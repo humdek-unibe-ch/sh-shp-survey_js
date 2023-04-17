@@ -50,7 +50,14 @@ class SurveyView extends StyleView
     {
         if (empty($local)) {
             if (DEBUG) {
-                $local = array(__DIR__ . "/js/survey.jquery.min.js",  __DIR__ . "/js/survey.js");
+                $local = array(
+                    __DIR__ . "/js/1_knockout-latest.js",
+                    __DIR__ . "/js/2_survey.core.min.js",
+                    __DIR__ . "/js/3_survey-knockout-ui.min.js",
+                    __DIR__ . "/js/4_survey-creator-core.min.js",
+                    __DIR__ . "/js/5_survey-creator-knockout.min.js",
+                    __DIR__ . "/js/6_survey.js"
+                );
             } else {
                 $local = array(__DIR__ . "/../../../../../survey-js/js/ext/survey-js.min.js?v=" . rtrim(shell_exec("git describe --tags")));
             }
@@ -69,7 +76,12 @@ class SurveyView extends StyleView
     {
         if (empty($local)) {
             if (DEBUG) {
-                $local = array(__DIR__ . "/css/modern.min.css", __DIR__ . "/css/defaultV2.min.css");
+                $local = array(
+                    // __DIR__ . "/css/survey.min.css",
+                    __DIR__ . "/css/modern.min.css",
+                    __DIR__ . "/css/defaultV2.min.css",
+                    __DIR__ . "/css/survey-creator-core.min.css"
+                );
             } else {
                 $local = array(__DIR__ . "/../../../../../survey-js/css/ext/survey-js.min.css?v=" . rtrim(shell_exec("git describe --tags")));
             }
