@@ -32,9 +32,9 @@ class SurveyJSModel extends StyleModel
      * @param array $entry_record
      *  An array that contains the entry record information.
      */
-    public function __construct($services, $id)
+    public function __construct($services, $id,$params)
     {
-        parent::__construct($services, $id);
+        parent::__construct($services, $id, $params);
     }
 
     /* Private Methods ********************************************************/
