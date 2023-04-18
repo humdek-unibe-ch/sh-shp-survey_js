@@ -29,7 +29,7 @@ class SurveyJSHooks extends BaseHooks
     /* Private Methods *********************************************************/
 
     /**
-     * Set csp rules for Qualtrics     
+     * Set csp rules for Surveyjs     
      * @return string
      * Return csp_rules
      */

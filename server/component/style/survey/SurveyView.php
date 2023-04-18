@@ -77,7 +77,6 @@ class SurveyView extends StyleView
         if (empty($local)) {
             if (DEBUG) {
                 $local = array(
-                    // __DIR__ . "/css/survey.min.css",
                     __DIR__ . "/css/modern.min.css",
                     __DIR__ . "/css/defaultV2.min.css",
                     __DIR__ . "/css/survey-creator-core.min.css"

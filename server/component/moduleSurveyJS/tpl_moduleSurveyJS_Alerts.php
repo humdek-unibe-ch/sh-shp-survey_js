@@ -3,4 +3,6 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 ?>
-<div id="surveyContainer"></div>
+<div class = "m-3">
+    <?php $this->output_alert(); ?>
+</div>
