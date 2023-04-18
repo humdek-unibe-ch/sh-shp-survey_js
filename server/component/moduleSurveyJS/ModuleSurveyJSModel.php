@@ -104,9 +104,7 @@ class ModuleSurveyJSModel extends BaseModel
      */
     public function get_surveys()
     {
-        $sql = "SELECT *, JSON_UNQUOTE(JSON_EXTRACT(config, '$.title')) AS survey_name
-                FROM surveys;";
-        return $this->db->query_db($sql, array());
+        return $this->db->select_table("view_surveys");
     }
 
     /**

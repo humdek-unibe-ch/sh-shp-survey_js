@@ -11,7 +11,7 @@ require_once __DIR__ . "/../../../../../../component/style/StyleModel.php";
  * components such that the data can easily be displayed in the view of the
  * component.
  */
-class SurveyModel extends StyleModel
+class SurveyJSModel extends StyleModel
 {
     /* Private Properties *****************************************************/
 
@@ -22,7 +22,7 @@ class SurveyModel extends StyleModel
      *
      * @param array $services
      *  An associative array holding the different available services. See the
-     *  class definition basepage for a list of all services.
+     *  class definition base page for a list of all services.
      * @param int $id
      *  The section id of the navigation wrapper.
      * @param array $params
@@ -42,6 +42,15 @@ class SurveyModel extends StyleModel
     
     /* Public Methods *********************************************************/
 
-    
+    /**
+     * Get a survey by id
+     * @param int $sid
+     * survey id
+     * @return object
+     * Return the row for the survey
+     */
+    public function get_survey($sid){
+        return $this->db->query_db_first("SELECT * FROM surveys WHERE id = :id", array(':id'=>$sid));
+    }
 }
 ?>

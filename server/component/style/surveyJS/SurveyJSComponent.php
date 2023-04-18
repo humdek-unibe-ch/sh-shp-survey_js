@@ -5,15 +5,15 @@
 ?>
 <?php
 require_once __DIR__ . "/../../../../../../component/BaseComponent.php";
-require_once __DIR__ . "/SurveyView.php";
-require_once __DIR__ . "/SurveyModel.php";
-require_once __DIR__ . "/SurveyController.php";
+require_once __DIR__ . "/SurveyJSView.php";
+require_once __DIR__ . "/SurveyJSModel.php";
+require_once __DIR__ . "/SurveyJSController.php";
 
 /**
- * A component class for a Survey style component. 
+ * A component class for a SurveyJS style component. 
  *
  */
-class SurveyComponent extends BaseComponent
+class SurveyJSComponent extends BaseComponent
 {
     /* Constructors ***********************************************************/
 
@@ -36,11 +36,11 @@ class SurveyComponent extends BaseComponent
      */
     public function __construct($services, $id)
     {
-        $model = new SurveyModel($services, $id);        
+        $model = new SurveyJSModel($services, $id);        
         $controller = null;
         if(!$model->is_cms_page())
-            $controller = new SurveyController($model);
-        $view = new SurveyView($model, $controller);
+            $controller = new SurveyJSController($model);
+        $view = new SurveyJSView($model, $controller);
         parent::__construct($model, $view, $controller);
     }
 }

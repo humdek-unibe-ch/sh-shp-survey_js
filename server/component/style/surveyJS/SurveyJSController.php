@@ -8,7 +8,7 @@ require_once __DIR__ . "/../../../../../../component/BaseController.php";
 /**
  * The controller class of formUserInput style component.
  */
-class SurveyController extends BaseController
+class SurveyJSController extends BaseController
 {
     /* Private Properties *****************************************************/
 

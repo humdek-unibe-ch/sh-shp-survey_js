@@ -29,7 +29,80 @@ class SurveyJSHooks extends BaseHooks
     /* Private Methods *********************************************************/
 
     /**
-     * Set csp rules for Surveyjs     
+     * Output select SurveyJS field
+     * @param string $value
+     * Value of the field
+     * @param string $name
+     * The name of the fields
+     * @param int $disabled 0 or 1
+     * If the field is in edit mode or view mode (disabled)
+     * @return object
+     * Return instance of BaseStyleComponent -> select style
+     */
+    private function outputSelectSurveyJSField($value, $name, $disabled){
+        return new BaseStyleComponent("select", array(
+                "value" => $value,
+                "name" => $name,
+                "max" => 10,
+                "live_search" => 1,
+                "is_required" => 1,
+                "disabled" => $disabled,
+                "items" => $this->db->fetch_table_as_select_values('view_surveys', 'id', array('survey_generated_id', 'survey_name'))
+            ));
+    }
+
+    /**
+     * Return a BaseStyleComponent object
+     * @param object $args
+     * Params passed to the method
+     * @param int $disabled 0 or 1
+     * If the field is in edit mode or view mode (disabled)
+     * @return object
+     * Return a BaseStyleComponent object
+     */
+    private function returnSelectSurveyJSField($args, $disabled){
+        $field = $this->get_param_by_name($args, 'field');
+        $res = $this->execute_private_method($args);                
+        if ($field['name'] == 'survey-js') {            
+            $field_name_prefix = "fields[" . $field['name'] . "][" . $field['id_language'] . "]" . "[" . $field['id_gender'] . "]";
+            $selectField = $this->outputSelectSurveyJSField($field['content'], $field_name_prefix . "[content]", $disabled);
+            if ($selectField && $res) {
+                $children = $res->get_view()->get_children();
+                $children[] = $selectField;
+                $res->get_view()->set_children($children);
+            }
+        }
+        return $res;
+    }
+
+    /* Public Methods *********************************************************/
+
+    /**
+     * Return a BaseStyleComponent object
+     * @param object $args
+     * Params passed to the method
+     * @return object
+     * Return a BaseStyleComponent object
+     */
+    public function outputFieldSurveyJSEdit($args)
+    {
+        return $this->returnSelectSurveyJSField($args, 0);
+    }
+
+    /**
+     * Return a BaseStyleComponent object
+     * @param object $args
+     * Params passed to the method
+     * @return object
+     * Return a BaseStyleComponent object
+     */
+    public function outputFieldSurveyJSView($args)
+    {
+        return $this->returnSelectSurveyJSField($args, 1);
+    }
+
+    /**
+     * Set csp rules for SurveyJS     
      * @return string
      * Return csp_rules
      */

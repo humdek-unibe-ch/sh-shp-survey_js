@@ -9,9 +9,19 @@ require_once __DIR__ . "/../../../../../../component/style/StyleView.php";
 /**
  * The view class of the formUserInput style component.
  */
-class SurveyView extends StyleView
+class SurveyJSView extends StyleView
 {
     /* Private Properties *****************************************************/
+
+    /**
+     * The survey id
+     */
+    private $sid;
+
+    /**
+     * The survey info
+     */
+    private $survey;
 
     /* Constructors ***********************************************************/
 
@@ -26,6 +36,10 @@ class SurveyView extends StyleView
     public function __construct($model, $controller)
     {
         parent::__construct($model, $controller);
+        $this->sid = $this->model->get_db_field('survey-js', '');
+        if ($this->sid > 0) {
+            $this->survey = $this->model->get_survey($this->sid);
+        }
     }
 
 
@@ -36,14 +50,14 @@ class SurveyView extends StyleView
      */
     public function output_content()
     {
-        require __DIR__ . "/tpl_survey.php";
+        require __DIR__ . "/tpl_surveyJS.php";
     }
 
     /**
      * Get js include files required for this component. This overrides the
      * parent implementation.
      *
-     * @retval array
+     * @return array
      *  An array of js include files the component requires.
      */
     public function get_js_includes($local = array())
@@ -51,12 +65,13 @@ class SurveyView extends StyleView
         if (empty($local)) {
             if (DEBUG) {
                 $local = array(
-                    __DIR__ . "/js/1_knockout-latest.js",
-                    __DIR__ . "/js/2_survey.core.min.js",
-                    __DIR__ . "/js/3_survey-knockout-ui.min.js",
-                    __DIR__ . "/js/4_survey-creator-core.min.js",
-                    __DIR__ . "/js/5_survey-creator-knockout.min.js",
-                    __DIR__ . "/js/6_survey.js"
+                    // __DIR__ . "/../../moduleSurveyJS/js/1_knockout-latest.js",
+                    // __DIR__ . "/../../moduleSurveyJS/js/2_survey.core.min.js",
+                    // __DIR__ . "/../../moduleSurveyJS/js/3_survey-knockout-ui.min.js",
+                    // __DIR__ . "/../../moduleSurveyJS/js/4_survey-creator-core.min.js",
+                    // __DIR__ . "/../../moduleSurveyJS/js/5_survey-creator-knockout.min.js",
+                    __DIR__ . "/js/1_survey.jquery.min.js",
+                    __DIR__ . "/js/2_surveyJS.js"
                 );
             } else {
                 $local = array(__DIR__ . "/../../../../../survey-js/js/ext/survey-js.min.js?v=" . rtrim(shell_exec("git describe --tags")));
@@ -69,7 +84,7 @@ class SurveyView extends StyleView
      * Get css include files required for this component. This overrides the
      * parent implementation.
      *
-     * @retval array
+     * @return array
      *  An array of css include files the component requires.
      */
     public function get_css_includes($local = array())
@@ -78,8 +93,7 @@ class SurveyView extends StyleView
             if (DEBUG) {
                 $local = array(
                     __DIR__ . "/css/modern.min.css",
-                    __DIR__ . "/css/defaultV2.min.css",
-                    __DIR__ . "/css/survey-creator-core.min.css"
+                    __DIR__ . "/css/defaultV2.min.css"
                 );
             } else {
                 $local = array(__DIR__ . "/../../../../../survey-js/css/ext/survey-js.min.css?v=" . rtrim(shell_exec("git describe --tags")));
