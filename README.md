@@ -11,4 +11,4 @@ This is a SelfHelpPlugin that is used for [SurveyJS](https://surveyjs.io) integr
 
 # Requirements
 
- - SelfHelp v6.1.3+
+ - SelfHelp v6.1.7+

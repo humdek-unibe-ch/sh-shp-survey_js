@@ -32,14 +32,14 @@ class SurveyJSModel extends StyleModel
      * @param array $entry_record
      *  An array that contains the entry record information.
      */
-    public function __construct($services, $id,$params)
+    public function __construct($services, $id, $params)
     {
         parent::__construct($services, $id, $params);
     }
 
     /* Private Methods ********************************************************/
 
-    
+
     /* Public Methods *********************************************************/
 
     /**
@@ -49,8 +49,16 @@ class SurveyJSModel extends StyleModel
      * @return object
      * Return the row for the survey
      */
-    public function get_survey($sid){
-        return $this->db->query_db_first("SELECT * FROM surveys WHERE id = :id", array(':id'=>$sid));
+    public function get_survey($sid)
+    {
+        $survey = $this->db->query_db_first("SELECT * FROM surveys WHERE id = :id", array(':id' => $sid));
+        $user_name = $this->db->fetch_user_name();
+        $user_code = $this->db->get_user_code();
+        $survey['content'] = $survey['config'];
+        $survey['name'] = 'survey-js';
+        $data_config = $this->get_db_field('data_config');
+        $survey['content'] = $this->calc_dynamic_values($survey, $data_config, $user_name, $user_code);
+        return $survey;
     }
 }
 ?>
