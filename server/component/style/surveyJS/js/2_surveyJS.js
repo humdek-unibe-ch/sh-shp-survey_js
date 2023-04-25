@@ -41,7 +41,7 @@ function initSurveyJS() {
 function saveSurveyJS(surveyFields, survey) {
     data = { ...survey.data };
     data.pageNo = survey.currentPageNo;
-    if (!surveyFields['restart_on_refresh']) {
+    if (!surveyFields['restart_on_refresh'] && data['survey_generated_id']) {
         window.localStorage.setItem(data['survey_generated_id'], JSON.stringify(data));
     }
     $.ajax({
@@ -52,6 +52,9 @@ function saveSurveyJS(surveyFields, survey) {
             if (data['trigger_type'] == 'finished') {
                 // on successful save on completed survey remove the local storage data
                 window.localStorage.removeItem(data['survey_generated_id']);
+                if(surveyFields['redirect_at_end']){
+                    window.location.href = surveyFields['redirect_at_end'];
+                }
             }
         }
     });

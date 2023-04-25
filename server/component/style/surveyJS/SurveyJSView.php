@@ -38,6 +38,11 @@ class SurveyJSView extends StyleView
      */
     private $restart_on_refresh;
 
+    /**
+     * If it is set it redirects to this link after the survey is completed
+     */
+    private $redirect_at_end;
+
     /* Constructors ***********************************************************/
 
     /**
@@ -58,6 +63,7 @@ class SurveyJSView extends StyleView
         $this->label_survey_done = $this->model->get_db_field('label_survey_done', '');
         $this->label_survey_not_active = $this->model->get_db_field('label_survey_not_active', '');
         $this->restart_on_refresh = $this->model->get_db_field('restart_on_refresh', '');
+        $this->redirect_at_end = $this->model->get_db_field('redirect_at_end', '');
     }
 
 
@@ -68,8 +74,12 @@ class SurveyJSView extends StyleView
      */
     public function output_content()
     {
+        $redirect_at_end = preg_replace('/^\/+/', '', $this->redirect_at_end); // remove the first /
+        $redirect_at_end = preg_replace('/^#+/', '', $this->redirect_at_end); // remove the first #
+        $redirect_at_end = $this->model->get_link_url(str_replace("/", "", $redirect_at_end));
         $survey_fields = array(
-            "restart_on_refresh" => boolval($this->restart_on_refresh)
+            "restart_on_refresh" => boolval($this->restart_on_refresh),
+            "redirect_at_end" => $redirect_at_end
         );
         $survey_fields = json_encode($survey_fields);
         require __DIR__ . "/tpl_surveyJS.php";

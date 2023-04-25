@@ -15,6 +15,36 @@ class SurveyJSModel extends StyleModel
 {
     /* Private Properties *****************************************************/
 
+    /**
+     * If checked the survey can be done once per schedule
+     */
+    private $once_per_schedule;
+
+    /**
+     * If checked the survey can be done only once by an user. The checkbox `once_per_schedule` is ignore if this is checked
+     */
+    private $once_per_user;
+
+    /**
+     * Start time when the survey should be available
+     */
+    private $start_time;
+
+    /**
+     * End time when the survey should be not available anymore
+     */
+    private $end_time;
+
+    /**
+     * Start time converted to date
+     */
+    private $start_time_calced;
+
+    /**
+     * End time converted to date and adjusted if smaller than start time
+     */
+    private $end_time_calced;    
+
     /* Constructors ***********************************************************/
 
     /**
@@ -35,9 +65,34 @@ class SurveyJSModel extends StyleModel
     public function __construct($services, $id, $params)
     {
         parent::__construct($services, $id, $params);
+        $this->once_per_schedule = $this->get_db_field('once_per_schedule', 0);        
+        $this->once_per_user = $this->get_db_field('once_per_user', 0);
+        $this->start_time = $this->get_db_field('start_time', '00:00');
+        $this->end_time = $this->get_db_field('end_time', '00:00');
+        $this->calc_times();
     }
 
     /* Private Methods ********************************************************/
+
+    /* Private Methods *********************************************************/
+
+    private function calc_times()
+    {
+        $d = new DateTime();
+        $now = $d->setTimestamp(strtotime("now"));
+        $at_start_time = explode(':', $this->start_time);
+        $at_end_time = explode(':', $this->end_time);
+        $start_time = $now->setTime($at_start_time[0], $at_start_time[1]);
+        $start_time = date('Y-m-d H:i:s', $start_time->getTimestamp());
+        $end_time = $now->setTime($at_end_time[0], $at_end_time[1]);
+        $end_time = date('Y-m-d H:i:s', $end_time->getTimestamp());
+        if (strtotime($start_time) > strtotime($end_time)) {
+            // move end time to next day
+            $end_time = date('Y-m-d H:i:s', strtotime($end_time . ' +1 day'));
+        }
+        $this->start_time_calced = $start_time;
+        $this->end_time_calced = $end_time;
+    }
 
     /**
      * Get the survey
@@ -88,6 +143,7 @@ class SurveyJSModel extends StyleModel
                 }
             }
         }
+        return false;
     }
 }
 ?>
