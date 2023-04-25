@@ -6,36 +6,53 @@ function initSurveyJS() {
     // Survey.StylesManager.applyTheme("modern");
     $('.selfHelp-survey-js').each(function () {
         var surveyContent = $(this).data('survey-js');
-        console.log(surveyContent);
+        var surveyFields = $(this).data('survey-js-fields');
         var survey = new Survey.Model(surveyContent);
+        if (!surveyFields['restart_on_refresh']) {
+            // Restore survey results
+            const notCompletedSurvey = window.localStorage.getItem(surveyContent['survey_generated_id']) || null;
+            if (notCompletedSurvey) {
+                survey.data = JSON.parse(notCompletedSurvey);
+                if (survey.data.pageNo) {
+                    survey.currentPageNo = survey.data.pageNo;
+                }
+            }
+            saveSurveyJS(surveyFields, survey);
+        }
         if (!survey.data['response_id']) {
             const uniqueId = Date.now().toString(36) + Math.random().toString(36).substring(2, 7);
             survey.setValue('response_id', "RJS_" + uniqueId.substring(uniqueId.length - 16));
             survey.setValue('trigger_type', 'started');
             survey.setValue('survey_generated_id', surveyContent['survey_generated_id']);
-            saveSurveyJS(survey.data);
+            saveSurveyJS(surveyFields, survey);
         }
         $(this).Survey({ model: survey });
-        console.log(survey.data);
-        survey.onCurrentPageChanged.add((sender, options) => {            
+        survey.onCurrentPageChanged.add((sender, options) => {
             sender.setValue('trigger_type', 'updated');
-            console.log('next page', sender.data);
-            saveSurveyJS(sender.data);
+            saveSurveyJS(surveyFields, sender);
         });
         survey.onComplete.add((sender, options) => {
             sender.setValue('trigger_type', 'finished');
-            console.log('finished', sender.data);
-            saveSurveyJS(sender.data);
+            saveSurveyJS(surveyFields, sender);
         });
     });
 }
 
-function saveSurveyJS(data) {
+function saveSurveyJS(surveyFields, survey) {
+    data = { ...survey.data };
+    data.pageNo = survey.currentPageNo;
+    if (!surveyFields['restart_on_refresh']) {
+        window.localStorage.setItem(data['survey_generated_id'], JSON.stringify(data));
+    }
     $.ajax({
         type: 'post',
         url: window.location,
         data: data,
-        success: function (data) {
+        success: function (r) {
+            if (data['trigger_type'] == 'finished') {
+                // on successful save on completed survey remove the local storage data
+                window.localStorage.removeItem(data['survey_generated_id']);
+            }
         }
     });
 }

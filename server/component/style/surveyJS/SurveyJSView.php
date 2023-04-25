@@ -23,6 +23,21 @@ class SurveyJSView extends StyleView
      */
     private $survey;
 
+    /**
+     * Markdown text that is shown if the survey is done and it can be filled only once per schedule.
+     */
+    private $label_survey_done;
+
+    /**
+     * Markdown text that is shown if the survey is not active right now.
+     */
+    private $label_survey_not_active;
+
+    /**
+     * If true the survey is restarted on refresh
+     */
+    private $restart_on_refresh;
+
     /* Constructors ***********************************************************/
 
     /**
@@ -40,6 +55,9 @@ class SurveyJSView extends StyleView
         if ($this->sid > 0) {
             $this->survey = $this->model->get_survey($this->sid);
         }
+        $this->label_survey_done = $this->model->get_db_field('label_survey_done', '');
+        $this->label_survey_not_active = $this->model->get_db_field('label_survey_not_active', '');
+        $this->restart_on_refresh = $this->model->get_db_field('restart_on_refresh', '');
     }
 
 
@@ -50,6 +68,10 @@ class SurveyJSView extends StyleView
      */
     public function output_content()
     {
+        $survey_fields = array(
+            "restart_on_refresh" => boolval($this->restart_on_refresh)
+        );
+        $survey_fields = json_encode($survey_fields);
         require __DIR__ . "/tpl_surveyJS.php";
     }
 
