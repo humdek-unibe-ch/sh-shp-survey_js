@@ -39,19 +39,27 @@ class SurveyJSModel extends StyleModel
 
     /* Private Methods ********************************************************/
 
+    /**
+     * Get the survey
+     * @return object
+     * Return the row for the survey
+     */
+    private function get_raw_survey()
+    {
+        $sid = $this->get_db_field('survey-js', '');
+        return $this->db->query_db_first("SELECT * FROM view_surveys WHERE id = :id", array(':id' => $sid));
+    }
 
     /* Public Methods *********************************************************/
 
     /**
-     * Get a survey by id
-     * @param int $sid
-     * survey id
+     * Get the survey and apply all dynamic variables
      * @return object
-     * Return the row for the survey
+     * Return the info for the survey
      */
-    public function get_survey($sid)
+    public function get_survey()
     {
-        $survey = $this->db->query_db_first("SELECT * FROM surveys WHERE id = :id", array(':id' => $sid));
+        $survey = $this->get_raw_survey();
         $user_name = $this->db->fetch_user_name();
         $user_code = $this->db->get_user_code();
         $survey['content'] = $survey['config'];
@@ -59,6 +67,27 @@ class SurveyJSModel extends StyleModel
         $data_config = $this->get_db_field('data_config');
         $survey['content'] = $this->calc_dynamic_values($survey, $data_config, $user_name, $user_code);
         return $survey;
+    }
+
+    /**
+     * Save survey js data as external table
+     * @param object $data
+     * Object with the data that should be saved
+     */
+    public function save_survey($data)
+    {
+        $survey = $this->get_raw_survey();
+        if (isset($survey['survey_generated_id']) && isset($data['survey_generated_id']) && $data['survey_generated_id'] == $survey['survey_generated_id']) {
+            if (isset($data['trigger_type'])) {
+                if ($data['trigger_type'] == actionTriggerTypes_started) {
+                    $this->user_input->save_external_data(transactionBy_by_user, $data['survey_generated_id'], $data);
+                } else {
+                    $this->user_input->save_external_data(transactionBy_by_user, $data['survey_generated_id'], $data, array(
+                        "response_id" => $data['response_id']
+                    ));
+                }
+            }
+        }
     }
 }
 ?>

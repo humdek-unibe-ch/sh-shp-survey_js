@@ -24,7 +24,11 @@ class SurveyJSController extends BaseController
      */
     public function __construct($model)
     {
-        parent::__construct($model);        
+        parent::__construct($model);
+        if(isset($_POST['trigger_type'])){
+            // survey data is sent
+            $this->model->save_survey($_POST);;
+        }
     }
 
     /* Private Methods ********************************************************/

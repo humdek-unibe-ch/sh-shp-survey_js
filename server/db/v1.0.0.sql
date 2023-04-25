@@ -18,6 +18,42 @@ INSERT IGNORE INTO `fields` (`id`, `name`, `id_type`, `display`) VALUES (NULL, '
 INSERT IGNORE INTO `styles_fields` (`id_styles`, `id_fields`, `default_value`, `help`) 
 VALUES (get_style_id('surveyJS'), get_field_id('survey-js'), '', 'Select a survey. The survey first should be created in module SurveyJS.');
 
+-- add field restart_on_refresh to style surveyJS
+INSERT IGNORE INTO `fields` (`id`, `name`, `id_type`, `display`) VALUES (NULL, 'restart_on_refresh', get_field_type_id('checkbox'), '0');
+INSERT IGNORE INTO `styles_fields` (`id_styles`, `id_fields`, `default_value`, `help`) VALUES (get_style_id('surveyJS'), get_field_id('restart_on_refresh'), 0, 'If checked the survey is restarted on refresh');
+
+-- add field once_per_schedule to style surveyJS
+INSERT IGNORE INTO `fields` (`id`, `name`, `id_type`, `display`) VALUES (NULL, 'once_per_schedule', get_field_type_id('checkbox'), '0');
+INSERT IGNORE INTO `styles_fields` (`id_styles`, `id_fields`, `default_value`, `help`) VALUES (get_style_id('surveyJS'), get_field_id('once_per_schedule'), 0, 'If checked the survey can be done once per schedule');
+
+-- add field once_per_user to style surveyJS
+INSERT IGNORE INTO `fields` (`id`, `name`, `id_type`, `display`) VALUES (NULL, 'once_per_user', get_field_type_id('checkbox'), '0');
+INSERT IGNORE INTO `styles_fields` (`id_styles`, `id_fields`, `default_value`, `help`) VALUES (get_style_id('surveyJS'), get_field_id('once_per_user'), 0, 'If checked the survey can be done only once by an user. The checkbox `once_per_schedule` is ignore if this is checked');
+
+-- add field start_time to style surveyJS
+INSERT IGNORE INTO `fields` (`id`, `name`, `id_type`, `display`) VALUES (NULL, 'start_time', get_field_type_id('time'), '0');
+INSERT IGNORE INTO `styles_fields` (`id_styles`, `id_fields`, `default_value`, `help`) VALUES (get_style_id('surveyJS'), get_field_id('start_time'), '00:00', 'Start time when the survey should be available');
+
+-- add field end_time to style surveyJS
+INSERT IGNORE INTO `fields` (`id`, `name`, `id_type`, `display`) VALUES (NULL, 'end_time', get_field_type_id('time'), '0');
+INSERT IGNORE INTO `styles_fields` (`id_styles`, `id_fields`, `default_value`, `help`) VALUES (get_style_id('surveyJS'), get_field_id('end_time'), '00:00', 'End time when the survey should be not available anymore');
+
+-- add field label_survey_done to style surveyJS
+INSERT IGNORE INTO `fields` (`id`, `name`, `id_type`, `display`) VALUES (NULL, 'label_survey_done', get_field_type_id('markdown'), 1);
+INSERT IGNORE INTO `styles_fields` (`id_styles`, `id_fields`, `default_value`, `help`) VALUES (get_style_id('surveyJS'), get_field_id('label_survey_done'), null, 'Markdown text that is shown if the survey is done and it can be filled only once per schedule');
+
+-- add field label_survey_not_active to style surveyJS
+INSERT IGNORE INTO `fields` (`id`, `name`, `id_type`, `display`) VALUES (NULL, 'label_survey_not_active', get_field_type_id('markdown'), 1);
+INSERT IGNORE INTO `styles_fields` (`id_styles`, `id_fields`, `default_value`, `help`) VALUES (get_style_id('surveyJS'), get_field_id('label_survey_not_active'), null, 'Markdown text that is shown if the survey is not active right now.');
+
+-- add field close_modal_at_end to style surveyJS
+INSERT IGNORE INTO `fields` (`id`, `name`, `id_type`, `display`) VALUES (NULL, 'close_modal_at_end', get_field_type_id('checkbox'), '0');
+INSERT IGNORE INTO `styles_fields` (`id_styles`, `id_fields`, `default_value`, `help`) VALUES (get_style_id('surveyJS'), get_field_id('close_modal_at_end'), 0, '`Only for mobile` - if selected the modal form will be closed once the survey is done');
+
+-- add field redirect_at_end to style surveyJS
+INSERT INTO `fields` (`id`, `name`, `id_type`, `display`) VALUES (NULL, 'redirect_at_end', get_field_type_id('text'), '0');
+INSERT INTO `styles_fields` (`id_styles`, `id_fields`, `default_value`, `help`) VALUES (get_style_id('surveyJS'), get_field_id('redirect_at_end'), null, 'Redirect to this url at the end of the survey');
+
 -- add hook to load surveyJS in the style surveyJS in edit mode
 INSERT IGNORE INTO `hooks` (`id_hookTypes`, `name`, `description`, `class`, `function`, `exec_class`, `exec_function`)
 VALUES ((SELECT id FROM lookups WHERE lookup_code = 'hook_overwrite_return' LIMIT 0,1), 'field-surveyJS-edit', 'Output select SurveyJS field - edit mdoe', 'CmsView', 'create_field_form_item', 'SurveyJSHooks', 'outputFieldSurveyJSEdit');
@@ -57,3 +93,12 @@ CREATE TABLE IF NOT EXISTS `surveys` (
     `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     `config` TEXT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+
+
+DROP VIEW IF EXISTS view_surveys;
+CREATE VIEW view_surveys
+AS
+SELECT id, survey_generated_id, created_at, updated_at, JSON_SET(config, '$.survey_generated_id', survey_generated_id) AS config, JSON_UNQUOTE(JSON_EXTRACT(config, '$.title')) AS survey_name
+FROM surveys;
+
