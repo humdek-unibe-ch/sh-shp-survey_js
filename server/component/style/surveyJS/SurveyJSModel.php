@@ -43,7 +43,7 @@ class SurveyJSModel extends StyleModel
     /**
      * End time converted to date and adjusted if smaller than start time
      */
-    private $end_time_calced;    
+    private $end_time_calced;
 
     /* Constructors ***********************************************************/
 
@@ -65,7 +65,7 @@ class SurveyJSModel extends StyleModel
     public function __construct($services, $id, $params)
     {
         parent::__construct($services, $id, $params);
-        $this->once_per_schedule = $this->get_db_field('once_per_schedule', 0);        
+        $this->once_per_schedule = $this->get_db_field('once_per_schedule', 0);
         $this->once_per_user = $this->get_db_field('once_per_user', 0);
         $this->start_time = $this->get_db_field('start_time', '00:00');
         $this->end_time = $this->get_db_field('end_time', '00:00');
@@ -103,6 +103,35 @@ class SurveyJSModel extends StyleModel
     {
         $sid = $this->get_db_field('survey-js', '');
         return $this->db->query_db_first("SELECT * FROM view_surveys WHERE id = :id", array(':id' => $sid));
+    }
+
+    /**
+     * Check if the survey is already done by the user
+     * @retval boolean
+     * true if it is already done, false if not
+     */
+    private function is_survey_done_by_user()
+    {
+        $form_name = $this->get_raw_survey()['survey_generated_id'];
+        $form_id = $this->user_input->get_form_id($form_name, FORM_EXTERNAL);
+        $filter = ' AND trigger_type = "' . actionTriggerTypes_finished . '"'; // the survey should be completed
+        $res = $this->user_input->get_data($form_id, $filter, true, FORM_EXTERNAL, $_SESSION['id_user'], true);
+        return $res;
+    }
+
+    /**
+     * Check if the survey is already done by the user for the selected period
+     * @retval boolean
+     * true if it is already done, false if not
+     */
+    private function is_survey_done_by_user_for_schedule()
+    {
+        $form_name = $this->get_raw_survey()['survey_generated_id'];
+        $form_id = $this->user_input->get_form_id($form_name, FORM_EXTERNAL);
+        $filter = ' AND trigger_type = "' . actionTriggerTypes_finished . '"'; // the survey should be completed
+        $filter = $filter  . ' AND (entry_date BETWEEN "' . $this->start_time_calced . '" AND "' . $this->end_time_calced . '")'; // the survey should be completed between the time
+        $res = $this->user_input->get_data($form_id, $filter, true, FORM_EXTERNAL, $_SESSION['id_user'], true);
+        return $res;
     }
 
     /* Public Methods *********************************************************/
@@ -144,6 +173,46 @@ class SurveyJSModel extends StyleModel
             }
         }
         return false;
+    }
+
+    /**
+     * Check if the survey is active
+     * @retval boolean
+     * true if it is active, false if it is not active
+     */
+    public function is_survey_active()
+    {
+        if ($this->start_time == $this->end_time) {
+            // survey is always active
+            return true;
+        } else {
+            if (strtotime($this->start_time_calced) <= strtotime("now") && strtotime("now") <= strtotime($this->end_time_calced)) {
+                // the survey is active
+                return true;
+            } else {
+                // survey is not active right now
+                return false;
+            }
+        }
+    }
+
+    /**
+     * Check if the survey is done; if once_per_schedule is not enabled it will return always false
+     * @retval boolean
+     * true if it is active, false if it is not active
+     */
+    public function is_survey_done()
+    {
+        if ($this->once_per_user) {
+            // the survey can be filled only once per user
+            return $this->is_survey_done_by_user();
+        } else if ($this->once_per_schedule) {
+            // the survey can be filled once per schedule
+            return $this->is_survey_done_by_user_for_schedule();
+        } else {
+            // survey can be filled as many times per schedule
+            return false;
+        }
     }
 }
 ?>

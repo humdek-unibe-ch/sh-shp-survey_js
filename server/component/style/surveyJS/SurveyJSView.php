@@ -74,15 +74,41 @@ class SurveyJSView extends StyleView
      */
     public function output_content()
     {
-        $redirect_at_end = preg_replace('/^\/+/', '', $this->redirect_at_end); // remove the first /
-        $redirect_at_end = preg_replace('/^#+/', '', $this->redirect_at_end); // remove the first #
-        $redirect_at_end = $this->model->get_link_url(str_replace("/", "", $redirect_at_end));
-        $survey_fields = array(
-            "restart_on_refresh" => boolval($this->restart_on_refresh),
-            "redirect_at_end" => $redirect_at_end
-        );
-        $survey_fields = json_encode($survey_fields);
-        require __DIR__ . "/tpl_surveyJS.php";
+        if ($this->model->is_survey_active()) {
+            if ($this->model->is_survey_done()) {
+                if ($this->label_survey_done != '') {
+                    $alert = new BaseStyleComponent("alert", array(
+                        "type" => "danger",
+                        "is_dismissable" => false,
+                        "children" => array(new BaseStyleComponent("markdown", array(
+                            "text_md" => $this->label_survey_done,
+                        )))
+                    ));
+                    $alert->output_content();
+                }
+            } else {
+                $redirect_at_end = preg_replace('/^\/+/', '', $this->redirect_at_end); // remove the first /
+                $redirect_at_end = preg_replace('/^#+/', '', $this->redirect_at_end); // remove the first #
+                $redirect_at_end = $this->model->get_link_url(str_replace("/", "", $redirect_at_end));
+                $survey_fields = array(
+                    "restart_on_refresh" => boolval($this->restart_on_refresh),
+                    "redirect_at_end" => $redirect_at_end
+                );
+                $survey_fields = json_encode($survey_fields);
+                require __DIR__ . "/tpl_surveyJS.php";
+            }
+        } else {
+            if ($this->label_survey_not_active != '') {
+                $alert = new BaseStyleComponent("alert", array(
+                    "type" => "danger",
+                    "is_dismissable" => false,
+                    "children" => array(new BaseStyleComponent("markdown", array(
+                        "text_md" => $this->label_survey_not_active,
+                    )))
+                ));
+                $alert->output_content();
+            }
+        }
     }
 
     /**
