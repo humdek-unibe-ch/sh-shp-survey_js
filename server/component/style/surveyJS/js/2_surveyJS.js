@@ -4,10 +4,17 @@ $(document).ready(function () {
 
 function initSurveyJS() {
     // Survey.StylesManager.applyTheme("modern");
-    $('.selfHelp-survey-js').each(function () {
+    $('.selfHelp-survey-js').each(function () {        
+        console.log(this);
         var surveyContent = $(this).data('survey-js');
         var surveyFields = $(this).data('survey-js-fields');
+        $(this).removeAttr('data-survey-js');
+        $(this).removeAttr('data-survey-js-fields');
         var survey = new Survey.Model(surveyContent);
+        var currentLocale = $(this).attr("class").split(" ").filter(function (className) {
+            return className.startsWith("selfHelp-locale-");
+        });
+        survey.locale = currentLocale[0].replace('selfHelp-locale-', '');
         if (!surveyFields['restart_on_refresh']) {
             // Restore survey results
             const notCompletedSurvey = window.localStorage.getItem(surveyContent['survey_generated_id']) || null;
@@ -44,6 +51,8 @@ function saveSurveyJS(surveyFields, survey) {
     if (!surveyFields['restart_on_refresh'] && data['survey_generated_id']) {
         window.localStorage.setItem(data['survey_generated_id'], JSON.stringify(data));
     }
+    data['_json'] = JSON.stringify(data);
+    console.log("save", data);
     $.ajax({
         type: 'post',
         url: window.location,
@@ -52,7 +61,7 @@ function saveSurveyJS(surveyFields, survey) {
             if (data['trigger_type'] == 'finished') {
                 // on successful save on completed survey remove the local storage data
                 window.localStorage.removeItem(data['survey_generated_id']);
-                if(surveyFields['redirect_at_end']){
+                if (surveyFields['redirect_at_end']) {
                     window.location.href = surveyFields['redirect_at_end'];
                 }
             }

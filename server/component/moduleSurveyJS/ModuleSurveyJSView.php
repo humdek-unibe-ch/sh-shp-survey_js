@@ -123,14 +123,20 @@ class ModuleSurveyJSView extends BaseView
     public function get_js_includes($local = array())
     {
         if (empty($local)) {
-            $local = array(
-                __DIR__ . "/js/1_knockout-latest.js",
-                __DIR__ . "/js/2_survey.core.min.js",
-                __DIR__ . "/js/3_survey-knockout-ui.min.js",
-                __DIR__ . "/js/4_survey-creator-core.min.js",
-                __DIR__ . "/js/5_survey-creator-knockout.min.js",
-                __DIR__ . "/js/survey.js",
-            );
+            if (DEBUG) {
+                $local = array(
+                    __DIR__ . "/js/1_knockout-latest.js",
+                    __DIR__ . "/js/2_survey.core.min.js",
+                    __DIR__ . "/js/3_survey-knockout-ui.min.js",
+                    __DIR__ . "/js/4_survey-creator-core.min.js",
+                    __DIR__ . "/js/5_survey-creator-knockout.min.js",
+                    __DIR__ . "/js/6_survey-creator-core.i18n.min",
+                    __DIR__ . "/js/7_survey.i18n.min",
+                    __DIR__ . "/js/8_survey.js",
+                );
+            } else {
+                $local = array(__DIR__ . "/../../../../survey-js/js/ext/survey-js.min.js?v=" . rtrim(shell_exec("git describe --tags")));
+            }
         }
         return parent::get_js_includes($local);
     }
@@ -152,6 +158,8 @@ class ModuleSurveyJSView extends BaseView
                     __DIR__ . "/css/survey-creator-core.min.css",
                     __DIR__ . "/css/survey.css"
                 );
+            } else {
+                $local = array(__DIR__ . "/../../../../survey-js/css/ext/survey-js.min.css?v=" . rtrim(shell_exec("git describe --tags")));
             }
         }
         return parent::get_css_includes($local);

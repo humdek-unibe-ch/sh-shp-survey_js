@@ -134,6 +134,26 @@ class SurveyJSModel extends StyleModel
         return $res;
     }
 
+    private function prepare_data($data)
+    {
+        foreach ($data as $key => $value) {
+            if (is_array($value)) {
+                // this is array and we have to rework it
+                if ($value === array_values($value)) {
+                    // The array is indexed with numerical keys
+                    $data[$key] = implode(',', $value);
+                } else {            
+                    // add all children directly in the data        
+                    foreach ($value as $val_key => $val_value) {
+                        $data[$key . "_" . $val_key] = $val_value;
+                    }
+                    unset($data[$key]); // remove the nested result
+                }
+            }
+        }
+        return $data;
+    }
+
     /* Public Methods *********************************************************/
 
     /**
@@ -160,6 +180,7 @@ class SurveyJSModel extends StyleModel
      */
     public function save_survey($data)
     {
+        $data = $this->prepare_data($data);
         $survey = $this->get_raw_survey();
         if (isset($survey['survey_generated_id']) && isset($data['survey_generated_id']) && $data['survey_generated_id'] == $survey['survey_generated_id']) {
             if (isset($data['trigger_type'])) {
