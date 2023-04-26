@@ -4,5 +4,5 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 ?>
 <div class="selfHelp-survey-js <?php echo $this->css; ?>"
- data-survey-js='<?php echo isset($this->survey['content']) ? $this->survey['content'] : ""; ?>' 
+ data-survey-js='<?php echo isset($this->survey['content']) ?  htmlspecialchars($this->survey['content'], ENT_QUOTES, 'UTF-8') : ""; ?>' 
  data-survey-js-fields='<?php echo $survey_fields ?>'></div>

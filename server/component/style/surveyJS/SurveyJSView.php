@@ -58,7 +58,7 @@ class SurveyJSView extends StyleView
         parent::__construct($model, $controller);
         $this->sid = $this->model->get_db_field('survey-js', '');
         if ($this->sid > 0) {
-            $this->survey = $this->model->get_survey($this->sid);
+            $this->survey = $this->model->get_survey();
         }
         $this->label_survey_done = $this->model->get_db_field('label_survey_done', '');
         $this->label_survey_not_active = $this->model->get_db_field('label_survey_not_active', '');
@@ -123,11 +123,6 @@ class SurveyJSView extends StyleView
         if (empty($local)) {
             if (DEBUG) {
                 $local = array(
-                    // __DIR__ . "/../../moduleSurveyJS/js/1_knockout-latest.js",
-                    // __DIR__ . "/../../moduleSurveyJS/js/2_survey.core.min.js",
-                    // __DIR__ . "/../../moduleSurveyJS/js/3_survey-knockout-ui.min.js",
-                    // __DIR__ . "/../../moduleSurveyJS/js/4_survey-creator-core.min.js",
-                    // __DIR__ . "/../../moduleSurveyJS/js/5_survey-creator-knockout.min.js",
                     __DIR__ . "/js/1_survey.jquery.min.js",
                     __DIR__ . "/js/2_surveyJS.js"
                 );

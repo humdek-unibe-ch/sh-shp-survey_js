@@ -1,6 +1,7 @@
 const creatorOptions = {
     showLogicTab: true,
-    isAutoSave: true
+    isAutoSave: true,
+    haveCommercialLicense: true
 };
 const creator = new SurveyCreator.SurveyCreator(creatorOptions);
 
