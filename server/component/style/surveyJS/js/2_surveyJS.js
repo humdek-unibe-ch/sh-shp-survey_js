@@ -4,13 +4,11 @@ $(document).ready(function () {
 
 function initSurveyJS() {
     // Survey.StylesManager.applyTheme("modern");
-    $('.selfHelp-survey-js').each(function () {
+    $('.selfHelp-survey-js-holder').each(function () {
         const surveyContent = $(this).data('survey-js');
         const surveyFields = $(this).data('survey-js-fields');
-        setTimeout(() => {
-            $(this).removeAttr('data-survey-js');
-            $(this).removeAttr('data-survey-js-fields');
-        }, 1);
+        $(this).removeAttr('data-survey-js');
+        $(this).removeAttr('data-survey-js-fields');   
         var survey = new Survey.Model(surveyContent);
         var currentLocale = $(this).attr("class").split(" ").filter(function (className) {
             return className.startsWith("selfHelp-locale-");
@@ -34,7 +32,7 @@ function initSurveyJS() {
             survey.setValue('survey_generated_id', surveyContent['survey_generated_id']);
             saveSurveyJS(surveyFields, survey);
         }
-        $(this).Survey({ model: survey });
+        $(this).children(".selfHelp-survey-js").first().Survey({ model: survey });
         survey.onCurrentPageChanged.add((sender, options) => {
             sender.setValue('trigger_type', 'updated');
             saveSurveyJS(surveyFields, sender);
@@ -53,7 +51,6 @@ function saveSurveyJS(surveyFields, survey) {
         window.localStorage.setItem(data['survey_generated_id'], JSON.stringify(data));
     }
     data['_json'] = JSON.stringify(data);
-    console.log("save", data);
     $.ajax({
         type: 'post',
         url: window.location,
