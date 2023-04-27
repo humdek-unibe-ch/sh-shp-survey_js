@@ -4,18 +4,19 @@ $(document).ready(function () {
 
 function initSurveyJS() {
     // Survey.StylesManager.applyTheme("modern");
-    $('.selfHelp-survey-js').each(function () {        
-        console.log(this);
-        var surveyContent = $(this).data('survey-js');
-        var surveyFields = $(this).data('survey-js-fields');
-        $(this).removeAttr('data-survey-js');
-        $(this).removeAttr('data-survey-js-fields');
+    $('.selfHelp-survey-js').each(function () {
+        const surveyContent = $(this).data('survey-js');
+        const surveyFields = $(this).data('survey-js-fields');
+        setTimeout(() => {
+            $(this).removeAttr('data-survey-js');
+            $(this).removeAttr('data-survey-js-fields');
+        }, 1);
         var survey = new Survey.Model(surveyContent);
         var currentLocale = $(this).attr("class").split(" ").filter(function (className) {
             return className.startsWith("selfHelp-locale-");
         });
         survey.locale = currentLocale[0].replace('selfHelp-locale-', '');
-        if (!surveyFields['restart_on_refresh']) {
+        if (surveyFields && !surveyFields['restart_on_refresh']) {
             // Restore survey results
             const notCompletedSurvey = window.localStorage.getItem(surveyContent['survey_generated_id']) || null;
             if (notCompletedSurvey) {

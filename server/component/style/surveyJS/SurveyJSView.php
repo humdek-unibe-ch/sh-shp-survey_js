@@ -146,7 +146,8 @@ class SurveyJSView extends StyleView
             if (DEBUG) {
                 $local = array(
                     __DIR__ . "/css/modern.min.css",
-                    __DIR__ . "/css/defaultV2.min.css"
+                    __DIR__ . "/css/defaultV2.min.css",
+                    __DIR__ . "/css/survey.css"
                 );
             } else {
                 $local = array(__DIR__ . "/../../../../../survey-js/css/ext/survey-js.min.css?v=" . rtrim(shell_exec("git describe --tags")));
