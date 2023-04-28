@@ -43,6 +43,11 @@ class SurveyJSView extends StyleView
      */
     private $redirect_at_end;
 
+    /**
+     * If set and the value is higher than 0, it will auto save the survey on interval based on the entered value.
+     */
+    private $auto_save_interval;
+
     /* Constructors ***********************************************************/
 
     /**
@@ -64,6 +69,7 @@ class SurveyJSView extends StyleView
         $this->label_survey_not_active = $this->model->get_db_field('label_survey_not_active', '');
         $this->restart_on_refresh = $this->model->get_db_field('restart_on_refresh', '');
         $this->redirect_at_end = $this->model->get_db_field('redirect_at_end', '');
+        $this->auto_save_interval = $this->model->get_db_field('auto_save_interval', 0);
     }
 
 
@@ -92,7 +98,8 @@ class SurveyJSView extends StyleView
                 $redirect_at_end = $this->model->get_link_url(str_replace("/", "", $redirect_at_end));
                 $survey_fields = array(
                     "restart_on_refresh" => boolval($this->restart_on_refresh),
-                    "redirect_at_end" => $redirect_at_end
+                    "redirect_at_end" => $redirect_at_end,
+                    "auto_save_interval" => $this->auto_save_interval
                 );
                 $survey_fields = json_encode($survey_fields);
                 require __DIR__ . "/tpl_surveyJS.php";

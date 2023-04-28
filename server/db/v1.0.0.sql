@@ -55,6 +55,10 @@ INSERT IGNORE INTO `styles_fields` (`id_styles`, `id_fields`, `default_value`, `
 INSERT INTO `fields` (`id`, `name`, `id_type`, `display`) VALUES (NULL, 'redirect_at_end', get_field_type_id('text'), '0');
 INSERT INTO `styles_fields` (`id_styles`, `id_fields`, `default_value`, `help`) VALUES (get_style_id('surveyJS'), get_field_id('redirect_at_end'), null, 'Redirect to this url at the end of the survey');
 
+-- add field auto_save_interval to style surveyJS
+INSERT IGNORE INTO `fields` (`id`, `name`, `id_type`, `display`) VALUES (NULL, 'auto_save_interval', get_field_type_id('number'), 0);
+INSERT IGNORE INTO `styles_fields` (`id_styles`, `id_fields`, `default_value`, `help`) VALUES (get_style_id('surveyJS'), get_field_id('auto_save_interval'), null, 'If set and the value is higher than 0, it will auto save the survey on interval based on the entered value. For example if you enter 10 it will autosave the survey every 10 seconds.');
+
 -- add hook to load surveyJS in the style surveyJS in edit mode
 INSERT IGNORE INTO `hooks` (`id_hookTypes`, `name`, `description`, `class`, `function`, `exec_class`, `exec_function`)
 VALUES ((SELECT id FROM lookups WHERE lookup_code = 'hook_overwrite_return' LIMIT 0,1), 'field-surveyJS-edit', 'Output select SurveyJS field - edit mdoe', 'CmsView', 'create_field_form_item', 'SurveyJSHooks', 'outputFieldSurveyJSEdit');
