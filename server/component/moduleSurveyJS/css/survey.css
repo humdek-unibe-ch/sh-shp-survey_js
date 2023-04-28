@@ -5,3 +5,7 @@
 .survey-js-card {
     --primary: #19b394
 }
+
+#surveyJSCreator {
+    height: 1150px;
+}

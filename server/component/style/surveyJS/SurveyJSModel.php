@@ -141,11 +141,23 @@ class SurveyJSModel extends StyleModel
                 // this is array and we have to rework it
                 if ($value === array_values($value)) {
                     // The array is indexed with numerical keys
-                    $data[$key] = implode(',', $value);
-                } else {            
+                    if (is_array($value[0]) && isset($value[0]['type'])) {
+                        // File upload, for now do not store it
+                        unset($data[$key]); // remove the file upload; it is saved in the whole json for now
+                    } else if (is_array($value[0]) && $value[0] !== array_values($value[0])) {
+                        // this questions is panel with some repetition
+                        $data[$key] = json_encode($value); // encode the data as json
+                    } else {
+                        $data[$key] = implode(',', $value);
+                    }
+                } else {
                     // add all children directly in the data        
                     foreach ($value as $val_key => $val_value) {
-                        $data[$key . "_" . $val_key] = $val_value;
+                        if (is_array($val_value)) {
+                            $data[$key . "_" . $val_key] = json_encode($val_value); // the value is array, save it as json
+                        } else {
+                            $data[$key . "_" . $val_key] = $val_value;
+                        }
                     }
                     unset($data[$key]); // remove the nested result
                 }
