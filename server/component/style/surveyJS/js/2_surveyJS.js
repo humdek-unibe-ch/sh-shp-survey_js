@@ -5,19 +5,17 @@ $(document).ready(function () {
 });
 
 function initSurveyJS() {
-    // Survey.StylesManager.applyTheme("modern");
     $('.selfHelp-survey-js-holder').each(function () {
         const surveyContent = $(this).data('survey-js');
         const surveyFields = $(this).data('survey-js-fields');
         $(this).removeAttr('data-survey-js');
         $(this).removeAttr('data-survey-js-fields');
+        Survey.StylesManager.applyTheme(surveyFields['survey_js_theme']);
         var survey = new Survey.Model(surveyContent);
         var currentLocale = $(this).attr("class").split(" ").filter(function (className) {
             return className.startsWith("selfHelp-locale-");
         });
         survey.locale = currentLocale[0].replace('selfHelp-locale-', '');
-
-        console.log(surveyFields['auto_save_interval'] );
         if (surveyFields && surveyFields['auto_save_interval'] > 0) {
             // set autosave functionality
             autoSaveTimers[surveyContent['survey_generated_id']] = window.setInterval(() => {

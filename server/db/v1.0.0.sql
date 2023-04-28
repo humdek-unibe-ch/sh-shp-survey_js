@@ -13,11 +13,21 @@ INSERT IGNORE INTO `styles_fields` (`id_styles`, `id_fields`, `default_value`, `
 INSERT IGNORE INTO `styles_fields` (`id_styles`, `id_fields`, `default_value`, `help`, `hidden`) VALUES (get_style_id('surveyJS'), get_field_id('jquery_builder_json'), '', 'This field contains the JSON structure for the jquery builder. The field should be hidden', 1);
 INSERT IGNORE INTO `styles_fields` (`id_styles`, `id_fields`, `default_value`, `help`) VALUES (get_style_id('surveyJS'), get_field_id('data_config'), '', 'Define data configuration for fields that are loaded from DB and can be used inside the style with their param names. The name of the field can be used between {{param_name}} to load the required value');
 
--- Add new field type `select-survey-js` and field `survey` in style qualtricsSurvey
+-- Add new field type `select-survey-js` and field `survey-js` in style qualtricsSurvey
 INSERT IGNORE INTO `fieldType` (`id`, `name`, `position`) VALUES (NULL, 'select-survey-js', '7');
 INSERT IGNORE INTO `fields` (`id`, `name`, `id_type`, `display`) VALUES (NULL, 'survey-js', get_field_type_id('select-survey-js'), '0');
 INSERT IGNORE INTO `styles_fields` (`id_styles`, `id_fields`, `default_value`, `help`) 
 VALUES (get_style_id('surveyJS'), get_field_id('survey-js'), '', 'Select a survey. The survey first should be created in module SurveyJS.');
+
+-- Add new field type `select-survey-js-theme` and field `survey-js-theme` in style qualtricsSurvey
+INSERT IGNORE INTO `fieldType` (`id`, `name`, `position`) VALUES (NULL, 'select-survey-js-theme', '8');
+INSERT IGNORE INTO `fields` (`id`, `name`, `id_type`, `display`) VALUES (NULL, 'survey-js-theme', get_field_type_id('select-survey-js-theme'), '0');
+INSERT IGNORE INTO `styles_fields` (`id_styles`, `id_fields`, `default_value`, `help`) 
+VALUES (get_style_id('surveyJS'), get_field_id('survey-js-theme'), 'defaultV2', 'Select survey theme from the drop down list');
+
+-- add survey-js themes
+INSERT IGNORE INTO `lookups` (type_code, lookup_code, lookup_value, lookup_description) values ('survey-js-themes', 'defaultV2', 'Default V2', 'Default V2');
+INSERT IGNORE INTO `lookups` (type_code, lookup_code, lookup_value, lookup_description) values ('survey-js-themes', 'modern', 'Modern', 'Modern');
 
 -- add field restart_on_refresh to style surveyJS
 INSERT IGNORE INTO `fields` (`id`, `name`, `id_type`, `display`) VALUES (NULL, 'restart_on_refresh', get_field_type_id('checkbox'), '0');
@@ -57,7 +67,7 @@ INSERT INTO `styles_fields` (`id_styles`, `id_fields`, `default_value`, `help`) 
 
 -- add field auto_save_interval to style surveyJS
 INSERT IGNORE INTO `fields` (`id`, `name`, `id_type`, `display`) VALUES (NULL, 'auto_save_interval', get_field_type_id('number'), 0);
-INSERT IGNORE INTO `styles_fields` (`id_styles`, `id_fields`, `default_value`, `help`) VALUES (get_style_id('surveyJS'), get_field_id('auto_save_interval'), null, 'If set and the value is higher than 0, it will auto save the survey on interval based on the entered value. For example if you enter 10 it will autosave the survey every 10 seconds.');
+INSERT IGNORE INTO `styles_fields` (`id_styles`, `id_fields`, `default_value`, `help`) VALUES (get_style_id('surveyJS'), get_field_id('auto_save_interval'), 0, 'If set and the value is higher than 0, it will auto save the survey on interval based on the entered value. For example if you enter 10 it will autosave the survey every 10 seconds.');
 
 -- add hook to load surveyJS in the style surveyJS in edit mode
 INSERT IGNORE INTO `hooks` (`id_hookTypes`, `name`, `description`, `class`, `function`, `exec_class`, `exec_function`)

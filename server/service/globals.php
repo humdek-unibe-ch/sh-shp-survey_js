@@ -6,4 +6,5 @@
 
 <?php
     define('SURVEYJS_TABLE_SURVEYS', 'surveys');
+    define('SURVEY_JS_THEMES', 'survey-js-themes');
 ?>

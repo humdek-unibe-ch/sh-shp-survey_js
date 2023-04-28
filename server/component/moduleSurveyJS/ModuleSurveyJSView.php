@@ -153,6 +153,7 @@ class ModuleSurveyJSView extends BaseView
         if (empty($local)) {
             if (DEBUG) {
                 $local = array(
+                    __DIR__ . "/css/survey.min.css",
                     __DIR__ . "/../style/surveyJS/css/modern.min.css",
                     __DIR__ . "/../style/surveyJS/css/defaultV2.min.css",
                     __DIR__ . "/css/survey-creator-core.min.css",

@@ -48,6 +48,11 @@ class SurveyJSView extends StyleView
      */
     private $auto_save_interval;
 
+    /**
+     * Selected survey theme
+     */
+    private $survey_js_theme;
+
     /* Constructors ***********************************************************/
 
     /**
@@ -70,6 +75,7 @@ class SurveyJSView extends StyleView
         $this->restart_on_refresh = $this->model->get_db_field('restart_on_refresh', '');
         $this->redirect_at_end = $this->model->get_db_field('redirect_at_end', '');
         $this->auto_save_interval = $this->model->get_db_field('auto_save_interval', 0);
+        $this->survey_js_theme = $this->model->get_db_field('survey-js-theme');
     }
 
 
@@ -99,7 +105,8 @@ class SurveyJSView extends StyleView
                 $survey_fields = array(
                     "restart_on_refresh" => boolval($this->restart_on_refresh),
                     "redirect_at_end" => $redirect_at_end,
-                    "auto_save_interval" => $this->auto_save_interval
+                    "auto_save_interval" => $this->auto_save_interval,
+                    "survey_js_theme" => $this->survey_js_theme
                 );
                 $survey_fields = json_encode($survey_fields);
                 require __DIR__ . "/tpl_surveyJS.php";
