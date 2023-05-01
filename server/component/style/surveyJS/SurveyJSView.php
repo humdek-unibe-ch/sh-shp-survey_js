@@ -53,6 +53,11 @@ class SurveyJSView extends StyleView
      */
     private $survey_js_theme;
 
+    /**
+     * If true the survey can be saved as a PDF
+     */
+    private $save_pdf;
+
     /* Constructors ***********************************************************/
 
     /**
@@ -75,6 +80,7 @@ class SurveyJSView extends StyleView
         $this->restart_on_refresh = $this->model->get_db_field('restart_on_refresh', '');
         $this->redirect_at_end = $this->model->get_db_field('redirect_at_end', '');
         $this->auto_save_interval = $this->model->get_db_field('auto_save_interval', 0);
+        $this->save_pdf = $this->model->get_db_field('save_pdf');
         $this->survey_js_theme = $this->model->get_db_field('survey-js-theme');
     }
 
@@ -106,7 +112,8 @@ class SurveyJSView extends StyleView
                     "restart_on_refresh" => boolval($this->restart_on_refresh),
                     "redirect_at_end" => $redirect_at_end,
                     "auto_save_interval" => $this->auto_save_interval,
-                    "survey_js_theme" => $this->survey_js_theme
+                    "survey_js_theme" => $this->survey_js_theme,
+                    "save_pdf" => $this->save_pdf
                 );
                 $survey_fields = json_encode($survey_fields);
                 require __DIR__ . "/tpl_surveyJS.php";
@@ -138,7 +145,9 @@ class SurveyJSView extends StyleView
             if (DEBUG) {
                 $local = array(
                     __DIR__ . "/js/1_survey.jquery.min.js",
-                    __DIR__ . "/js/2_surveyJS.js"
+                    __DIR__ . "/js/2_jspdf.umd.min.js",
+                    __DIR__ . "/js/3_survey.pdf.min.js",
+                    __DIR__ . "/js/4_surveyJS.js"
                 );
             } else {
                 $local = array(__DIR__ . "/../../../../../survey-js/js/ext/survey-js.min.js?v=" . rtrim(shell_exec("git describe --tags")));

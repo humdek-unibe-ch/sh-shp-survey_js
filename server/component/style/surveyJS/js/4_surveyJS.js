@@ -56,6 +56,27 @@ function initSurveyJS() {
             sender.setValue('trigger_type', 'finished');
             saveSurveyJS(surveyFields, sender);
         });
+
+        console.log(surveyFields['save_pdf']);
+        if (surveyFields && surveyFields['save_pdf'] == 1) {
+            
+            const exportToPdfOptions = {
+                haveCommercialLicense: true
+            };
+            const savePdf = function (surveyData) {
+                console.log(surveyContent);
+                const surveyPdf = new SurveyPDF.SurveyPDF(surveyContent, exportToPdfOptions);
+                surveyPdf.data = surveyData;
+                surveyPdf.save(surveyContent.title.default || surveyContent.title);
+            };
+
+            survey.addNavigationItem({
+                id: "pdf-export",
+                title: "Save as PDF",
+                action: () => savePdf(survey.data)
+            });
+        }
+
     });
 }
 
