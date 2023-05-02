@@ -65,10 +65,21 @@ class ModuleSurveyJSView extends BaseView
                     new   BaseStyleComponent("div", array(
                         "css" => "mb-3 d-flex justify-content-between",
                         "children" => array(
-                            new BaseStyleComponent("button", array(
-                                "label" => "Back to All Surveys",
-                                "url" => $this->model->get_link_url("moduleSurveyJS"),
-                                "type" => "secondary",
+                            new   BaseStyleComponent("div", array(
+                                "css" => "",
+                                "children" => array(
+                                    new BaseStyleComponent("button", array(
+                                        "label" => "Back to All Surveys",
+                                        "url" => $this->model->get_link_url("moduleSurveyJS"),
+                                        "type" => "secondary",
+                                    )),
+                                    new BaseStyleComponent("button", array(
+                                        "label" => "Dashboard",
+                                        "url" => $this->model->get_link_url("moduleSurveyJSDashboard", array("sid" => $this->sid)),
+                                        "type" => "primary",
+                                        "css" => "ml-3"
+                                    ))
+                                )
                             )),
                             new BaseStyleComponent("button", array(
                                 "label" => "Delete Survey",
