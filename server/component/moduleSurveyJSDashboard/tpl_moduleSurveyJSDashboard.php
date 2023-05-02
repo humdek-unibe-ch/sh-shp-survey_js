@@ -3,9 +3,5 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 ?>
-
-<?php
-    define('SURVEYJS_TABLE_SURVEYS', 'surveys');
-    define('SURVEY_JS_THEMES', 'survey-js-themes');
-    define('SURVEY_JS_FETCH_RESULTS', 'fetch_results');
-?>
+<div id="surveyJSDashboard" data-survey-js='<?php echo isset($fields['survey']['config']) ?  htmlspecialchars($fields['survey']['config'], ENT_QUOTES, 'UTF-8') : ""; ?>'>
+</div>
