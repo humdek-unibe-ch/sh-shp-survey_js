@@ -49,6 +49,7 @@ class ModuleSurveyJSDashboardView extends BaseView
      */
     public function output_content()
     {
+        // return require  __DIR__ . "/tpl_moduleSurveyJSDashboard.php";
         $surveyJSHolder = new BaseStyleComponent("div", array(
             "css" => "m-3",
             "children" => array(
@@ -62,8 +63,21 @@ class ModuleSurveyJSDashboardView extends BaseView
                                     "label" => "Back to Survey Editor",
                                     "url" => $this->model->get_link_url("moduleSurveyJSMode", array("mode" => UPDATE, "sid" => $this->sid)),
                                     "type" => "secondary",
+                                )),
+                                new BaseStyleComponent("button", array(
+                                    "label" => "Refresh",
+                                    "css" => "ml-3",
+                                    "url" => "#",
+                                    "id" => "refresh_dashboard",
+                                    "type" => "primary",
                                 ))
                             )
+                        )),
+                        new BaseStyleComponent("button", array(
+                            "label" => "Reset Dashboard",
+                            "id" => "reset_dashboard",
+                            "url" => "#",
+                            "type" => "danger",
                         ))
                     )
                 )),
@@ -73,11 +87,17 @@ class ModuleSurveyJSDashboardView extends BaseView
                     "is_collapsible" => false,
                     "type" => "warning",
                     "id" => "survey-js-dashboard-card",
-                    "title" => 'Survey JS Dashboard',
+                    "title" => '<span>Survey JS Dashboard</span>' . (isset($this->survey['survey_name']) ? ('<div> <code>&nbsp;' . $this->survey['survey_name'] . '</code></div>') : '') . (isset($this->survey['survey_generated_id']) ? ('<div> <code>&nbsp;' . $this->survey['survey_generated_id'] . '</code></div>') : ''),
                     "children" => array(new BaseStyleComponent("template", array(
                         "path" => __DIR__ . "/tpl_moduleSurveyJSDashboard.php",
                         "items" => array(
-                            "survey" => $this->survey
+                            "survey" => $this->survey,
+                            "output_dashboard_panel" => function () {
+                                require __DIR__ . "/tpl_moduleSurveyJSDashboardPanel.php";
+                            },
+                            "output_dashboard_table" => function () {
+                                require __DIR__ . "/tpl_moduleSurveyJSTable.php";
+                            }
                         )
                     )))
                 ))
@@ -114,11 +134,16 @@ class ModuleSurveyJSDashboardView extends BaseView
             if (DEBUG) {
                 $local = array(
                     __DIR__ . "/../moduleSurveyJS/js/1_knockout-latest.js",
-                    __DIR__ . "/../moduleSurveyJS//js/2_survey.core.min.js",
-                    __DIR__ . "/js/01_plotly-latest.min.js",
-                    __DIR__ . "/js/02_wordcloud2.js",
-                    __DIR__ . "/js/03_survey.analytics.min.js",
-                    __DIR__ . "/js/04_dashboard.js",
+                    __DIR__ . "/../moduleSurveyJS/js/2_survey.core.min.js",
+                    __DIR__ . "/js/plotly-latest.min.js",
+                    __DIR__ . "/js/wordcloud2.js",
+                    __DIR__ . "/js/survey.analytics.min.js",
+                    __DIR__ . "/js/xlsx.full.min.js",
+                    __DIR__ . "/js/jspdf.min.js",
+                    __DIR__ . "/js/jspdf.plugin.autotable.min.js",
+                    __DIR__ . "/js/tabulator.min.js",
+                    __DIR__ . "/js/survey.analytics.tabulator.min.js",
+                    __DIR__ . "/js/dashboard.js",
                 );
             } else {
                 $local = array(__DIR__ . "/../../../../survey-js/js/ext/survey-js.min.js?v=" . rtrim(shell_exec("git describe --tags")));
@@ -139,7 +164,10 @@ class ModuleSurveyJSDashboardView extends BaseView
         if (empty($local)) {
             if (DEBUG) {
                 $local = array(
-                    __DIR__ . "/css/survey.analytics.min.css"
+                    __DIR__ . "/css/survey.analytics.min.css",
+                    __DIR__ . "/css/tabulator.min.css",
+                    __DIR__ . "/css/survey.analytics.tabulator.css",
+                    __DIR__ . "/css/dashboard.css"
                 );
             } else {
                 $local = array(__DIR__ . "/../../../../survey-js/css/ext/survey-js.min.css?v=" . rtrim(shell_exec("git describe --tags")));

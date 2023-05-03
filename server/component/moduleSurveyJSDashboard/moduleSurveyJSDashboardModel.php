@@ -27,6 +27,24 @@ class ModuleSurveyJSDashboardModel extends ModuleSurveyJSModel
     }
 
     /**
+     * Get all validation codes and return them in array("id_users"=>"code")
+     * @return array
+     * return the codes in array("id_users"=>"code")
+     */
+    private function get_validation_codes_for_users()
+    {
+        $sql = 'SELECT *
+                FROM validation_codes
+                WHERE id_users > 0';
+        $res = $this->db->query_db($sql);
+        $codes = array();
+        foreach ($res as $key => $value) {
+            $codes[$value['id_users']] = $value['code'];
+        }
+        return $codes;
+    }
+
+    /**
      * Get all surveys results
      * @param int $sid
      * Survey id
@@ -44,9 +62,16 @@ class ModuleSurveyJSDashboardModel extends ModuleSurveyJSModel
             $form_id = $this->user_input->get_form_id($survey['survey_generated_id'], FORM_EXTERNAL);
             if ($form_id) {
                 $res =  $this->user_input->get_data($form_id, '', false, FORM_EXTERNAL);
+                $validation_code = $this->get_validation_codes_for_users();
                 foreach ($res as $key => $value) {
                     if (isset($value['_json'])) {
-                        $survey_results[] = json_decode($value['_json']);
+                        $survey_raw_data = json_decode($value['_json']);
+                        $survey_raw_data->record_id = $value['record_id'];
+                        $survey_raw_data->date = $value['entry_date'];
+                        $survey_raw_data->id_users = $value['id_users'];
+                        $survey_raw_data->user_name = $value['user_name'];
+                        $survey_raw_data->code = isset(($validation_code[$value['id_users']])) ? $validation_code[$value['id_users']] : "-";
+                        $survey_results[] = $survey_raw_data;
                     }
                 }
             }

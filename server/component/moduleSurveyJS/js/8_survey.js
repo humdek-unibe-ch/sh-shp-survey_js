@@ -34,7 +34,6 @@ function initDeleteSurvey() {
 
 function deleteSurvey() {
     var survey_name = JSON.parse(creator.text)['title'];
-    console.log(survey_name);
     if (survey_name) {
         $.confirm({
             title: 'Delete survey: <code>' + survey_name + "</code>",
@@ -75,7 +74,6 @@ function autoSaveTheSurvey(surveyJson) {
 
             }
             else {
-                console.log(data);
                 alert("Error while autosaving the Survey");
             }
         },
@@ -90,7 +88,6 @@ function initSurveysTable() {
 
     table.on('click', 'tr[id|="surveys-js-url"]', function (e) {
         var ids = $(this).attr('id').split('-');
-        console.log(ids);
         document.location = window.location + '/update/' + parseInt(ids[3]);
     });
 }

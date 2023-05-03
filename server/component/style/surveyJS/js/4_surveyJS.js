@@ -57,14 +57,12 @@ function initSurveyJS() {
             saveSurveyJS(surveyFields, sender);
         });
 
-        console.log(surveyFields['save_pdf']);
         if (surveyFields && surveyFields['save_pdf'] == 1) {
             
             const exportToPdfOptions = {
                 haveCommercialLicense: true
             };
             const savePdf = function (surveyData) {
-                console.log(surveyContent);
                 const surveyPdf = new SurveyPDF.SurveyPDF(surveyContent, exportToPdfOptions);
                 surveyPdf.data = surveyData;
                 surveyPdf.save(surveyContent.title.default || surveyContent.title);
@@ -87,7 +85,6 @@ function saveSurveyJS(surveyFields, survey) {
         window.localStorage.setItem(data['survey_generated_id'], JSON.stringify(data));
     }
     data['_json'] = JSON.stringify(data);
-    console.log(data);
     $.ajax({
         type: 'post',
         url: window.location,
