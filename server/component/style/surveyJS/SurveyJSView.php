@@ -142,16 +142,12 @@ class SurveyJSView extends StyleView
     public function get_js_includes($local = array())
     {
         if (empty($local)) {
-            if (DEBUG) {
-                $local = array(
-                    __DIR__ . "/js/1_survey.jquery.min.js",
-                    __DIR__ . "/js/2_jspdf.umd.min.js",
-                    __DIR__ . "/js/3_survey.pdf.min.js",
-                    __DIR__ . "/js/4_surveyJS.js"
-                );
-            } else {
-                $local = array(__DIR__ . "/../../../../../survey-js/js/ext/survey-js.min.js?v=" . rtrim(shell_exec("git describe --tags")));
-            }
+            $local = array(
+                __DIR__ . "/js/1_survey.jquery.min.js",
+                __DIR__ . "/js/2_jspdf.umd.min.js",
+                __DIR__ . "/js/3_survey.pdf.min.js",
+                __DIR__ . "/js/4_surveyJS.js"
+            );
         }
         return parent::get_js_includes($local);
     }

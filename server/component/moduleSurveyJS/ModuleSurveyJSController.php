@@ -24,7 +24,7 @@ class ModuleSurveyJSController extends BaseController
     public function __construct($model, $mode, $sid)
     {
         parent::__construct($model);
-        if (isset($_POST['mode']) && !$this->check_acl($mode)) {
+        if (isset($mode) && !$this->check_acl($mode)) {
             return false;
         }
         if ($mode === INSERT) {

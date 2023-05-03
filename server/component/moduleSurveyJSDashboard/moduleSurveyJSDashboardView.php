@@ -131,23 +131,19 @@ class ModuleSurveyJSDashboardView extends BaseView
     public function get_js_includes($local = array())
     {
         if (empty($local)) {
-            if (DEBUG) {
-                $local = array(
-                    __DIR__ . "/../moduleSurveyJS/js/1_knockout-latest.js",
-                    __DIR__ . "/../moduleSurveyJS/js/2_survey.core.min.js",
-                    __DIR__ . "/js/plotly-latest.min.js",
-                    __DIR__ . "/js/wordcloud2.js",
-                    __DIR__ . "/js/survey.analytics.min.js",
-                    __DIR__ . "/js/xlsx.full.min.js",
-                    __DIR__ . "/js/jspdf.min.js",
-                    __DIR__ . "/js/jspdf.plugin.autotable.min.js",
-                    __DIR__ . "/js/tabulator.min.js",
-                    __DIR__ . "/js/survey.analytics.tabulator.min.js",
-                    __DIR__ . "/js/dashboard.js",
-                );
-            } else {
-                $local = array(__DIR__ . "/../../../../survey-js/js/ext/survey-js.min.js?v=" . rtrim(shell_exec("git describe --tags")));
-            }
+            $local = array(
+                __DIR__ . "/../moduleSurveyJS/js/1_knockout-latest.js",
+                __DIR__ . "/../moduleSurveyJS/js/2_survey.core.min.js",
+                __DIR__ . "/js/plotly-latest.min.js",
+                __DIR__ . "/js/wordcloud2.js",
+                __DIR__ . "/js/survey.analytics.min.js",
+                __DIR__ . "/js/xlsx.full.min.js",
+                __DIR__ . "/js/jspdf.min.js",
+                __DIR__ . "/js/jspdf.plugin.autotable.min.js",
+                __DIR__ . "/js/tabulator.min.js",
+                __DIR__ . "/js/survey.analytics.tabulator.min.js",
+                __DIR__ . "/js/dashboard.js",
+            );
         }
         return parent::get_js_includes($local);
     }
@@ -162,16 +158,12 @@ class ModuleSurveyJSDashboardView extends BaseView
     public function get_css_includes($local = array())
     {
         if (empty($local)) {
-            if (DEBUG) {
-                $local = array(
-                    __DIR__ . "/css/survey.analytics.min.css",
-                    __DIR__ . "/css/tabulator.min.css",
-                    __DIR__ . "/css/survey.analytics.tabulator.css",
-                    __DIR__ . "/css/dashboard.css"
-                );
-            } else {
-                $local = array(__DIR__ . "/../../../../survey-js/css/ext/survey-js.min.css?v=" . rtrim(shell_exec("git describe --tags")));
-            }
+            $local = array(
+                __DIR__ . "/css/survey.analytics.min.css",
+                __DIR__ . "/css/tabulator.min.css",
+                __DIR__ . "/css/survey.analytics.tabulator.css",
+                __DIR__ . "/css/dashboard.css"
+            );
         }
         return parent::get_css_includes($local);
     }
