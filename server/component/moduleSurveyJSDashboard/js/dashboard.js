@@ -95,19 +95,19 @@ function initSurveyDashboardTable(survey_results) {
                 elements: [{
                     name: "record_id",
                     type: "text"
-                },{
+                }, {
                     name: "response_id",
                     type: "text"
-                },{
+                }, {
                     name: "date",
                     type: "text"
-                },{
+                }, {
                     name: "id_users",
                     type: "text"
-                },{
+                }, {
                     name: "code",
                     type: "text"
-                },{
+                }, {
                     name: "user_name",
                     type: "text"
                 }, {
@@ -122,9 +122,17 @@ function initSurveyDashboardTable(survey_results) {
 
         const survey = new Survey.Model(surveyJson);
 
+        var currentDate = new Date();
+        var year = currentDate.getFullYear();
+        var month = ('0' + (currentDate.getMonth() + 1)).slice(-2);
+        var day = ('0' + currentDate.getDate()).slice(-2);
+        var hours = ('0' + currentDate.getHours()).slice(-2);
+        var minutes = ('0' + currentDate.getMinutes()).slice(-2);
+
         const dashboardOptions = {
             allowHideQuestions: true,
             haveCommercialLicense: true,
+            downloadOptions: { fileName: surveyId + '_[' + year + '_' + month + '_' + day + '-' + hours + '_' + minutes + ']' }
         }
 
         const surveyJSDashboardTable = new SurveyAnalyticsTabulator.Tabulator(
