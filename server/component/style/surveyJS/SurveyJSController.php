@@ -27,7 +27,11 @@ class SurveyJSController extends BaseController
         parent::__construct($model);
         if (isset($_POST['trigger_type'])) {
             // survey data is sent
-            $this->model->save_survey($_POST);
+            $data = array_merge([], $_POST); //create a copy
+            unset($data['id_languages']);
+            unset($data['device_id']);
+            unset($data['device_token']);
+            $this->model->save_survey($data);
         }
     }
 

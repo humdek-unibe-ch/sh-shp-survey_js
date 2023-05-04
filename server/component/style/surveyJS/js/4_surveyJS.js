@@ -79,7 +79,7 @@ function initSurveyJS() {
 }
 
 function saveSurveyJS(surveyFields, survey) {
-    data = { ...survey.data };
+    var data = { ...survey.data };
     data.pageNo = survey.currentPageNo;
     if (!surveyFields['restart_on_refresh'] && data['survey_generated_id']) {
         window.localStorage.setItem(data['survey_generated_id'], JSON.stringify(data));
