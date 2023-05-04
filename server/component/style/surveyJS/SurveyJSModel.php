@@ -178,7 +178,7 @@ class SurveyJSModel extends StyleModel
         $survey = $this->get_raw_survey();
         $user_name = $this->db->fetch_user_name();
         $user_code = $this->db->get_user_code();
-        $survey['content'] = $survey['config'];
+        $survey['content'] = $survey['published'];
         $survey['name'] = 'survey-js';
         $data_config = $this->get_db_field('data_config');
         $survey['content'] = $this->calc_dynamic_values($survey, $data_config, $user_name, $user_code);

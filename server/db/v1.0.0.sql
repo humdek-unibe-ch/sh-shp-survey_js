@@ -114,16 +114,16 @@ INSERT IGNORE INTO `acl_groups` (`id_groups`, `id_pages`, `acl_select`, `acl_ins
 INSERT IGNORE INTO `pages_fields_translation` (`id_pages`, `id_fields`, `id_languages`, `content`) VALUES (@id_page, get_field_id('title'), '0000000001', 'Survey JS Dashboard');
 INSERT IGNORE INTO `pages_fields_translation` (`id_pages`, `id_fields`, `id_languages`, `content`) VALUES (@id_page, get_field_id('title'), '0000000002', 'Survey JS Dashboard');
 
--- add table formActions
+-- add table surveys
 CREATE TABLE IF NOT EXISTS `surveys` (
 	`id` INT(10) UNSIGNED ZEROFILL NOT NULL PRIMARY KEY  AUTO_INCREMENT,		
 	`survey_generated_id` VARCHAR(20) NOT NULL,
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    `config` LONGTEXT
+    `config` LONGTEXT,
+    `published` LONGTEXT,
+    `published_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-
-
 
 DROP VIEW IF EXISTS view_surveys;
 CREATE VIEW view_surveys
@@ -135,6 +135,8 @@ JSON_UNQUOTE(
       JSON_EXTRACT(config, '$.title.default'),
       JSON_EXTRACT(config, '$.title')
     )
-  ) AS survey_name
+  ) AS survey_name,
+  published, published_at
 FROM surveys;
+
 

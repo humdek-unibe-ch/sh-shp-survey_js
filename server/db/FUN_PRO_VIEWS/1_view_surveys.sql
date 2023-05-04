@@ -8,5 +8,6 @@ JSON_UNQUOTE(
       JSON_EXTRACT(config, '$.title.default'),
       JSON_EXTRACT(config, '$.title')
     )
-  ) AS survey_name
+  ) AS survey_name,
+  published, published_at
 FROM surveys;

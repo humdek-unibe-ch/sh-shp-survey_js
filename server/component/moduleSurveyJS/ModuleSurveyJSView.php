@@ -59,6 +59,12 @@ class ModuleSurveyJSView extends BaseView
             require __DIR__ . "/tpl_moduleSurveyJS.php";
         } else {
             require __DIR__ . "/tpl_moduleSurveyJS_Alerts.php";
+            $card_title = '<span>Survey JS </span>'  . (isset($this->survey['survey_generated_id']) ? ('<div> <code>&nbsp;' . $this->survey['survey_generated_id'] . '</code></div>') : '');
+            if ($this->survey['published']) {
+                $card_title = $card_title . '<span class="text-right flex-grow-1">Published at: <code id="survey-js-publish-at">' . $this->survey['published_at'] . '</code> </span>';
+            } else {
+                $card_title = $card_title . '<span class="text-right flex-grow-1"><code>Not published yet</code> </span>';
+            }
             $surveyJSHolder = new BaseStyleComponent("div", array(
                 "css" => "m-3",
                 "children" => array(
@@ -72,6 +78,13 @@ class ModuleSurveyJSView extends BaseView
                                         "label" => "Back to All Surveys",
                                         "url" => $this->model->get_link_url("moduleSurveyJS"),
                                         "type" => "secondary",
+                                    )),
+                                    new BaseStyleComponent("button", array(
+                                        "label" => "Publish",
+                                        "id" => "survey-js-publish",
+                                        "url" => "#",
+                                        "type" => "warning",
+                                        "css" => "ml-3 " . ($this->survey['config'] == $this->survey['published'] ? 'disabled' : '')
                                     )),
                                     new BaseStyleComponent("button", array(
                                         "label" => "Dashboard",
@@ -95,7 +108,7 @@ class ModuleSurveyJSView extends BaseView
                         "is_collapsible" => false,
                         "type" => "warning",
                         "id" => "survey-js-card",
-                        "title" => '<span>Survey JS </span>'  . (isset($this->survey['survey_generated_id']) ? ('<div> <code>&nbsp;' . $this->survey['survey_generated_id'] . '</code></div>') : ''),
+                        "title" => $card_title,
                         "children" => array(new BaseStyleComponent("template", array(
                             "path" => __DIR__ . "/tpl_moduleSurveyCreatorJS.php",
                             "items" => array(

@@ -118,4 +118,19 @@ class ModuleSurveyJSModel extends BaseModel
     {
         return $this->db->remove_by_ids("surveys", array("id" => $sid));
     }
+
+    /**
+     * Publish survey
+     * @param int $sid
+     * The survey id
+     * @return bool
+     * Return the success result of the operation
+     */
+    public function publish_survey($sid)
+    {
+        $sql = 'UPDATE surveys
+                SET published = config, published_at = NOW()
+                WHERE id =:sid;';
+        return $this->db->execute_update_db($sql, array(":sid" => $sid));
+    }
 }

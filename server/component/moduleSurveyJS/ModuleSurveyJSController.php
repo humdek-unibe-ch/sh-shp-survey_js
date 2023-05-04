@@ -37,6 +37,8 @@ class ModuleSurveyJSController extends BaseController
             }
         } else if ($mode === UPDATE && $sid > 0 && isset($_POST['surveyJson'])) {
             $this->model->update_survey($sid, $_POST['surveyJson']);
+        } else if ($mode === UPDATE && $sid > 0 && isset($_POST['mode']) && $_POST['mode'] == 'publish') {
+            $this->model->publish_survey($sid);
         } else if ($mode === DELETE && $sid > 0) {
             $del_res = $this->model->delete_survey($sid);
             if ($del_res) {
