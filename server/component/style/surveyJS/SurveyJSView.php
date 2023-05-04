@@ -132,6 +132,28 @@ class SurveyJSView extends StyleView
         }
     }
 
+    public function output_content_mobile()
+    {
+        $style = parent::output_content_mobile();
+        $redirect_at_end = preg_replace('/^\/+/', '', $this->redirect_at_end); // remove the first /
+        $redirect_at_end = preg_replace('/^#+/', '', $this->redirect_at_end); // remove the first #
+        $redirect_at_end = $this->model->get_link_url(str_replace("/", "", $redirect_at_end));
+        $style['redirect_at_end'] = $redirect_at_end;
+        $style['survey_json'] = json_decode($this->survey['content']);
+        $style['alert'] = '';
+        $style['show_survey'] = true;
+        if ($this->model->is_survey_active()) {
+            if ($this->model->is_survey_done()) {
+                $style['alert'] = $this->label_survey_done;
+                $style['show_survey'] = false;
+            }
+        } else {
+            $style['alert'] = $this->label_survey_not_active;
+            $style['show_survey'] = false;
+        }
+        return $style;
+    }
+
     /**
      * Get js include files required for this component. This overrides the
      * parent implementation.
