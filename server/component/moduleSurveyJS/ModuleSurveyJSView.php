@@ -95,7 +95,7 @@ class ModuleSurveyJSView extends BaseView
                         "is_collapsible" => false,
                         "type" => "warning",
                         "id" => "survey-js-card",
-                        "title" => 'Survey JS',
+                        "title" => '<span>Survey JS </span>'  . (isset($this->survey['survey_generated_id']) ? ('<div> <code>&nbsp;' . $this->survey['survey_generated_id'] . '</code></div>') : ''),
                         "children" => array(new BaseStyleComponent("template", array(
                             "path" => __DIR__ . "/tpl_moduleSurveyCreatorJS.php",
                             "items" => array(
