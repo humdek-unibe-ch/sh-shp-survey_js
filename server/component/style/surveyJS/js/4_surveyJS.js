@@ -18,7 +18,7 @@ function initSurveyJS() {
         survey.locale = currentLocale[0].replace('selfHelp-locale-', '');
         if (surveyFields && surveyFields['auto_save_interval'] > 0) {
             // set autosave functionality
-            autoSaveTimers[surveyContent['survey_generated_id']] = window.setInterval(() => {
+            autoSaveTimers[surveyFields['survey_generated_id']] = window.setInterval(() => {
                 survey.setValue('trigger_type', 'updated'); // change the trigger type to updated
                 saveSurveyJS(surveyFields, survey);
             }, surveyFields['auto_save_interval'] * 1000);
@@ -26,7 +26,7 @@ function initSurveyJS() {
 
         if (surveyFields && !surveyFields['restart_on_refresh']) {
             // Restore survey results
-            const notCompletedSurvey = window.localStorage.getItem(surveyContent['survey_generated_id']) || null;
+            const notCompletedSurvey = window.localStorage.getItem(surveyFields['survey_generated_id']) || null;
             if (notCompletedSurvey) {
                 survey.data = JSON.parse(notCompletedSurvey);
                 survey.setValue('trigger_type', 'updated');
@@ -40,7 +40,7 @@ function initSurveyJS() {
             const uniqueId = Date.now().toString(36) + Math.random().toString(36).substring(2, 7);
             survey.setValue('response_id', "RJS_" + uniqueId.substring(uniqueId.length - 16));
             survey.setValue('trigger_type', 'started');
-            survey.setValue('survey_generated_id', surveyContent['survey_generated_id']);
+            survey.setValue('survey_generated_id', surveyFields['survey_generated_id']);
             saveSurveyJS(surveyFields, survey);
         }
         $(this).children(".selfHelp-survey-js").first().Survey({ model: survey });
@@ -51,7 +51,7 @@ function initSurveyJS() {
         survey.onComplete.add((sender, options) => {
             if (surveyFields && surveyFields['auto_save_interval'] > 0) {
                 // clear the timer when the survey is finished
-                clearInterval(autoSaveTimers[surveyContent['survey_generated_id']]);
+                clearInterval(autoSaveTimers[surveyFields['survey_generated_id']]);
             }
             sender.setValue('trigger_type', 'finished');
             saveSurveyJS(surveyFields, sender);

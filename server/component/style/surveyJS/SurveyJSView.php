@@ -113,7 +113,8 @@ class SurveyJSView extends StyleView
                     "redirect_at_end" => $redirect_at_end,
                     "auto_save_interval" => $this->auto_save_interval,
                     "survey_js_theme" => $this->survey_js_theme,
-                    "save_pdf" => $this->save_pdf
+                    "save_pdf" => $this->save_pdf,
+                    "survey_generated_id" => $this->survey['survey_generated_id']
                 );
                 $survey_fields = json_encode($survey_fields);
                 require __DIR__ . "/tpl_surveyJS.php";
