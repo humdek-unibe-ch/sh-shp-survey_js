@@ -69,6 +69,7 @@ class ModuleSurveyJSDashboardModel extends ModuleSurveyJSModel
                         $survey_raw_data->record_id = $value['record_id'];
                         $survey_raw_data->date = $value['entry_date'];
                         $survey_raw_data->id_users = $value['id_users'];
+                        $survey_raw_data->par = 'test';
                         $survey_raw_data->user_name = $value['user_name'];
                         $survey_raw_data->code = isset(($validation_code[$value['id_users']])) ? $validation_code[$value['id_users']] : "no code";
                         $survey_results[] = $survey_raw_data;

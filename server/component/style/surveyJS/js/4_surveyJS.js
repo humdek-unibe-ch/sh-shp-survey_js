@@ -43,7 +43,7 @@ function initSurveyJS() {
             survey.setValue('survey_generated_id', surveyFields['survey_generated_id']);
             if (surveyFields['extra_params']) {
                 for (let prop in surveyFields['extra_params']) {
-                    survey.setValue(prop, surveyFields['extra_params'][prop]);
+                    survey.setValue("extra_param_" + prop, surveyFields['extra_params'][prop]);
                 }
             }
             saveSurveyJS(surveyFields, survey);

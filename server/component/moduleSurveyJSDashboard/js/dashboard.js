@@ -63,7 +63,7 @@ function initSurveyDashboard(survey_results) {
         surveyJSDashboard.onStateChanged.add(function (_table, state) {
             window.localStorage.setItem(surveyId + "_DashboardPanel", JSON.stringify(state));
         });
-        
+
         $("#surveyJSDashboard").empty();
         surveyJSDashboard.render("surveyJSDashboard");
 
@@ -85,6 +85,30 @@ function initSurveyDashboardTable(survey_results) {
         const surveyId = $("#surveyJSTable").data('survey-js-id');
         $("#surveyJSTable").removeAttr('data-survey-js-id');
         var localStorageSurveyDashboardTable = window.localStorage.getItem(surveyId + "_DashboardTable");
+
+        // add extra params as questions so they can be visualized in the table
+        var extra_params = [];
+        for (var i = 0; i < survey_results.length; i++) {
+            var obj = survey_results[i];
+            for (var key in obj) {
+                if (key.startsWith("extra_param_") && !extra_params.includes(key)) {
+                    extra_params.push(key);
+                }
+            }
+        }
+        if (extra_params.length > 0) {
+            var extra_params_q = {
+                name: 'extra_params',
+                elements: []
+            }
+            extra_params.forEach(extra_param => {
+                extra_params_q.elements.push({
+                    name: extra_param,
+                    type: "text"
+                });
+            });
+            surveyJson.pages.unshift(extra_params_q);
+        }
 
         if (surveyJson.pages && surveyJson.pages.length > 0 && surveyJson.pages[0].name != 'internal_data') {
             surveyJson.pages.unshift({
