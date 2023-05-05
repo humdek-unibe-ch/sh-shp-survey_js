@@ -63,19 +63,16 @@ function initSurveyDashboard(survey_results) {
         surveyJSDashboard.onStateChanged.add(function (_table, state) {
             window.localStorage.setItem(surveyId + "_DashboardPanel", JSON.stringify(state));
         });
-
+        
+        $("#surveyJSDashboard").empty();
         surveyJSDashboard.render("surveyJSDashboard");
-        surveyJSDashboard.onAfterRender.add(function (sender, options) {
-            if ($('.sa-visualizer__content').height() == 0) {
-                // Element not shown
-                surveyJSDashboard.layout();
-            }
-        });
 
         $('#nav-dashboard-tab').click(function () {
             if ($('.sa-visualizer__content').height() == 0) {
                 // Element not shown
-                surveyJSDashboard.refresh();
+                setTimeout(() => {
+                    surveyJSDashboard.layout();
+                }, 300);
             }
         });
     }
