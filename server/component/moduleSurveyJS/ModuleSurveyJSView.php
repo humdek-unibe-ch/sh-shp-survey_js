@@ -64,59 +64,61 @@ class ModuleSurveyJSView extends BaseView
                 $card_title = $card_title . '<span class="text-right flex-grow-1">Published at: <code id="survey-js-publish-at">' . $this->survey['published_at'] . '</code> </span>';
             } else {
                 $card_title = $card_title . '<span class="text-right flex-grow-1"><code>Not published yet</code> </span>';
-            }
+            }            
+            $surveyJSHolderChildren = array(
+                $this->output_check_multiple_users(true),
+                new   BaseStyleComponent("div", array(
+                    "css" => "mb-3 d-flex justify-content-between",
+                    "children" => array(
+                        new   BaseStyleComponent("div", array(
+                            "css" => "",
+                            "children" => array(
+                                new BaseStyleComponent("button", array(
+                                    "label" => "Back to All Surveys",
+                                    "url" => $this->model->get_link_url("moduleSurveyJS"),
+                                    "type" => "secondary",
+                                )),
+                                new BaseStyleComponent("button", array(
+                                    "label" => "Publish",
+                                    "id" => "survey-js-publish",
+                                    "url" => "#",
+                                    "type" => "warning",
+                                    "css" => "ml-3 " . ($this->survey['config'] == $this->survey['published'] ? 'disabled' : '')
+                                )),
+                                new BaseStyleComponent("button", array(
+                                    "label" => "Dashboard",
+                                    "url" => $this->model->get_link_url("moduleSurveyJSDashboard", array("sid" => $this->sid)),
+                                    "type" => "primary",
+                                    "css" => "ml-3"
+                                ))
+                            )
+                        )),
+                        new BaseStyleComponent("button", array(
+                            "label" => "Delete Survey",
+                            "id" => "survey-js-delete-btn",
+                            "url" => $this->model->get_link_url("moduleSurveyJSMode", array("mode" => DELETE, "sid" => $this->sid)),
+                            "type" => "danger",
+                        ))
+                    )
+                )),
+                new BaseStyleComponent("card", array(
+                    "css" => "survey-js-card",
+                    "is_expanded" => true,
+                    "is_collapsible" => false,
+                    "type" => "warning",
+                    "id" => "survey-js-card",
+                    "title" => $card_title,
+                    "children" => array(new BaseStyleComponent("template", array(
+                        "path" => __DIR__ . "/tpl_moduleSurveyCreatorJS.php",
+                        "items" => array(
+                            "survey" => $this->survey
+                        )
+                    )))
+                ))
+            );
             $surveyJSHolder = new BaseStyleComponent("div", array(
                 "css" => "m-3",
-                "children" => array(
-                    new   BaseStyleComponent("div", array(
-                        "css" => "mb-3 d-flex justify-content-between",
-                        "children" => array(
-                            new   BaseStyleComponent("div", array(
-                                "css" => "",
-                                "children" => array(
-                                    new BaseStyleComponent("button", array(
-                                        "label" => "Back to All Surveys",
-                                        "url" => $this->model->get_link_url("moduleSurveyJS"),
-                                        "type" => "secondary",
-                                    )),
-                                    new BaseStyleComponent("button", array(
-                                        "label" => "Publish",
-                                        "id" => "survey-js-publish",
-                                        "url" => "#",
-                                        "type" => "warning",
-                                        "css" => "ml-3 " . ($this->survey['config'] == $this->survey['published'] ? 'disabled' : '')
-                                    )),
-                                    new BaseStyleComponent("button", array(
-                                        "label" => "Dashboard",
-                                        "url" => $this->model->get_link_url("moduleSurveyJSDashboard", array("sid" => $this->sid)),
-                                        "type" => "primary",
-                                        "css" => "ml-3"
-                                    ))
-                                )
-                            )),
-                            new BaseStyleComponent("button", array(
-                                "label" => "Delete Survey",
-                                "id" => "survey-js-delete-btn",
-                                "url" => $this->model->get_link_url("moduleSurveyJSMode", array("mode" => DELETE, "sid" => $this->sid)),
-                                "type" => "danger",
-                            ))
-                        )
-                    )),
-                    new BaseStyleComponent("card", array(
-                        "css" => "survey-js-card",
-                        "is_expanded" => true,
-                        "is_collapsible" => false,
-                        "type" => "warning",
-                        "id" => "survey-js-card",
-                        "title" => $card_title,
-                        "children" => array(new BaseStyleComponent("template", array(
-                            "path" => __DIR__ . "/tpl_moduleSurveyCreatorJS.php",
-                            "items" => array(
-                                "survey" => $this->survey
-                            )
-                        )))
-                    ))
-                )
+                "children" => $surveyJSHolderChildren
             ));
 
             $surveyJSHolder->output_content();

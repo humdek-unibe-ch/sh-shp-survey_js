@@ -155,5 +155,17 @@ class SurveyJSHooks extends BaseHooks
         }
         return implode(";", $resArr);
     }
+
+    /**
+     * Set csp rules for SurveyJS     
+     * @return string
+     * Return csp_rules
+     */
+    public function get_sensible_pages($args)
+    {
+        $res = $this->execute_private_method($args);
+        $res[] = 'moduleSurveyJSMode';
+        return $res;
+    }
 }
 ?>

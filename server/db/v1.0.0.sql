@@ -4,6 +4,8 @@ VALUES ('survey-js', 'v1.0.0');
 
 -- register hook get_csp_rules
 INSERT IGNORE INTO `hooks` (`id_hookTypes`, `name`, `description`, `class`, `function`, `exec_class`, `exec_function`, `priority`) VALUES ((SELECT id FROM lookups WHERE lookup_code = 'hook_overwrite_return' LIMIT 0,1), 'survey-js-addCspRule', 'Add csp rule for SurveyJS', 'BasePage', 'getCspRules', 'SurveyJSHooks', 'setCspRules', 1);
+-- add sensitive page
+INSERT IGNORE INTO `hooks` (`id_hookTypes`, `name`, `description`, `class`, `function`, `exec_class`, `exec_function`, `priority`) VALUES ((SELECT id FROM lookups WHERE lookup_code = 'hook_overwrite_return' LIMIT 0,1), 'survey-js-get_sensible_pages', 'Add sesnible page', 'Router', 'get_sensible_pages', 'SurveyJSHooks', 'get_sensible_pages', 1);
 
 -- Add new style `surveyJS`
 INSERT IGNORE INTO `styles` (`name`, `id_type`, `id_group`, `description`) VALUES ('surveyJS', (SELECT id FROM styleType WHERE `name` = 'component'), (select id from styleGroup where `name` = 'Wrapper' limit 1), 'A style which takes a survey and load it on the page');

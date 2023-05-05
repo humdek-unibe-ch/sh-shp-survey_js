@@ -12,4 +12,4 @@ This is a SelfHelpPlugin that is used for [SurveyJS](https://surveyjs.io) integr
 
 # Requirements
 
- - SelfHelp v6.1.7+
+ - SelfHelp v6.2.0+
