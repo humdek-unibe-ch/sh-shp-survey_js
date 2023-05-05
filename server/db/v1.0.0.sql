@@ -75,6 +75,10 @@ INSERT INTO `styles_fields` (`id_styles`, `id_fields`, `default_value`, `help`) 
 INSERT IGNORE INTO `fields` (`id`, `name`, `id_type`, `display`) VALUES (NULL, 'auto_save_interval', get_field_type_id('number'), 0);
 INSERT IGNORE INTO `styles_fields` (`id_styles`, `id_fields`, `default_value`, `help`) VALUES (get_style_id('surveyJS'), get_field_id('auto_save_interval'), 0, 'If set and the value is higher than 0, it will auto save the survey on interval based on the entered value. For example if you enter 10 it will autosave the survey every 10 seconds.');
 
+-- add field url_params to style surveyJS
+INSERT IGNORE INTO `fields` (`id`, `name`, `id_type`, `display`) VALUES (NULL, 'url_params', get_field_type_id('checkbox'), 0);
+INSERT IGNORE INTO `styles_fields` (`id_styles`, `id_fields`, `default_value`, `help`) VALUES (get_style_id('surveyJS'), get_field_id('url_params'), 0, 'If enabled, parameters can be passed via the url. Example: `?code=test&par1=2&par2=2`');
+
 -- add hook to load surveyJS in the style surveyJS in edit mode
 INSERT IGNORE INTO `hooks` (`id_hookTypes`, `name`, `description`, `class`, `function`, `exec_class`, `exec_function`)
 VALUES ((SELECT id FROM lookups WHERE lookup_code = 'hook_overwrite_return' LIMIT 0,1), 'field-surveyJS-edit', 'Output select SurveyJS field - edit mdoe', 'CmsView', 'create_field_form_item', 'SurveyJSHooks', 'outputFieldSurveyJSEdit');

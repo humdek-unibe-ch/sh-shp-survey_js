@@ -58,6 +58,11 @@ class SurveyJSView extends StyleView
      */
     private $save_pdf;
 
+    /**
+     * If enabled, parameters can be passed via the url. Example: `?code=test&par1=2&par2=2`
+     */
+    private $url_params;
+
     /* Constructors ***********************************************************/
 
     /**
@@ -80,6 +85,7 @@ class SurveyJSView extends StyleView
         $this->restart_on_refresh = $this->model->get_db_field('restart_on_refresh', '');
         $this->redirect_at_end = $this->model->get_db_field('redirect_at_end', '');
         $this->auto_save_interval = $this->model->get_db_field('auto_save_interval', 0);
+        $this->url_params = $this->model->get_db_field('url_params', '');
         $this->save_pdf = $this->model->get_db_field('save_pdf');
         $this->survey_js_theme = $this->model->get_db_field('survey-js-theme');
     }
@@ -116,6 +122,13 @@ class SurveyJSView extends StyleView
                     "save_pdf" => $this->save_pdf,
                     "survey_generated_id" => $this->survey['survey_generated_id']
                 );
+                if ($this->url_params) {
+                    $url_components = parse_url($this->model->get_services()->get_router()->get_url('#self')); // get the requested url
+                    $extra_surveyjs_params = isset($url_components['query']) ? $url_components['query'] : ''; // check if the url contains url parameters (the same format as Qualtrics)
+                    $extra_params_arr = array();
+                    parse_str($extra_surveyjs_params, $extra_params_arr);
+                    $survey_fields['extra_params'] = $extra_params_arr;
+                }
                 $survey_fields = json_encode($survey_fields);
                 require __DIR__ . "/tpl_surveyJS.php";
             }

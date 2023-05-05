@@ -41,6 +41,11 @@ function initSurveyJS() {
             survey.setValue('response_id', "RJS_" + uniqueId.substring(uniqueId.length - 16));
             survey.setValue('trigger_type', 'started');
             survey.setValue('survey_generated_id', surveyFields['survey_generated_id']);
+            if (surveyFields['extra_params']) {
+                for (let prop in surveyFields['extra_params']) {
+                    survey.setValue(prop, surveyFields['extra_params'][prop]);
+                }
+            }
             saveSurveyJS(surveyFields, survey);
         }
         $(this).children(".selfHelp-survey-js").first().Survey({ model: survey });
@@ -58,7 +63,7 @@ function initSurveyJS() {
         });
 
         if (surveyFields && surveyFields['save_pdf'] == 1) {
-            
+
             const exportToPdfOptions = {
                 haveCommercialLicense: true
             };
