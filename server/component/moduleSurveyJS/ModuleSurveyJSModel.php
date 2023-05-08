@@ -131,6 +131,18 @@ class ModuleSurveyJSModel extends BaseModel
         $sql = 'UPDATE surveys
                 SET published = config, published_at = NOW()
                 WHERE id =:sid;';
-        return $this->db->execute_update_db($sql, array(":sid" => $sid));
+        $res = $this->db->execute_update_db($sql, array(":sid" => $sid));
+        if ($res) {
+            // add new version of the survey
+            $survey = $this->get_survey($sid);
+
+            $res = $res &&  $this->db->insert(SURVEYJS_TABLE_SURVEYS_VERSIONS, array(
+                "id_users" => $_SESSION['id_user'],
+                "id_surveys" => $sid,
+                "config" => $survey['published'],
+                "published" => 1
+            ));
+        }
+        return $res;
     }
 }

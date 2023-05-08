@@ -90,6 +90,12 @@ class ModuleSurveyJSView extends BaseView
                                     "url" => $this->model->get_link_url("moduleSurveyJSDashboard", array("sid" => $this->sid)),
                                     "type" => "primary",
                                     "css" => "ml-3"
+                                )),
+                                new BaseStyleComponent("button", array(
+                                    "label" => "Versions",
+                                    "url" => $this->model->get_link_url("moduleSurveyJSVersions", array("sid" => $this->sid)),
+                                    "type" => "primary",
+                                    "css" => "ml-3"
                                 ))
                             )
                         )),
