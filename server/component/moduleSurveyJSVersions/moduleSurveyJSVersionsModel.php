@@ -26,5 +26,21 @@ class ModuleSurveyJSVersionsModel extends ModuleSurveyJSModel
         parent::__construct($services);
     }
 
+    /**
+     * Get survey js versions
+     * @param int $sid
+     * survey id
+     * @param return object
+     * Return the survey versions
+     */
+    public function get_survey_versions($sid)
+    {
+        $sql = "SELECT sv.*, u.email AS user_email
+                FROM surveys_versions sv
+                INNER JOIN users u ON (sv.id_users = u.id)
+                WHERE sv.id_surveys = :sid";
+        return $this->db->query_db($sql, array(':sid' => $sid));
+    }
+
     
 }

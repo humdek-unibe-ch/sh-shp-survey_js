@@ -21,9 +21,14 @@ class ModuleSurveyJSVersionsView extends BaseView
     private $sid;
 
     /**
-     * the current selected survey
+     * All versions for the selected survey
      */
     private $survey_versions;
+
+    /**
+     * the current selected survey
+     */
+    private $survey;
 
     /**
      * The constructor.
@@ -36,7 +41,8 @@ class ModuleSurveyJSVersionsView extends BaseView
         parent::__construct($model, $controller);
         $this->sid = $sid;
         if ($this->sid) {
-            // $this->survey_versions = $this->model->get_survey_versions($this->sid);
+            $this->survey_versions = $this->model->get_survey_versions($this->sid);
+            $this->survey = $this->model->get_survey($this->sid);
         }
     }
 
@@ -49,12 +55,39 @@ class ModuleSurveyJSVersionsView extends BaseView
      */
     public function output_content()
     {
-        return require  __DIR__ . "/tpl_moduleSurveyJSVersions.php";
+        if ($this->survey) {
+            return require  __DIR__ . "/tpl_moduleSurveyJSVersions.php";
+        }
     }
 
     public function output_content_mobile()
     {
         echo 'mobile';
+    }
+
+    /**
+     * Render the rows for the survey js versions
+     */
+    protected function output_actions_rows()
+    {
+        foreach ($this->survey_versions as $version) {
+            require __DIR__ . "/tpl_surveyJSVersions_row.php";
+        }
+    }
+
+    /**
+     * Render the sidebar buttons
+     */
+    public function output_side_buttons()
+    {
+        //show create button
+        $createButton = new BaseStyleComponent("button", array(
+            "label" => "Back to Survey Editor",
+            "url" => $this->model->get_link_url("moduleSurveyJSMode", array("mode" => UPDATE, "sid" => $this->sid)),
+            "type" => "secondary",
+            "css" => "d-block mb-3",
+        ));
+        $createButton->output_content();
     }
 
     /**
@@ -78,7 +111,7 @@ class ModuleSurveyJSVersionsView extends BaseView
                 // __DIR__ . "/js/jspdf.plugin.autotable.min.js",
                 // __DIR__ . "/js/tabulator.min.js",
                 // __DIR__ . "/js/survey.analytics.tabulator.min.js",
-                // __DIR__ . "/js/dashboard.js",
+                __DIR__ . "/js/surveyVersions.js",
             );
         }
         return parent::get_js_includes($local);
