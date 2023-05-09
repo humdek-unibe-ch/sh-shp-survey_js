@@ -55,7 +55,7 @@ class ModuleSurveyJSController extends BaseController
      * @return bool
      * true if access is granted, false otherwise.
      */
-    private function check_acl($mode)
+    protected function check_acl($mode)
     {
         if (!$this->model->get_services()->get_acl()->has_access($_SESSION['id_user'], $this->model->get_services()->get_db()->fetch_page_id_by_keyword("moduleSurveyJSMode"), $mode)) {
             $this->fail = true;

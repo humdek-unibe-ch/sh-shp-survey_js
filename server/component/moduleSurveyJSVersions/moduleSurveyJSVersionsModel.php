@@ -42,5 +42,37 @@ class ModuleSurveyJSVersionsModel extends ModuleSurveyJSModel
         return $this->db->query_db($sql, array(':sid' => $sid));
     }
 
-    
+    /**
+     * Restore survey to the selected version
+     * @param int $sid
+     * The survey id that we want to restore
+     * @param int $version_id 
+     * The version id that we want to restore
+     * @return bool
+     * Return the result of the action
+     */
+    public function restore_survey($sid, $version_id)
+    {
+        try {
+            $this->db->begin_transaction();
+            $sql = 'UPDATE surveys
+                SET config = (SELECT config FROM surveys_versions WHERE id = :vid LIMIT 0,1)
+                WHERE id = :sid;';
+            $res = $this->db->execute_update_db($sql, array(
+                ":sid" => $sid,
+                ":vid" => $version_id
+            ));
+            $sql = 'UPDATE surveys_versions
+                    SET restored_at = NOW()
+                    WHERE id = :vid;';
+            $res = $res && $this->db->execute_update_db($sql, array(
+                ":vid" => $version_id
+            ));
+            $this->db->commit();
+            return $res;
+        } catch (Exception $e) {
+            $this->db->rollback();
+            return false;
+        }
+    }
 }

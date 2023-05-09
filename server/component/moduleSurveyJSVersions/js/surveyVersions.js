@@ -23,7 +23,7 @@ $(document).ready(function () {
                     return rows.length + ' actions selected';
                 } else if (rows.length > 0) {
                     let row = rows[0];
-                    return 'Action ' + row[0] + ' selected';
+                    return 'Survey Version ' + row[0] + ' selected';
                 }
             },
         },
@@ -51,7 +51,7 @@ $(document).ready(function () {
         },
         deselectAfterAction: false,
         items: [
-            // Empty starter seperator to demonstrate that it won't render
+            // Empty starter separator to demonstrate that it won't render
             {
                 type: 'divider',
             },
@@ -64,7 +64,7 @@ $(document).ready(function () {
                 buttonClasses: ['btn', 'btn-outline-secondary'],
                 contextMenuClasses: ['text-secondary'],
                 action: function (row) {
-                    var ids = row[0].DT_RowId.split('-');                    
+                    var ids = row[0].DT_RowId.split('-');
                     window.open('formsActions/select/' + parseInt(ids[2]), '_blank')
                 },
                 isDisabled: function (row) {
@@ -79,20 +79,35 @@ $(document).ready(function () {
                 type: 'option',
                 multi: false,
                 title: 'Restore',
-                iconClass: 'fa-edit',
+                iconClass: 'fa-window-restore',
                 buttonClasses: ['btn', 'btn-outline-success'],
-                contextMenuClasses: ['text-success'],
+                contextMenuClasses: ['text-warning'],
                 action: function (row) {
-                    var ids = row[0].DT_RowId.split('-');
-                    window.open('formsActions/update/' + parseInt(ids[2]), '_blank')
+                    $.ajax({
+                        type: 'post',
+                        url: window.location,
+                        dataType: "json",
+                        data: { mode: "restore", version_id: row[0][0] },
+                        success: function (r) {
+                            if (r.result) {
+                                window.location = $('#survey-js-back').attr('href'); // go back to the survey
+                            } else {
+                                $.alert({
+                                    title: 'Error',
+                                    type: "red",
+                                    content: 'Failed to restore the survey or the survey is the same as the one that you want to restore!',
+                                });
+                            }
+                        }
+                    });
                 },
                 isDisabled: function (row) {
                 },
             },
 
-            
 
-            // Empty ending seperator to demonstrate that it won't render
+
+            // Empty ending separator to demonstrate that it won't render
             {
                 type: 'divider',
             },
