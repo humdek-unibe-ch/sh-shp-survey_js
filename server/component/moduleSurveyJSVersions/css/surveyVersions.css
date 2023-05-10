@@ -1,0 +1,22 @@
+.survey-js-modal-holder .modal-dialog {
+    min-width: 80%;
+}
+
+.survey-js-modal-holder .modal-body {
+    padding: 0;
+}
+
+.survey-js-modal-holder .modal-header {
+    background-color: var(--secondary);
+    color: var(--light);
+}
+
+.survey-js-modal-holder .modal-header .close {
+    text-shadow: 0 1px 0 var(--dark);
+    color: var(--light);
+}
+
+#survey-js-version-viewer {
+    max-height: 70vh;
+    overflow-y: scroll;
+}

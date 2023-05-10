@@ -56,6 +56,28 @@ class ModuleSurveyJSVersionsView extends BaseView
     public function output_content()
     {
         if ($this->survey) {
+            $modal = new BaseStyleComponent('modal', array(
+                'title' => "Survey Viewer",
+                "css" => "survey-js-modal-holder",
+                'children' => array(
+                    new BaseStyleComponent("div", array(
+                        "id" => "survey-js-version-viewer"
+                    )),
+                    new BaseStyleComponent("div", array(
+                        "css" => "modal-footer",
+                        "children" => array(
+                            new BaseStyleComponent("button", array(
+                                "label" => "Restore",
+                                "url" => "#",
+                                "type" => "warning",
+                                "css" => "bnt-sm",
+                                "id" => "survey-js-restore"
+                            )),
+                        )
+                    ))
+                ),
+            ));
+            $modal->output_content();
             return require  __DIR__ . "/tpl_moduleSurveyJSVersions.php";
         }
     }
@@ -102,16 +124,7 @@ class ModuleSurveyJSVersionsView extends BaseView
     {
         if (empty($local)) {
             $local = array(
-                // __DIR__ . "/../moduleSurveyJS/js/1_knockout-latest.js",
-                // __DIR__ . "/../moduleSurveyJS/js/2_survey.core.min.js",
-                // __DIR__ . "/js/plotly-latest.min.js",
-                // __DIR__ . "/js/wordcloud2.js",
-                // __DIR__ . "/js/survey.analytics.min.js",
-                // __DIR__ . "/js/xlsx.full.min.js",
-                // __DIR__ . "/js/jspdf.min.js",
-                // __DIR__ . "/js/jspdf.plugin.autotable.min.js",
-                // __DIR__ . "/js/tabulator.min.js",
-                // __DIR__ . "/js/survey.analytics.tabulator.min.js",
+                __DIR__ . "/../style/surveyJS/js/1_survey.jquery.min.js",
                 __DIR__ . "/js/surveyVersions.js",
             );
         }
@@ -129,10 +142,8 @@ class ModuleSurveyJSVersionsView extends BaseView
     {
         if (empty($local)) {
             $local = array(
-                // __DIR__ . "/css/survey.analytics.min.css",
-                // __DIR__ . "/css/tabulator.min.css",
-                // __DIR__ . "/css/survey.analytics.tabulator.css",
-                // __DIR__ . "/css/dashboard.css"
+                __DIR__ . "/../style/surveyJS/css/defaultV2.min.css",
+                __DIR__ . "/css/surveyVersions.css"
             );
         }
         return parent::get_css_includes($local);

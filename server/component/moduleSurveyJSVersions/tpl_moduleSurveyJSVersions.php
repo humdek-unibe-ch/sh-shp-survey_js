@@ -20,10 +20,11 @@
                 </p>
             </div>
             <div class="mb-3">
-                <table id="survey-js-versions" class="table table-sm table-hover">
+                <table id="survey-js-versions" class="table table-sm table-hover w-100">
                     <thead>
                         <tr>
                             <th scope="col">Version ID</th>
+                            <th scope="col">Config</th>
                             <th scope="col">Created At</th>
                             <th scope="col">User</th>
                             <th scope="col">Restored At</th>

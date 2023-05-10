@@ -1,8 +1,15 @@
 $(document).ready(function () {
+    initVersionsTable();
+});
+
+function initVersionsTable() {
     //datatable projects
     var table = $('#survey-js-versions').DataTable({
         "order": [[0, "desc"]]
     });
+
+    table.column(1).visible(false);
+
 
     table.on('click', 'tr[id|="formAction-url"]', function (e) {
         var ids = $(this).attr('id').split('-');
@@ -27,20 +34,6 @@ $(document).ready(function () {
                 }
             },
         },
-        showConfirmationMethod: (confirmation) => {
-            $.confirm({
-                title: confirmation.title,
-                content: confirmation.content,
-                buttons: {
-                    confirm: function () {
-                        return confirmation.callback(true);
-                    },
-                    cancel: function () {
-                        return confirmation.callback(false);
-                    }
-                }
-            });
-        },
         buttonList: {
             enabled: true,
             iconOnly: false,
@@ -64,8 +57,23 @@ $(document).ready(function () {
                 buttonClasses: ['btn', 'btn-outline-secondary'],
                 contextMenuClasses: ['text-secondary'],
                 action: function (row) {
-                    var ids = row[0].DT_RowId.split('-');
-                    window.open('formsActions/select/' + parseInt(ids[2]), '_blank')
+                    try {
+                        surveyContent = JSON.parse(row[0][1]);
+                        var version_id = row[0][0];
+                        initModalRestoreBtn(version_id);
+                        var survey = new Survey.Model(surveyContent);
+                        $('#survey-js-version-viewer').Survey({ model: survey });
+                        $(".survey-js-modal-holder").modal({
+                            backdrop: false
+                        });
+                    } catch (error) {
+                        console.log(error);
+                        $.alert({
+                            title: 'Error',
+                            type: "red",
+                            content: 'Corrupted version!',
+                        });
+                    }
                 },
                 isDisabled: function (row) {
                 },
@@ -83,23 +91,8 @@ $(document).ready(function () {
                 buttonClasses: ['btn', 'btn-outline-success'],
                 contextMenuClasses: ['text-warning'],
                 action: function (row) {
-                    $.ajax({
-                        type: 'post',
-                        url: window.location,
-                        dataType: "json",
-                        data: { mode: "restore", version_id: row[0][0] },
-                        success: function (r) {
-                            if (r.result) {
-                                window.location = $('#survey-js-back').attr('href'); // go back to the survey
-                            } else {
-                                $.alert({
-                                    title: 'Error',
-                                    type: "red",
-                                    content: 'Failed to restore the survey or the survey is the same as the one that you want to restore!',
-                                });
-                            }
-                        }
-                    });
+                    var version_id = row[0][0];
+                    restore_version(version_id);
                 },
                 isDisabled: function (row) {
                 },
@@ -115,5 +108,41 @@ $(document).ready(function () {
     };
 
     table.contextualActions(actionOptions);
+}
 
-});
+function restore_version(version_id) {
+    $.confirm({
+        title: 'Restore old version!',
+        content: 'Are you sure that you want to restore version <code>' + version_id + '</code>',
+        buttons: {
+            confirm: function () {
+                $.ajax({
+                    type: 'post',
+                    url: window.location,
+                    dataType: "json",
+                    data: { mode: "restore", version_id: version_id },
+                    success: function (r) {
+                        if (r.result) {
+                            window.location = $('#survey-js-back').attr('href'); // go back to the survey
+                        } else {
+                            $.alert({
+                                title: 'Error',
+                                type: "red",
+                                content: 'Failed to restore the survey or the survey is the same as the one that you want to restore!',
+                            });
+                        }
+                    }
+                });
+            },
+            cancel: function () {
+
+            }
+        }
+    });
+}
+
+function initModalRestoreBtn(version_id) {
+    $("#survey-js-restore").off('click').on('click', () => {
+        restore_version(version_id);
+    });
+}
