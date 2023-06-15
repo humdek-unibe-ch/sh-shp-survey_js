@@ -120,7 +120,7 @@ class SurveyJSView extends StyleView
                     "auto_save_interval" => $this->auto_save_interval,
                     "survey_js_theme" => $this->survey_js_theme,
                     "save_pdf" => $this->save_pdf,
-                    "survey_generated_id" => $this->survey['survey_generated_id']
+                    "survey_generated_id" => isset($this->survey['survey_generated_id']) ? $this->survey['survey_generated_id'] : null
                 );
                 if ($this->url_params) {
                     $url_components = parse_url($this->model->get_services()->get_router()->get_url('#self')); // get the requested url

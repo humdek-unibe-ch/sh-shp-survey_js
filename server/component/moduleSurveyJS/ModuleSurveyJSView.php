@@ -60,7 +60,7 @@ class ModuleSurveyJSView extends BaseView
         } else {
             require __DIR__ . "/tpl_moduleSurveyJS_Alerts.php";
             $card_title = '<span>Survey JS </span>'  . (isset($this->survey['survey_generated_id']) ? ('<div> <code>&nbsp;' . $this->survey['survey_generated_id'] . '</code></div>') : '');
-            if ($this->survey['published']) {
+            if (isset($this->survey['published']) && $this->survey['published']) {
                 $card_title = $card_title . '<span class="text-right flex-grow-1">Published at: <code id="survey-js-publish-at">' . $this->survey['published_at'] . '</code> </span>';
             } else {
                 $card_title = $card_title . '<span class="text-right flex-grow-1"><code>Not published yet</code> </span>';
@@ -83,7 +83,7 @@ class ModuleSurveyJSView extends BaseView
                                     "id" => "survey-js-publish",
                                     "url" => "#",
                                     "type" => "warning",
-                                    "css" => "ml-3 " . ($this->survey['config'] == $this->survey['published'] ? 'disabled' : '')
+                                    "css" => "ml-3 " . (isset($this->survey) && $this->survey['config'] == $this->survey['published'] ? 'disabled' : '')
                                 )),
                                 new BaseStyleComponent("button", array(
                                     "label" => "Dashboard",
@@ -161,8 +161,8 @@ class ModuleSurveyJSView extends BaseView
                 __DIR__ . "/js/3_survey-knockout-ui.min.js",
                 __DIR__ . "/js/4_survey-creator-core.min.js",
                 __DIR__ . "/js/5_survey-creator-knockout.min.js",
-                __DIR__ . "/js/6_survey-creator-core.i18n.min",
-                __DIR__ . "/js/7_survey.i18n.min",
+                __DIR__ . "/js/6_survey-creator-core.i18n.min.js",
+                __DIR__ . "/js/7_survey.i18n.min.js",
                 __DIR__ . "/js/8_survey.js",
             );
         }
