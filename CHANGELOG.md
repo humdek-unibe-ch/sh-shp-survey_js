@@ -1,3 +1,7 @@
+# v1.0.3
+### Bug fix
+ - add [uopz_allow_exit(true);](https://www.php.net/manual/en/function.uopz-allow-exit.php);
+
 # v1.0.2
 ### Bug fix
  - fix DB script v1.0.0

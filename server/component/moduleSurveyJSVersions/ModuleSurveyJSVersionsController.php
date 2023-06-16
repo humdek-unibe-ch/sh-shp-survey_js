@@ -29,7 +29,9 @@ class ModuleSurveyJSVersionsController extends ModuleSurveyJSController
         }
         if (isset($_POST['mode']) && $_POST['mode'] == 'restore' && isset($_POST['version_id'])) {
             $res = $this->model->restore_survey($sid, $_POST['version_id']);
+            header("Content-Type: application/json");
             echo json_encode(array("result" => $res));
+            uopz_allow_exit(true);
             exit();
         }
     }

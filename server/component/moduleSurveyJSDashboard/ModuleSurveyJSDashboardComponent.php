@@ -32,7 +32,9 @@ class ModuleSurveyJSDashboardComponent extends BaseComponent
         $model = new ModuleSurveyJSDashboardModel($services);
         $controller = new ModuleSurveyJSDashboardController($model, $sid);
         if (isset($_POST['mode']) && $_POST['mode'] == SURVEY_JS_FETCH_RESULTS) {
+            header("Content-Type: application/json");
             echo json_encode($model->get_survey_results($sid));
+            uopz_allow_exit(true);
             exit();
         }
         $view = new ModuleSurveyJSDashboardView($model, $controller, $sid);
