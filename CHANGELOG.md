@@ -1,3 +1,8 @@
+# v1.0.2
+### Bug fix
+ - fix DB script v1.0.0
+ - fix capital letters for `Dashboard` and `Version` modules
+
 # v1.0.1
 ### Bug fix
  - php init variables checks 

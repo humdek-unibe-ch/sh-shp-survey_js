@@ -68,8 +68,8 @@ INSERT IGNORE INTO `fields` (`id`, `name`, `id_type`, `display`) VALUES (NULL, '
 INSERT IGNORE INTO `styles_fields` (`id_styles`, `id_fields`, `default_value`, `help`) VALUES (get_style_id('surveyJS'), get_field_id('close_modal_at_end'), 0, '`Only for mobile` - if selected the modal form will be closed once the survey is done');
 
 -- add field redirect_at_end to style surveyJS
-INSERT INTO `fields` (`id`, `name`, `id_type`, `display`) VALUES (NULL, 'redirect_at_end', get_field_type_id('text'), '0');
-INSERT INTO `styles_fields` (`id_styles`, `id_fields`, `default_value`, `help`) VALUES (get_style_id('surveyJS'), get_field_id('redirect_at_end'), null, 'Redirect to this url at the end of the survey');
+INSERT IGNORE INTO `fields` (`id`, `name`, `id_type`, `display`) VALUES (NULL, 'redirect_at_end', get_field_type_id('text'), '0');
+INSERT IGNORE INTO `styles_fields` (`id_styles`, `id_fields`, `default_value`, `help`) VALUES (get_style_id('surveyJS'), get_field_id('redirect_at_end'), null, 'Redirect to this url at the end of the survey');
 
 -- add field auto_save_interval to style surveyJS
 INSERT IGNORE INTO `fields` (`id`, `name`, `id_type`, `display`) VALUES (NULL, 'auto_save_interval', get_field_type_id('number'), 0);
@@ -147,7 +147,7 @@ CREATE TABLE IF NOT EXISTS `surveys_versions` (
     `id_users` INT(10) UNSIGNED ZEROFILL NOT NULL,
 	`id_surveys` INT(10) UNSIGNED ZEROFILL NOT NULL,
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    `restored_at` TIMESTAMP DEFAULT NULL,
+    `restored_at` DATETIME DEFAULT NULL,
     `config` LONGTEXT,
     `published` TINYINT(1),
     CONSTRAINT `fk_surveys_versions_id_users` FOREIGN KEY (`id_users`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
