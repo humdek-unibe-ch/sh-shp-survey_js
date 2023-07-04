@@ -1,3 +1,7 @@
+# v1.0.4
+### New Features
+ - add extra CSP rules only for pages: `moduleSurveyJSMode` and `moduleSurveyJSDashboard`
+
 # v1.0.3
 ### Bug fix
  - add [uopz_allow_exit(true);](https://www.php.net/manual/en/function.uopz-allow-exit.php);

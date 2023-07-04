@@ -11,4 +11,5 @@ define('SURVEY_JS_THEMES', 'survey-js-themes');
 define('SURVEY_JS_FETCH_RESULTS', 'fetch_results');
 /* Page keywords */
 define('PAGE_SURVEY_JS_MODE', 'moduleSurveyJSMode');
+define('PAGE_SURVEY_JS_DASHBOARD', 'moduleSurveyJSDashboard');
 ?>
