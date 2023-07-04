@@ -83,7 +83,7 @@ class ModuleSurveyJSView extends BaseView
                                     "id" => "survey-js-publish",
                                     "url" => "#",
                                     "type" => "warning",
-                                    "css" => "ml-3 " . (isset($this->survey) && $this->survey['config'] == $this->survey['published'] ? 'disabled' : '')
+                                    "css" => "ml-3 " . (isset($this->survey['config']) && $this->survey['config'] == $this->survey['published'] ? 'disabled' : '')
                                 )),
                                 new BaseStyleComponent("button", array(
                                     "label" => "Dashboard",
@@ -102,7 +102,7 @@ class ModuleSurveyJSView extends BaseView
                         new BaseStyleComponent("button", array(
                             "label" => "Delete Survey",
                             "id" => "survey-js-delete-btn",
-                            "url" => $this->model->get_link_url("moduleSurveyJSMode", array("mode" => DELETE, "sid" => $this->sid)),
+                            "url" => $this->model->get_link_url(PAGE_SURVEY_JS_MODE, array("mode" => DELETE, "sid" => $this->sid)),
                             "type" => "danger",
                         ))
                     )
@@ -202,7 +202,7 @@ class ModuleSurveyJSView extends BaseView
         //show create button
         $createButton = new BaseStyleComponent("button", array(
             "label" => "Create New SurveyJS",
-            "url" => $this->model->get_link_url("moduleSurveyJSMode", array("mode" => INSERT)),
+            "url" => $this->model->get_link_url(PAGE_SURVEY_JS_MODE, array("mode" => INSERT)),
             "type" => "secondary",
             "css" => "d-block mb-3",
         ));

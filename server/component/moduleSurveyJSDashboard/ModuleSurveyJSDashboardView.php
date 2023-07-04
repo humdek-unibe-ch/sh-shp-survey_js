@@ -61,7 +61,7 @@ class ModuleSurveyJSDashboardView extends BaseView
                             "children" => array(
                                 new BaseStyleComponent("button", array(
                                     "label" => "Back to Survey Editor",
-                                    "url" => $this->model->get_link_url("moduleSurveyJSMode", array("mode" => UPDATE, "sid" => $this->sid)),
+                                    "url" => $this->model->get_link_url(PAGE_SURVEY_JS_MODE, array("mode" => UPDATE, "sid" => $this->sid)),
                                     "type" => "secondary",
                                 )),
                                 new BaseStyleComponent("button", array(

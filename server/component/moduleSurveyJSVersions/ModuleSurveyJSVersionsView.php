@@ -106,7 +106,7 @@ class ModuleSurveyJSVersionsView extends BaseView
         $createButton = new BaseStyleComponent("button", array(
             "label" => "Back to Survey Editor",
             "id" => 'survey-js-back',
-            "url" => $this->model->get_link_url("moduleSurveyJSMode", array("mode" => UPDATE, "sid" => $this->sid)),
+            "url" => $this->model->get_link_url(PAGE_SURVEY_JS_MODE, array("mode" => UPDATE, "sid" => $this->sid)),
             "type" => "secondary",
             "css" => "d-block mb-3",
         ));

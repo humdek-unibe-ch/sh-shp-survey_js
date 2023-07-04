@@ -164,7 +164,7 @@ class SurveyJSHooks extends BaseHooks
     public function get_sensible_pages($args)
     {
         $res = $this->execute_private_method($args);
-        $res[] = 'moduleSurveyJSMode';
+        $res[] = PAGE_SURVEY_JS_MODE;
         return $res;
     }
 }

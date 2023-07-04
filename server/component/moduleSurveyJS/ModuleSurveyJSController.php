@@ -32,7 +32,7 @@ class ModuleSurveyJSController extends BaseController
             $sid = $this->model->insert_new_survey();
             if ($sid) {
                 // redirect in update mode with the newly created survey id
-                $url = $this->model->get_link_url("moduleSurveyJSMode", array("mode" => UPDATE, "sid" => $sid));
+                $url = $this->model->get_link_url(PAGE_SURVEY_JS_MODE, array("mode" => UPDATE, "sid" => $sid));
                 header('Location: ' . $url);
             }
         } else if ($mode === UPDATE && $sid > 0 && isset($_POST['surveyJson'])) {
@@ -57,7 +57,7 @@ class ModuleSurveyJSController extends BaseController
      */
     protected function check_acl($mode)
     {
-        if (!$this->model->get_services()->get_acl()->has_access($_SESSION['id_user'], $this->model->get_services()->get_db()->fetch_page_id_by_keyword("moduleSurveyJSMode"), $mode)) {
+        if (!$this->model->get_services()->get_acl()->has_access($_SESSION['id_user'], $this->model->get_services()->get_db()->fetch_page_id_by_keyword(PAGE_SURVEY_JS_MODE), $mode)) {
             $this->fail = true;
             $this->error_msgs[] = "You don't have rights to " . $mode . " this survey";
             return false;
