@@ -1,6 +1,7 @@
--- add plugin entry in the plugin table
-INSERT IGNORE INTO plugins (name, version) 
-VALUES ('survey-js', 'v1.1.0');
+-- update plugin version
+UPDATE `plugins`
+SET version = 'v1.1.0'
+WHERE `name` = 'survey-js';
 
 DELIMITER //
 DROP PROCEDURE IF EXISTS get_all_sections_in_page //
