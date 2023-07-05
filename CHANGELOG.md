@@ -1,3 +1,7 @@
+# v1.1.0
+### New Features
+ - load CSP rules for pages that contains SurveyJS
+
 # v1.0.4
 ### New Features
  - add extra CSP rules only for pages: `moduleSurveyJSMode` and `moduleSurveyJSDashboard`

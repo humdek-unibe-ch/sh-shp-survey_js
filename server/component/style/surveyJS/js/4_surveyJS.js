@@ -1,11 +1,12 @@
 var autoSaveTimers = {};
 
 $(document).ready(function () {
+    console.log('adss');
     initSurveyJS();
 });
 
 function initSurveyJS() {
-    $('.selfHelp-survey-js-holder').each(function () {
+    $('.selfHelp-survey-js-holder').each(function () {        
         const surveyContent = $(this).data('survey-js');
         const surveyFields = $(this).data('survey-js-fields');
         $(this).removeAttr('data-survey-js');

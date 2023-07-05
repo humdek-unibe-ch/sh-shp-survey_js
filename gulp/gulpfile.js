@@ -21,26 +21,11 @@ gulp.task('styles', function () {
         .pipe(gulp.dest('../css/ext'))
 });
 
-// Gulp task to minify JavaScript files
-gulp.task('scripts', function () {
-    return gulp.src(['../server/component/style/js/*.js',
-        '../server/component/style/**/js/*.js',
-        '../server/component/**/js/*.js'])
-        // .pipe(babel({
-        //     presets: ['@babel/preset-env']
-        // }))
-        // Minify the file
-        .pipe(terser())
-        // Concat
-        .pipe(concat('survey-js.min.js'))
-        // Output
-        .pipe(gulp.dest('../js/ext'))
-});
 
 // Clean output directory
 gulp.task('clean', () => del(['dist']));
 
 // Gulp task to minify all files
-gulp.task('default', gulp.series('clean', 'styles', 'scripts', function (done) {
+gulp.task('default', gulp.series('clean', 'styles', function (done) {
     done();
 }));
