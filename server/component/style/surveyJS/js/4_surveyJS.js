@@ -1,7 +1,6 @@
 var autoSaveTimers = {};
 
 $(document).ready(function () {
-    console.log('adss');
     initSurveyJS();
 });
 

@@ -1,3 +1,6 @@
+# v1.2.0 - Requires SelfHelp 6.6.0 (Unpublished) 
+ - remove field `jquery_builder_json`
+
 # v1.1.0
 ### New Features
  - load CSP rules for pages that contains SurveyJS
