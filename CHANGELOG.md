@@ -1,4 +1,4 @@
-# v1.3.0
+# v1.3.0 (Unpublished)
  - #1 add field `timeout` in style `surveyJS`
 
 # v1.2.0 - Requires SelfHelp 6.6.0 (Unpublished) 
