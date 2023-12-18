@@ -28,10 +28,15 @@ function initSurveyJS() {
             // Restore survey results
             const notCompletedSurvey = window.localStorage.getItem(surveyFields['survey_generated_id']) || null;
             if (notCompletedSurvey) {
-                survey.data = JSON.parse(notCompletedSurvey);
-                survey.setValue('trigger_type', 'updated');
-                if (survey.data.pageNo) {
-                    survey.currentPageNo = survey.data.pageNo;
+                var localSurveyData = JSON.parse(notCompletedSurvey);
+                var timeoutExpired = checkTimeout(surveyFields['timeout'], localSurveyData);
+                if (!timeoutExpired) {
+                    // load the survey if not expired based on the configuration
+                    survey.data = localSurveyData;
+                    survey.setValue('trigger_type', 'updated');
+                    if (survey.data.pageNo) {
+                        survey.currentPageNo = survey.data.pageNo;
+                    }
                 }
             }
             saveSurveyJS(surveyFields, survey);
@@ -114,6 +119,33 @@ function initSurveyJS() {
     });
 }
 
+/**
+ * Checks if a timeout has occurred based on the elapsed time since a survey started.
+ *
+ * @param {number} timeout - The timeout duration in minutes. Set to 0 if not configured.
+ * @param {Object} localSurvey - The survey object containing survey data and metadata.
+ * @returns {boolean} True if a timeout has occurred, false otherwise.
+ */
+function checkTimeout(timeout, localSurvey) {
+    if (timeout == 0) {
+        // not configured
+        return false;
+    } else {
+        var time_passed = (Date.now() - new Date(localSurvey['_meta']['start_time'])) / (1000 * 60); // in minutes
+        if (time_passed > timeout) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+}
+
+/**
+ * Saves survey data to the server and handles local storage.
+ *
+ * @param {Object} surveyFields - An object containing survey-specific configuration.
+ * @param {Object} survey - The survey object containing survey data and information.
+ */
 function saveSurveyJS(surveyFields, survey) {
     var data = { ...survey.data };
     data.pageNo = survey.currentPageNo;

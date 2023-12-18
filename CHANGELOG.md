@@ -1,5 +1,5 @@
 # v1.3.0 (Unpublished)
- - #1 add field `timeout` in style `surveyJS`
+ - #1 add field `timeout` in style `surveyJS` and if the time has passed since the survey was started it will start a new survey.
  - #4 collect metadata for surveys: `start_time`, `end_time`, `duration`, `pages`, `user_agent`, etc.
 
 # v1.2.0 - Requires SelfHelp 6.6.0 (Unpublished) 

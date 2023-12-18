@@ -63,6 +63,11 @@ class SurveyJSView extends StyleView
      */
     private $url_params;
 
+    /**
+     * When a non-zero value is set for this field, it serves as a `Survey Timeout` or `Survey Expiry Time`
+     */
+    private $timeout;
+
     /* Constructors ***********************************************************/
 
     /**
@@ -85,6 +90,7 @@ class SurveyJSView extends StyleView
         $this->restart_on_refresh = $this->model->get_db_field('restart_on_refresh', '');
         $this->redirect_at_end = $this->model->get_db_field('redirect_at_end', '');
         $this->auto_save_interval = $this->model->get_db_field('auto_save_interval', 0);
+        $this->timeout = $this->model->get_db_field('timeout', 0);
         $this->url_params = $this->model->get_db_field('url_params', '');
         $this->save_pdf = $this->model->get_db_field('save_pdf');
         $this->survey_js_theme = $this->model->get_db_field('survey-js-theme');
@@ -118,6 +124,7 @@ class SurveyJSView extends StyleView
                     "restart_on_refresh" => boolval($this->restart_on_refresh),
                     "redirect_at_end" => $redirect_at_end,
                     "auto_save_interval" => $this->auto_save_interval,
+                    "timeout" => $this->timeout,
                     "survey_js_theme" => $this->survey_js_theme,
                     "save_pdf" => $this->save_pdf,
                     "survey_generated_id" => isset($this->survey['survey_generated_id']) ? $this->survey['survey_generated_id'] : null
