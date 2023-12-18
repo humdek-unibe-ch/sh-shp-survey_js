@@ -4,7 +4,7 @@ $(document).ready(function () {
     initSurveyJS();
 });
 
-function initSurveyJS() {    
+function initSurveyJS() {
     $('.selfHelp-survey-js-holder').each(function () {
         const surveyContent = $(this).data('survey-js');
         const surveyFields = $(this).data('survey-js-fields');
@@ -50,7 +50,12 @@ function initSurveyJS() {
             metaData['viewport_width'] = window.innerWidth;
             metaData['viewport_height'] = window.innerHeight;
             metaData['start_time'] = new Date(dateNow);
-            survey.setValue('meta', metaData);
+            metaData['pages'] = [];
+            metaData['pages'].push({
+                'pageNo': survey.currentPageNo,
+                'start_time': new Date(dateNow)
+            });
+            survey.setValue('_meta', metaData);
             if (surveyFields['extra_params']) {
                 for (let prop in surveyFields['extra_params']) {
                     survey.setValue("extra_param_" + prop, surveyFields['extra_params'][prop]);
@@ -60,7 +65,16 @@ function initSurveyJS() {
         }
         $(this).children(".selfHelp-survey-js").first().Survey({ model: survey });
         survey.onCurrentPageChanged.add((sender, options) => {
+            var dateNow = Date.now();
+            var meta = survey.getValue('_meta');
+            meta['pages'][meta['pages'].length - 1]['end_time'] = new Date(dateNow);
+            meta['pages'][meta['pages'].length - 1]['duration'] = ((dateNow - new Date(meta['pages'][meta['pages'].length - 1]['start_time'])) / 1000);
+            meta['pages'].push({
+                'pageNo': survey.currentPageNo,
+                'start_time': new Date(dateNow)
+            });
             sender.setValue('trigger_type', 'updated');
+            survey.setValue('_meta', meta);
             saveSurveyJS(surveyFields, sender);
         });
         survey.onComplete.add((sender, options) => {
@@ -70,10 +84,12 @@ function initSurveyJS() {
             }
             sender.setValue('trigger_type', 'finished');
             var dateNow = Date.now();
-            var meta = survey.getValue('meta');
-            meta['duration'] = (dateNow - meta['start_time']) / 1000; // save duration in seconds
+            var meta = survey.getValue('_meta');
+            meta['duration'] = (dateNow - new Date(meta['start_time'])) / 1000; // save duration in seconds
             meta['end_time'] = new Date(dateNow);
-            survey.setValue(meta);
+            meta['pages'][meta['pages'].length - 1]['end_time'] = new Date(dateNow);
+            meta['pages'][meta['pages'].length - 1]['duration'] = ((dateNow - new Date(meta['pages'][meta['pages'].length - 1]['start_time'])) / 1000);
+            survey.setValue('_meta', meta);
             saveSurveyJS(surveyFields, sender);
         });
 

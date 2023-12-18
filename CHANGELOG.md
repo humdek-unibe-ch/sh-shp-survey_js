@@ -1,6 +1,6 @@
 # v1.3.0 (Unpublished)
  - #1 add field `timeout` in style `surveyJS`
- - #4 collect metadata for surveys
+ - #4 collect metadata for surveys: `start_time`, `end_time`, `duration`, `pages`, `user_agent`, etc.
 
 # v1.2.0 - Requires SelfHelp 6.6.0 (Unpublished) 
  - remove field `jquery_builder_json`
