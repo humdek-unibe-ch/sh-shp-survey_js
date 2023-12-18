@@ -4,8 +4,8 @@ $(document).ready(function () {
     initSurveyJS();
 });
 
-function initSurveyJS() {
-    $('.selfHelp-survey-js-holder').each(function () {        
+function initSurveyJS() {    
+    $('.selfHelp-survey-js-holder').each(function () {
         const surveyContent = $(this).data('survey-js');
         const surveyFields = $(this).data('survey-js-fields');
         $(this).removeAttr('data-survey-js');
@@ -37,10 +37,20 @@ function initSurveyJS() {
             saveSurveyJS(surveyFields, survey);
         }
         if (!survey.data['response_id']) {
-            const uniqueId = Date.now().toString(36) + Math.random().toString(36).substring(2, 7);
+            var dateNow = Date.now();
+            const uniqueId = dateNow.toString(36) + Math.random().toString(36).substring(2, 7);
             survey.setValue('response_id', "RJS_" + uniqueId.substring(uniqueId.length - 16));
             survey.setValue('trigger_type', 'started');
             survey.setValue('survey_generated_id', surveyFields['survey_generated_id']);
+            survey.setValue('start_time', new Date(dateNow));
+            var metaData = {};
+            metaData['user_agent'] = navigator.userAgent;
+            metaData['screen_width'] = window.screen.width;
+            metaData['screen_height'] = window.screen.height;
+            metaData['pixel_ratio'] = window.devicePixelRatio;
+            metaData['viewport_width'] = window.innerWidth;
+            metaData['viewport_height'] = window.innerHeight;
+            survey.setValue('meta', metaData);
             if (surveyFields['extra_params']) {
                 for (let prop in surveyFields['extra_params']) {
                     survey.setValue("extra_param_" + prop, surveyFields['extra_params'][prop]);
@@ -59,6 +69,11 @@ function initSurveyJS() {
                 clearInterval(autoSaveTimers[surveyFields['survey_generated_id']]);
             }
             sender.setValue('trigger_type', 'finished');
+            var dateNow = Date.now();
+            survey.setValue('end_time', new Date(dateNow));
+            var start_time = survey.getValue('start_time');
+            console.log('meta', survey.getValue('meta'));
+            survey.setValue('duration', ((dateNow - start_time) / 1000)); // save duration in seconds
             saveSurveyJS(surveyFields, sender);
         });
 
