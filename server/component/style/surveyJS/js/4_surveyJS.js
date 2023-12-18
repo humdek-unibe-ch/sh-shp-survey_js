@@ -42,7 +42,6 @@ function initSurveyJS() {
             survey.setValue('response_id', "RJS_" + uniqueId.substring(uniqueId.length - 16));
             survey.setValue('trigger_type', 'started');
             survey.setValue('survey_generated_id', surveyFields['survey_generated_id']);
-            survey.setValue('start_time', new Date(dateNow));
             var metaData = {};
             metaData['user_agent'] = navigator.userAgent;
             metaData['screen_width'] = window.screen.width;
@@ -50,6 +49,7 @@ function initSurveyJS() {
             metaData['pixel_ratio'] = window.devicePixelRatio;
             metaData['viewport_width'] = window.innerWidth;
             metaData['viewport_height'] = window.innerHeight;
+            metaData['start_time'] = new Date(dateNow);
             survey.setValue('meta', metaData);
             if (surveyFields['extra_params']) {
                 for (let prop in surveyFields['extra_params']) {
@@ -70,10 +70,10 @@ function initSurveyJS() {
             }
             sender.setValue('trigger_type', 'finished');
             var dateNow = Date.now();
-            survey.setValue('end_time', new Date(dateNow));
-            var start_time = survey.getValue('start_time');
-            console.log('meta', survey.getValue('meta'));
-            survey.setValue('duration', ((dateNow - start_time) / 1000)); // save duration in seconds
+            var meta = survey.getValue('meta');
+            meta['duration'] = (dateNow - meta['start_time']) / 1000; // save duration in seconds
+            meta['end_time'] = new Date(dateNow);
+            survey.setValue(meta);
             saveSurveyJS(surveyFields, sender);
         });
 
