@@ -1,9 +1,7 @@
-# v1.3.0 (Unpublished)
+# v1.2.0 - Requires SelfHelp 6.6.0
+ - remove field `jquery_builder_json`
  - #1 add field `timeout` in style `surveyJS` and if the time has passed since the survey was started it will start a new survey.
  - #4 collect metadata for surveys: `start_time`, `end_time`, `duration`, `pages`, `user_agent`, etc.
-
-# v1.2.0 - Requires SelfHelp 6.6.0 (Unpublished) 
- - remove field `jquery_builder_json`
 
 # v1.1.0
 ### New Features
