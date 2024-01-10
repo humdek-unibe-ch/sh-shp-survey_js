@@ -48,8 +48,10 @@ function initSurveyDashboard(survey_results) {
 
         const dashboardOptions = {
             allowHideQuestions: true,
-            haveCommercialLicense: true,
         }
+        Survey.setLicenseKey(
+            "ZWUzYjk4NjctYmYzMi00ZmFiLWFlODQtMGE4OTBjMTNiYTRkOzE9MjAyNC0wNC0yNSwyPTIwMjQtMDQtMjUsND0yMDI0LTA0LTI1"
+        );
 
         const surveyJSDashboard = new SurveyAnalytics.VisualizationPanel(
             survey.getAllQuestions(),
@@ -152,9 +154,12 @@ function initSurveyDashboardTable(survey_results) {
 
         const dashboardOptions = {
             allowHideQuestions: true,
-            haveCommercialLicense: true,
             downloadOptions: { fileName: surveyId + '_[' + year + '_' + month + '_' + day + '-' + hours + '_' + minutes + ']' }
         }
+
+        Survey.setLicenseKey(
+            "ZWUzYjk4NjctYmYzMi00ZmFiLWFlODQtMGE4OTBjMTNiYTRkOzE9MjAyNC0wNC0yNSwyPTIwMjQtMDQtMjUsND0yMDI0LTA0LTI1"
+        );
 
         const surveyJSDashboardTable = new SurveyAnalyticsTabulator.Tabulator(
             survey,

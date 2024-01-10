@@ -1,9 +1,11 @@
 const creatorOptions = {
     showLogicTab: true,
     isAutoSave: true,
-    haveCommercialLicense: true,
     showTranslationTab: true
 };
+Survey.setLicenseKey(
+    "ZWUzYjk4NjctYmYzMi00ZmFiLWFlODQtMGE4OTBjMTNiYTRkOzE9MjAyNC0wNC0yNSwyPTIwMjQtMDQtMjUsND0yMDI0LTA0LTI1"
+);
 const creator = new SurveyCreator.SurveyCreator(creatorOptions);
 var published_json = '';
 

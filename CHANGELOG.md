@@ -1,3 +1,6 @@
+# v1.2.1
+ - update `SurveyJs` from `v1.9.85` to `v1.9.124`
+
 # v1.2.0 - Requires SelfHelp 6.6.0
  - remove field `jquery_builder_json`
  - #1 add field `timeout` in style `surveyJS` and if the time has passed since the survey was started it will start a new survey.

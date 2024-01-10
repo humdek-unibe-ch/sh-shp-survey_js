@@ -98,11 +98,42 @@ function initSurveyJS() {
             saveSurveyJS(surveyFields, sender);
         });
 
+
+        // custom catch for upload files when storeDataAsText is false
+        survey.onUploadFiles.add((_, options) => {
+            const formData = new FormData();
+            options.files.forEach((file) => {
+                formData.append(file.name, file);
+            });
+            console.log(options);
+
+            // fetch("https://api.surveyjs.io/private/Surveys/uploadTempFiles", {
+            //     method: "POST",
+            //     body: formData
+            // })
+            //     .then((response) => response.json())
+            //     .then((data) => {
+            //         options.callback(
+            //             options.files.map((file) => {
+            //                 return {
+            //                     file: file,
+            //                     content: "https://api.surveyjs.io/private/Surveys/getTempFile?name=" + data[file.name]
+            //                 };
+            //             })
+            //         );
+            //     })
+            //     .catch((error) => {
+            //         console.error("Error: ", error);
+            //         options.callback([], [ 'An error occurred during file upload.' ]);
+            //     });
+        });
+
         if (surveyFields && surveyFields['save_pdf'] == 1) {
 
-            const exportToPdfOptions = {
-                haveCommercialLicense: true
-            };
+            const exportToPdfOptions = {};
+            Survey.setLicenseKey(
+                "ZWUzYjk4NjctYmYzMi00ZmFiLWFlODQtMGE4OTBjMTNiYTRkOzE9MjAyNC0wNC0yNSwyPTIwMjQtMDQtMjUsND0yMDI0LTA0LTI1"
+            );
             const savePdf = function (surveyData) {
                 const surveyPdf = new SurveyPDF.SurveyPDF(surveyContent, exportToPdfOptions);
                 surveyPdf.data = surveyData;
