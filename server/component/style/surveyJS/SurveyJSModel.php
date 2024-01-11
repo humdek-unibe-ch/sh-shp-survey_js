@@ -176,7 +176,7 @@ class SurveyJSModel extends StyleModel
     public function get_survey()
     {
         $survey = $this->get_raw_survey();
-        if(!$survey){
+        if (!$survey) {
             return false;
         }
         $user_name = $this->db->fetch_user_name();
@@ -257,34 +257,41 @@ class SurveyJSModel extends StyleModel
      * This function takes care of saving uploaded files to the server while organizing them
      * into appropriate directories based on survey, response, user code, and question name.
      *
-     * @return bool True if all files were successfully saved, false otherwise.
+     * @return mixed If all files are successfully saved, it returns an empty array. If there are any errors,
+     *               it returns an associative array where keys are file names and values are the paths
+     *               where the files were supposed to be saved but couldn't due to errors. If there are no errors
+     *               and no files to be saved, it returns `null`.
      */
     public function save_uploaded_files()
     {
         $survey = $this->get_raw_survey();
         $survey_id = $survey['survey_generated_id'];
         $user_code = isset($_SESSION['user_code']) ? $_SESSION['user_code'] : 'no_code';
-        $no_error = true;
+        $return_files = array();
 
         foreach ($_FILES as $index => $file) {
             $question_name = $_POST['question_name'];
             $response_id = $_POST['response_id'];
-            $new_directory = __DIR__ . '../../../../../' . SURVEYJS_UPLOAD_FOLDER . '/' . $survey_id . '/' . $response_id . '/' . $user_code . '/' . $question_name;
-            $new_file_name = $new_directory . '/[' . $survey_id . '][' . $response_id . '][' . $user_code . '][' . $question_name . ']' . $file['name'];
+            $rel_path = SURVEYJS_UPLOAD_FOLDER . '/' . $survey_id . '/' . $response_id . '/' . $user_code . '/' . $question_name;
+            $new_directory = __DIR__ . '../../../../../' . $rel_path;
+            $new_file_name = '[' . $survey_id . '][' . $response_id . '][' . $user_code . '][' . $question_name . ']' . $file['name'];
+            $new_file_name_full_path = $new_directory . '/' . $new_file_name;
 
             // Create the directory if it doesn't exist
             if (!is_dir($new_directory)) {
                 if (!mkdir($new_directory, 0755, true)) {
-                    $no_error = false;
                     // Handle the error (e.g., log or display an error message)
+                    return false;
                 }
             }
 
-            if (!move_uploaded_file($file['tmp_name'], $new_file_name)) {
-                $no_error = false;
+            if (!move_uploaded_file($file['tmp_name'], $new_file_name_full_path)) {
+                return false;
+            } else {
+                $return_files[$file['name']] = '?file_path=' . $rel_path . '/' . $new_file_name;
             }
         }
-        return $no_error;
+        return $return_files;
     }
 }
 ?>

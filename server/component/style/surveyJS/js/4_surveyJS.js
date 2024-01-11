@@ -272,7 +272,7 @@ function uploadFiles(survey) {
                     body: formData
                 })
                     .then((response) => {
-                        response.json()
+                        return response.json()
                     })
                     .then(data => {
                         // Save metadata about uploaded files as the question value
@@ -280,10 +280,10 @@ function uploadFiles(survey) {
                             return {
                                 name: file.name,
                                 type: file.type,
-                                // content: "https://api.surveyjs.io/private/Surveys/getTempFile?name=" + data[file.name]
-                                content: "test"
+                                content: data[file.name]
                             };
                         });
+
                     })
                     .catch(error => {
                         console.error("Error:", error);
