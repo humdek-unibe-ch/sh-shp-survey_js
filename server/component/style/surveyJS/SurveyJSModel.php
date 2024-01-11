@@ -231,7 +231,7 @@ class SurveyJSModel extends StyleModel
 
     /**
      * Check if the survey is done; if once_per_schedule is not enabled it will return always false
-     * @retval boolean
+     * @return boolean
      * true if it is active, false if it is not active
      */
     public function is_survey_done()
@@ -246,6 +246,42 @@ class SurveyJSModel extends StyleModel
             // survey can be filled as many times per schedule
             return false;
         }
+    }
+
+    /**
+     * Saves uploaded files to the server.
+     *
+     * This function takes care of saving uploaded files to the server while organizing them
+     * into appropriate directories based on survey, response, user code, and question name.
+     *
+     * @return bool True if all files were successfully saved, false otherwise.
+     */
+    public function save_uploaded_files()
+    {
+        $survey = $this->get_raw_survey();
+        $survey_id = $survey['survey_generated_id'];
+        $user_code = isset($_SESSION['user_code']) ? $_SESSION['user_code'] : 'no_code';
+        $no_error = true;
+
+        foreach ($_FILES as $index => $file) {
+            $question_name = $_POST['question_name'];
+            $response_id = $_POST['response_id'];
+            $new_directory = __DIR__ . '../../../../../' . SURVEYJS_UPLOAD_FOLDER . '/' . $survey_id . '/' . $response_id . '/' . $user_code . '/' . $question_name;
+            $new_file_name = $new_directory . '/[' . $survey_id . '][' . $response_id . '][' . $user_code . '][' . $question_name . ']' . $file['name'];
+
+            // Create the directory if it doesn't exist
+            if (!is_dir($new_directory)) {
+                if (!mkdir($new_directory, 0755, true)) {
+                    $no_error = false;
+                    // Handle the error (e.g., log or display an error message)
+                }
+            }
+
+            if (!move_uploaded_file($file['tmp_name'], $new_file_name)) {
+                $no_error = false;
+            }
+        }
+        return $no_error;
     }
 }
 ?>

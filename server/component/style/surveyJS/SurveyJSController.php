@@ -32,6 +32,12 @@ class SurveyJSController extends BaseController
             unset($data['device_id']);
             unset($data['device_token']);
             $this->model->save_survey($data);
+        } else if (isset($_POST['upload_files']) && isset($_FILES) && isset($_POST['response_id']) && isset($_POST['question_name'])) {
+            if ($this->model->save_uploaded_files()) {
+                echo json_encode(array("status" => "success"), JSON_UNESCAPED_UNICODE);
+            } else {
+                echo json_encode(array("status" => "error", "error" => "Error while saving the files!"), JSON_UNESCAPED_UNICODE);
+            };
         }
     }
 

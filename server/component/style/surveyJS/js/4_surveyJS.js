@@ -1,4 +1,6 @@
 var autoSaveTimers = {};
+// A variable that will store files until the survey is completed
+const tempFileStorage = {};
 
 $(document).ready(function () {
     initSurveyJS();
@@ -95,37 +97,72 @@ function initSurveyJS() {
             meta['pages'][meta['pages'].length - 1]['end_time'] = new Date(dateNow);
             meta['pages'][meta['pages'].length - 1]['duration'] = ((dateNow - new Date(meta['pages'][meta['pages'].length - 1]['start_time'])) / 1000);
             survey.setValue('_meta', meta);
-            saveSurveyJS(surveyFields, sender);
+            uploadFiles(survey)
+                .then(() => {
+                    saveSurveyJS(surveyFields, sender);
+                })
+                .catch(error => {
+                    // Handle any errors that occurred during uploads
+                    console.error("Upload error:", error);
+                });;
         });
 
 
         // custom catch for upload files when storeDataAsText is false
         survey.onUploadFiles.add((_, options) => {
-            const formData = new FormData();
-            options.files.forEach((file) => {
-                formData.append(file.name, file);
+            // Add files to the temporary storage
+            if (tempFileStorage[options.name] !== undefined && tempFileStorage[options.name].length > 0) {
+                tempFileStorage[options.name].concat(options.files);
+            } else {
+                tempFileStorage[options.name] = options.files;
+            }
+            // Load file previews
+            const content = [];
+            options.files.forEach(file => {
+                const fileReader = new FileReader();
+                fileReader.onload = () => {
+                    content.push({
+                        name: file.name,
+                        type: file.type,
+                        content: fileReader.result,
+                        file: file
+                    });
+                    if (content.length === options.files.length) {
+                        // Return a file for preview as a { file, content } object 
+                        options.callback(
+                            content.map(fileContent => {
+                                return {
+                                    file: fileContent.file,
+                                    content: fileContent.content
+                                };
+                            })
+                        );
+                    }
+                };
+                fileReader.readAsDataURL(file);
             });
-            console.log(options);
 
-            // fetch("https://api.surveyjs.io/private/Surveys/uploadTempFiles", {
-            //     method: "POST",
-            //     body: formData
-            // })
-            //     .then((response) => response.json())
-            //     .then((data) => {
-            //         options.callback(
-            //             options.files.map((file) => {
-            //                 return {
-            //                     file: file,
-            //                     content: "https://api.surveyjs.io/private/Surveys/getTempFile?name=" + data[file.name]
-            //                 };
-            //             })
-            //         );
-            //     })
-            //     .catch((error) => {
-            //         console.error("Error: ", error);
-            //         options.callback([], [ 'An error occurred during file upload.' ]);
-            //     });
+        });
+
+        // Handles file removal
+        survey.onClearFiles.add((_, options) => {
+            // Empty the temporary file storage if "Clear All" is clicked 
+            if (options.fileName === null) {
+                tempFileStorage[options.name] = [];
+                options.callback("success");
+                return;
+            }
+
+            // Remove an individual file
+            const tempFiles = tempFileStorage[options.name];
+            if (!!tempFiles) {
+                const fileInfoToRemove = tempFiles.filter(file => file.name === options.fileName)[0];
+                if (fileInfoToRemove) {
+                    const index = tempFiles.indexOf(fileInfoToRemove);
+                    tempFiles.splice(index, 1);
+                }
+            }
+            options.callback("success");
         });
 
         if (surveyFields && surveyFields['save_pdf'] == 1) {
@@ -196,6 +233,74 @@ function saveSurveyJS(surveyFields, survey) {
                     window.location.href = surveyFields['redirect_at_end'];
                 }
             }
+        }
+    });
+}
+
+/**
+ * Upload files associated with survey questions and update question values with metadata.
+ *
+ * @param {Survey} survey - The survey object containing questions and data.
+ * @returns {Promise} A Promise that resolves when all file uploads are completed successfully,
+ *                    or rejects if any of the uploads fail.
+ */
+function uploadFiles(survey) {
+    return new Promise((resolve, reject) => {
+        const questionsToUpload = Object.keys(tempFileStorage);
+
+        if (questionsToUpload.length === 0) {
+            resolve(); // No files to upload, resolve immediately
+        } else {
+            const uploadPromises = [];
+
+            for (let i = 0; i < questionsToUpload.length; i++) {
+                const questionName = questionsToUpload[i];
+                const question = survey.getQuestionByName(questionName);
+                const filesToUpload = tempFileStorage[questionName];
+
+                const formData = new FormData();
+                filesToUpload.forEach(file => {
+                    formData.append(file.name, file);
+                });
+
+                formData.append("upload_files", true);
+                formData.append("response_id", survey.data['response_id']);
+                formData.append("question_name", questionName);
+
+                const uploadPromise = fetch(window.location.href, {
+                    method: "POST",
+                    body: formData
+                })
+                    .then((response) => {
+                        response.json()
+                    })
+                    .then(data => {
+                        // Save metadata about uploaded files as the question value
+                        question.value = filesToUpload.map(file => {
+                            return {
+                                name: file.name,
+                                type: file.type,
+                                // content: "https://api.surveyjs.io/private/Surveys/getTempFile?name=" + data[file.name]
+                                content: "test"
+                            };
+                        });
+                    })
+                    .catch(error => {
+                        console.error("Error:", error);
+                        reject(error); // Reject the promise if there's an error
+                    });
+
+                uploadPromises.push(uploadPromise);
+            }
+
+            // Wait for all upload promises to complete before resolving
+            Promise.all(uploadPromises)
+                .then(() => {
+                    resolve(); // All uploads completed successfully
+                })
+                .catch(error => {
+                    reject(error); // Reject if any of the uploads failed
+                });
         }
     });
 }
