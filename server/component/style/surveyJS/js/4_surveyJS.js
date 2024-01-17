@@ -104,7 +104,7 @@ function initSurveyJS() {
                 .catch(error => {
                     // Handle any errors that occurred during uploads
                     console.error("Upload error:", error);
-                });;
+                });
         });
 
 
