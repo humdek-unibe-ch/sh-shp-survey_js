@@ -276,6 +276,11 @@ class SurveyJSModel extends StyleModel
             $new_directory = __DIR__ . '../../../../../' . $rel_path;
             $new_file_name = '[' . $survey_id . '][' . $response_id . '][' . $user_code . '][' . $question_name . ']' . $file['name'];
             $new_file_name_full_path = $new_directory . '/' . $new_file_name;
+            $new_file_name_full_path = str_replace(array("\r", "\n"), '', $new_file_name_full_path);
+            $new_directory = str_replace(array("\r", "\n"), '', $new_directory);
+            $rel_path = str_replace(array("\r", "\n"), '', $rel_path);
+            $new_file_name = str_replace(array("\r", "\n"), '', $new_file_name);
+
 
             // Create the directory if it doesn't exist
             if (!is_dir($new_directory)) {
