@@ -1,3 +1,6 @@
+# v1.2.2 (Unpublished)
+ - add `uopz_allow_exit` when returns `json`
+
 # v1.2.1
  - update `SurveyJs` from `v1.9.85` to `v1.9.124`
  - when questions from type `File Upload` has `storeDataAsText` set to false, the files are uploaded to the server in folder `upload` in the plugin folder. Inside that folder automatically is created a folder structure /survey_id/response_id/user_code/question_name/image_name, where image file is saved as `[survey_id][response_id][user_code][question_name]image_name`

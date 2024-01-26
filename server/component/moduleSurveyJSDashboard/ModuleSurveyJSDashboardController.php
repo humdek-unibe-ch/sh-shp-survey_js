@@ -72,7 +72,8 @@ class ModuleSurveyJSDashboardController extends BaseController
 
             // Read and output the file
             readfile($absolute_path);
-            exit;
+            uopz_allow_exit(true);
+            exit();
         } else {
             // File not found, you can handle this case accordingly (e.g., display an error message)
             echo "File not found!";
