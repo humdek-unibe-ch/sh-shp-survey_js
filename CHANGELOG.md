@@ -1,4 +1,4 @@
-# v1.2.2 (Unpublished)
+# v1.2.2
  - add `uopz_allow_exit` when returns `json`
  - adjust relative paths for uploading files to work on `windows` and `linux`
 
