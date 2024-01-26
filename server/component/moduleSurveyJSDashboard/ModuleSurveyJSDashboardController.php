@@ -76,7 +76,9 @@ class ModuleSurveyJSDashboardController extends BaseController
             exit();
         } else {
             // File not found, you can handle this case accordingly (e.g., display an error message)
-            echo "File not found!";
+            echo "File not found! Path: " . $absolute_path;
+            uopz_allow_exit(true);
+            exit();
         }
     }
 
