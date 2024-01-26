@@ -273,7 +273,7 @@ class SurveyJSModel extends StyleModel
             $question_name = $_POST['question_name'];
             $response_id = $_POST['response_id'];
             $rel_path = SURVEYJS_UPLOAD_FOLDER . '/' . $survey_id . '/' . $response_id . '/' . $user_code . '/' . $question_name;
-            $new_directory = __DIR__ . '../../../../../' . $rel_path;
+            $new_directory = __DIR__ . '/../../../../' . $rel_path;
             $new_file_name = '[' . $survey_id . '][' . $response_id . '][' . $user_code . '][' . $question_name . ']' . $file['name'];
             $new_file_name_full_path = $new_directory . '/' . $new_file_name;
             $new_file_name_full_path = str_replace(array("\r", "\n"), '', $new_file_name_full_path);

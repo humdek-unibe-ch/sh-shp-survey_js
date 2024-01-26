@@ -1,5 +1,6 @@
 # v1.2.2 (Unpublished)
  - add `uopz_allow_exit` when returns `json`
+ - adjust relative paths for uploading files to work on `windows` and `linux`
 
 # v1.2.1
  - update `SurveyJs` from `v1.9.85` to `v1.9.124`

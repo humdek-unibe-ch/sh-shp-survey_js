@@ -39,7 +39,7 @@ class ModuleSurveyJSDashboardController extends BaseController
     private function output_file()
     {
         $file_path = $_GET['file_path'];
-        $absolute_path = __DIR__ . '../../../../' . $file_path;
+        $absolute_path = __DIR__ . '/../../../' . $file_path;
         if (file_exists($absolute_path)) {
             // Set the appropriate headers for a download
             // get the file mime type using the file extension
