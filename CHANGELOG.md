@@ -1,3 +1,7 @@
+# v1.2.3
+### New Features
+ - load plugin version using `BaseHook` class
+
 # v1.2.2
  - add `uopz_allow_exit` when returns `json`
  - adjust relative paths for uploading files to work on `windows` and `linux`

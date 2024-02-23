@@ -207,5 +207,13 @@ class SurveyJSHooks extends BaseHooks
         $res[] = PAGE_SURVEY_JS_MODE;
         return $res;
     }
+
+    /**
+     * Get the plugin version
+     */
+    public function get_plugin_db_version($plugin_name = 'survey-js')
+    {
+        return parent::get_plugin_db_version($plugin_name);
+    }
 }
 ?>
