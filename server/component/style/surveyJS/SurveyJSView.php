@@ -213,7 +213,7 @@ class SurveyJSView extends StyleView
                     __DIR__ . "/css/survey.css"
                 );
             } else {
-                $local = array(__DIR__ . "/../../../../../survey-js/css/ext/survey-js.min.css?v=" . rtrim(shell_exec("git describe --tags")));
+                $local = array(__DIR__ . "/../../../../css/ext/survey-js.min.css?v=" . rtrim(shell_exec("git describe --tags")));
             }
         }
         return parent::get_css_includes($local);
