@@ -222,13 +222,20 @@ class SurveyJSModel extends StyleModel
             // survey is always active
             return true;
         } else {
-            if (strtotime($this->start_time_calced) <= strtotime("now") && strtotime("now") <= strtotime($this->end_time_calced)) {
-                // the survey is active
+            if (strtotime($this->start_time) <= strtotime("now") && strtotime("now") <= strtotime($this->end_time)) {
+                // The survey is active
                 return true;
+            } elseif (strtotime($this->start_time) > strtotime($this->end_time)) {
+                // Handle the case where the end time is on the next day
+                if (strtotime($this->start_time) <= strtotime("now") || strtotime("now") <= strtotime($this->end_time)) {
+                    // The survey is active
+                    return true;
+                }
             } else {
-                // survey is not active right now
+                // Survey is not active right now
                 return false;
             }
+            
         }
     }
 

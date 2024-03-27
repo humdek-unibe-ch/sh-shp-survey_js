@@ -1,3 +1,7 @@
+# v1.2.5
+### Bugfix
+ - properly calculate when the survey is active based on start time and end time
+
 # v1.2.4
 ### Bugfix
  - fix loading path for minified files 
