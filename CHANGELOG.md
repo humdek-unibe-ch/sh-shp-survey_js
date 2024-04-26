@@ -1,3 +1,7 @@
+# v1.2.6 (unpublished)
+### Bugfix
+ - fix the check if the survey is done in CMS edit mode
+
 # v1.2.5
 ### Bugfix
  - properly calculate when the survey is active based on start time and end time

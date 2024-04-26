@@ -115,6 +115,10 @@ class SurveyJSModel extends StyleModel
         $form_name = $this->get_raw_survey()['survey_generated_id'];
         $form_id = $this->user_input->get_form_id($form_name, FORM_EXTERNAL);
         $filter = ' AND trigger_type = "' . actionTriggerTypes_finished . '"'; // the survey should be completed
+        if(!$form_id){
+            // if no form, the survey was never filled, so it is not done
+            return false; 
+        }
         $res = $this->user_input->get_data($form_id, $filter, true, FORM_EXTERNAL, $_SESSION['id_user'], true);
         return $res;
     }
