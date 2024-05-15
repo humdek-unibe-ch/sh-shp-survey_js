@@ -1,6 +1,7 @@
-# v1.2.6 (unpublished)
+# v1.2.6
 ### Bugfix
  - fix the check if the survey is done in CMS edit mode
+ - #12 - now properly check `once_per_scheduled`
 
 # v1.2.5
 ### Bugfix

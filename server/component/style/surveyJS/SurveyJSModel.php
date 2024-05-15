@@ -87,8 +87,13 @@ class SurveyJSModel extends StyleModel
         $end_time = $now->setTime($at_end_time[0], $at_end_time[1]);
         $end_time = date('Y-m-d H:i:s', $end_time->getTimestamp());
         if (strtotime($start_time) > strtotime($end_time)) {
-            // move end time to next day
-            $end_time = date('Y-m-d H:i:s', strtotime($end_time . ' +1 day'));
+            if (strtotime($end_time) > strtotime("now")) {
+                //move start time to previous day
+                $start_time = date('Y-m-d H:i:s', strtotime($start_time . ' -1 day'));
+            } else {
+                // move end time to next day
+                $end_time = date('Y-m-d H:i:s', strtotime($end_time . ' +1 day'));
+            }            
         }
         $this->start_time_calced = $start_time;
         $this->end_time_calced = $end_time;
