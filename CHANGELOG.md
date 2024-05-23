@@ -1,3 +1,10 @@
+# v1.3.0
+### New Features
+ - add field `debug` to style `surveyJS`
+
+### Bugfix
+ - properly load `entry_record` in the `surveyJS`
+
 # v1.2.6
 ### Bugfix
  - fix the check if the survey is done in CMS edit mode

@@ -62,9 +62,9 @@ class SurveyJSModel extends StyleModel
      * @param array $entry_record
      *  An array that contains the entry record information.
      */
-    public function __construct($services, $id, $params)
+    public function __construct($services, $id, $params, $id_page = -1, $entry_record)
     {
-        parent::__construct($services, $id, $params);
+        parent::__construct($services, $id, $params, $id_page, $entry_record);
         $this->once_per_schedule = $this->get_db_field('once_per_schedule', 0);
         $this->once_per_user = $this->get_db_field('once_per_user', 0);
         $this->start_time = $this->get_db_field('start_time', '00:00');
@@ -93,7 +93,7 @@ class SurveyJSModel extends StyleModel
             } else {
                 // move end time to next day
                 $end_time = date('Y-m-d H:i:s', strtotime($end_time . ' +1 day'));
-            }            
+            }
         }
         $this->start_time_calced = $start_time;
         $this->end_time_calced = $end_time;
@@ -120,9 +120,9 @@ class SurveyJSModel extends StyleModel
         $form_name = $this->get_raw_survey()['survey_generated_id'];
         $form_id = $this->user_input->get_form_id($form_name, FORM_EXTERNAL);
         $filter = ' AND trigger_type = "' . actionTriggerTypes_finished . '"'; // the survey should be completed
-        if(!$form_id){
+        if (!$form_id) {
             // if no form, the survey was never filled, so it is not done
-            return false; 
+            return false;
         }
         $res = $this->user_input->get_data($form_id, $filter, true, FORM_EXTERNAL, $_SESSION['id_user'], true);
         return $res;
@@ -179,7 +179,7 @@ class SurveyJSModel extends StyleModel
 
     /**
      * Get the survey and apply all dynamic variables
-     * @return object
+     * @return object | false
      * Return the info for the survey
      */
     public function get_survey()
@@ -193,6 +193,7 @@ class SurveyJSModel extends StyleModel
         $survey['content'] = isset($survey['published']) ? $survey['published'] : '';
         $survey['name'] = 'survey-js';
         $data_config = $this->get_db_field('data_config');
+        $survey['section_name'] = $this->section_name;
         $survey['content'] = $this->calc_dynamic_values($survey, $data_config, $user_name, $user_code);
         return $survey;
     }
@@ -222,7 +223,7 @@ class SurveyJSModel extends StyleModel
 
     /**
      * Check if the survey is active
-     * @retval boolean
+     * @return boolean
      * true if it is active, false if it is not active
      */
     public function is_survey_active()
@@ -244,8 +245,8 @@ class SurveyJSModel extends StyleModel
                 // Survey is not active right now
                 return false;
             }
-            
         }
+        return true;
     }
 
     /**

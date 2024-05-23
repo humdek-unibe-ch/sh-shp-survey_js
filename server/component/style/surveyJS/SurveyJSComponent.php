@@ -34,11 +34,11 @@ class SurveyJSComponent extends BaseComponent
      * @param array $entry_record
      *  An array that contains the entry record information.
      */
-    public function __construct($services, $id, $params)
+    public function __construct($services, $id, $params, $id_page = -1, $entry_record = array())
     {
-        $model = new SurveyJSModel($services, $id, $params);        
+        $model = new SurveyJSModel($services, $id, $params, $id_page, $entry_record);
         $controller = null;
-        if(!$model->is_cms_page())
+        if (!$model->is_cms_page())
             $controller = new SurveyJSController($model);
         $view = new SurveyJSView($model, $controller);
         parent::__construct($model, $view, $controller);
