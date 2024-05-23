@@ -1,3 +1,7 @@
+# v1.3.1
+### Bugfix
+ - properly return if the survey is active when there is a start time and end time
+
 # v1.3.0
 ### New Features
  - add field `debug` to style `surveyJS`
