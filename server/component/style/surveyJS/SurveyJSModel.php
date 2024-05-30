@@ -188,6 +188,11 @@ class SurveyJSModel extends StyleModel
         if (!$survey) {
             return false;
         }
+        $last_response = $this->user_input->get_data($this->user_input->get_form_id($survey['survey_generated_id'], FORM_EXTERNAL), 'ORDER BY record_id DESC', true, FORM_EXTERNAL, $_SESSION['id_user'], true);
+        if(isset($last_response['_json'])){
+            $last_response_json = json_decode($last_response['_json'], true);            
+            $survey['last_response'] = $last_response_json['trigger_type'] != 'finished' ? $last_response_json : array();
+        }
         $user_name = $this->db->fetch_user_name();
         $user_code = $this->db->get_user_code();
         $survey['content'] = isset($survey['published']) ? $survey['published'] : '';
@@ -210,9 +215,9 @@ class SurveyJSModel extends StyleModel
         if (isset($survey['survey_generated_id']) && isset($data['survey_generated_id']) && $data['survey_generated_id'] == $survey['survey_generated_id']) {
             if (isset($data['trigger_type'])) {
                 if ($data['trigger_type'] == actionTriggerTypes_started) {
-                    $this->user_input->save_external_data(transactionBy_by_user, $data['survey_generated_id'], $data);
+                    return $this->user_input->save_external_data(transactionBy_by_user, $data['survey_generated_id'], $data);
                 } else {
-                    $this->user_input->save_external_data(transactionBy_by_user, $data['survey_generated_id'], $data, array(
+                    return $this->user_input->save_external_data(transactionBy_by_user, $data['survey_generated_id'], $data, array(
                         "response_id" => $data['response_id']
                     ));
                 }

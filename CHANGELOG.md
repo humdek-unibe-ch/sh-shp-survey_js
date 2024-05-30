@@ -1,3 +1,8 @@
+# v1.3.2
+### Bugfix
+ - #15 - No more keep a local state of the survey. Now the state is retrieved from DB.
+ - #14 - Check if the data is saved in DB and then move to the next page. Show alerts when the data is not properly saved.
+
 # v1.3.1
 ### Bugfix
  - properly return if the survey is active when there is a start time and end time

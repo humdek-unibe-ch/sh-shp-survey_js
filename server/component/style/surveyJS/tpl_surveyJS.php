@@ -5,6 +5,7 @@
 ?>
 <div class="selfHelp-survey-js-holder <?php echo $this->css; ?>"
  data-survey-js='<?php echo isset($this->survey['content']) ?  htmlspecialchars($this->survey['content'], ENT_QUOTES, 'UTF-8') : ""; ?>' 
+ data-survey-js-last-response='<?php echo isset($this->survey['last_response']) ?  json_encode($this->survey['last_response']) : ""; ?>'
  data-survey-js-fields='<?php echo $survey_fields ?>'>
  <div class="selfHelp-survey-js"></div>
  </div>

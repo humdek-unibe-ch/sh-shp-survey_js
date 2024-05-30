@@ -31,7 +31,11 @@ class SurveyJSController extends BaseController
             unset($data['id_languages']);
             unset($data['device_id']);
             unset($data['device_token']);
-            $this->model->save_survey($data);
+            $res = $this->model->save_survey($data);
+            header("Content-Type: application/json");
+            echo json_encode(array("result" => $res));
+            uopz_allow_exit(true);
+            exit();
         } else if (isset($_POST['upload_files']) && isset($_FILES) && isset($_POST['response_id']) && isset($_POST['question_name'])) {
             $files = $this->model->save_uploaded_files();
             header("Content-Type: application/json");
