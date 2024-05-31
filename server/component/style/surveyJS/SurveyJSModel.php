@@ -226,7 +226,7 @@ class SurveyJSModel extends StyleModel
                 }
             }
         }
-        return 'errorrrrrr';
+        return false;
     }
 
     /**
