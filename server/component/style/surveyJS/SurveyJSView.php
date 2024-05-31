@@ -163,6 +163,7 @@ class SurveyJSView extends StyleView
         $style['survey_json'] = $this->survey['content'] ? json_decode($this->survey['content']) : [];
         $style['alert'] = '';
         $style['show_survey'] = true;
+        $style['last_response'] = $this->survey['last_response'] ?? [];
         $style['survey_generated_id'] = $this->survey['survey_generated_id'];
         if ($this->model->is_survey_active()) {
             if ($this->model->is_survey_done()) {
