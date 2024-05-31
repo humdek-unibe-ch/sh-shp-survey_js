@@ -188,9 +188,12 @@ class SurveyJSModel extends StyleModel
         if (!$survey) {
             return false;
         }
-        $last_response = $this->user_input->get_data($this->user_input->get_form_id($survey['survey_generated_id'], FORM_EXTERNAL), 'ORDER BY record_id DESC', true, FORM_EXTERNAL, $_SESSION['id_user'], true);
-        if(isset($last_response['_json'])){
-            $last_response_json = json_decode($last_response['_json'], true);            
+        $form_id = $this->user_input->get_form_id($survey['survey_generated_id'], FORM_EXTERNAL);
+        if ($form_id) {
+            $last_response = $this->user_input->get_data($form_id, 'ORDER BY record_id DESC', true, FORM_EXTERNAL, $_SESSION['id_user'], true);
+        }
+        if (isset($last_response['_json'])) {
+            $last_response_json = json_decode($last_response['_json'], true);
             $survey['last_response'] = $last_response_json['trigger_type'] != 'finished' ? $last_response_json : array();
         }
         $user_name = $this->db->fetch_user_name();
@@ -223,7 +226,7 @@ class SurveyJSModel extends StyleModel
                 }
             }
         }
-        return false;
+        return 'errorrrrrr';
     }
 
     /**

@@ -1,3 +1,7 @@
+# v1.3.3 (Unpublished)
+### Bugfix
+ - check if the uploadTable with survey name exists before trying to get the last_response
+
 # v1.3.2
 ### Bugfix
  - #15 - No more keep a local state of the survey. Now the state is retrieved from DB.
