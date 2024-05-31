@@ -1,6 +1,7 @@
-# v1.3.3 (Unpublished)
+# v1.3.3
 ### Bugfix
  - check if the uploadTable with survey name exists before trying to get the last_response
+ - properly handle multiple surveys on the same page
 
 # v1.3.2
 ### Bugfix
