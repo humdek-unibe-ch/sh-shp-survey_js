@@ -104,6 +104,13 @@ class SurveyJSView extends StyleView
      */
     public function output_content()
     {
+        if (
+            method_exists($this->model, 'is_cms_page') && $this->model->is_cms_page() &&
+            method_exists($this->model, 'is_cms_page_editing') && $this->model->is_cms_page_editing()
+        ) {
+            // cms - do not load the survey
+            return;
+        }
         if ($this->model->is_survey_active()) {
             if ($this->model->is_survey_done()) {
                 if ($this->label_survey_done != '') {

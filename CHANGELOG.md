@@ -1,3 +1,7 @@
+# v1.3.4
+### Bugfix
+ - do not load the survey in the CMS
+
 # v1.3.3
 ### Bugfix
  - check if the uploadTable with survey name exists before trying to get the last_response
