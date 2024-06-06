@@ -12,6 +12,30 @@ class ModuleSurveyJSController extends BaseController
 {
     /* Private Properties *****************************************************/
 
+    /**
+     * Recursively converts string values of "true" and "false" to boolean true and false within a nested array.
+     *
+     * This function traverses through a given array and checks each value. If a value is a nested array,
+     * it recursively processes that array. If a value is the string "true" or "false", it converts that
+     * value to the corresponding boolean true or false.
+     *
+     * @param array $data The input array that may contain string "true" and "false" values.
+     * @return array The processed array with "true" and "false" strings converted to boolean true and false.
+     */
+    private function convertStringToBoolean($data) {
+        if (is_array($data)) {
+            foreach ($data as $key => &$value) {
+                if (is_array($value)) {
+                    $value = $this->convertStringToBoolean($value); // Recursive call for nested arrays
+                } elseif ($value === "true") {
+                    $value = true;
+                } elseif ($value === "false") {
+                    $value = false;
+                }
+            }
+        }
+        return $data;
+    }
 
     /* Constructors ***********************************************************/
 
@@ -36,7 +60,8 @@ class ModuleSurveyJSController extends BaseController
                 header('Location: ' . $url);
             }
         } else if ($mode === UPDATE && $sid > 0 && isset($_POST['surveyJson'])) {
-            $this->model->update_survey($sid, $_POST['surveyJson']);
+            $adjustJson = $this->convertStringToBoolean($_POST['surveyJson']); // convert all booleans form string to bool
+            $this->model->update_survey($sid, $adjustJson);
         } else if ($mode === UPDATE && $sid > 0 && isset($_POST['mode']) && $_POST['mode'] == 'publish') {
             $this->model->publish_survey($sid);
         } else if ($mode === DELETE && $sid > 0) {

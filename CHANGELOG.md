@@ -1,3 +1,7 @@
+# v1.3.5
+### Bugfix
+ - properly save `Boolean` JSON fields from SurveyJS creator to the DB
+
 # v1.3.4
 ### Bugfix
  - do not load the survey in the CMS
