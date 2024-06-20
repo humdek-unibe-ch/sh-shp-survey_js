@@ -61,7 +61,7 @@ class ModuleSurveyJSDashboardModel extends ModuleSurveyJSModel
             $survey = $this->get_survey($sid);
             $form_id = $this->user_input->get_dataTable_id($survey['survey_generated_id']);
             if ($form_id) {
-                $res =  $this->user_input->get_data($form_id, '', false, -1);
+                $res =  $this->user_input->get_data($form_id, '', false);
                 $validation_code = $this->get_validation_codes_for_users();
                 foreach ($res as $key => $value) {
                     if (isset($value['_json'])) {
