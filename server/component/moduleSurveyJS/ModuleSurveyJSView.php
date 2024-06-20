@@ -41,9 +41,7 @@ class ModuleSurveyJSView extends BaseView
         parent::__construct($model, $controller);
         $this->mode = $mode;
         $this->sid = $sid;
-        if ($this->sid) {
-            $this->survey = $this->model->get_survey($this->sid);
-        }
+        $this->survey = $this->model->get_survey();
     }
 
     /* Private Methods ********************************************************/

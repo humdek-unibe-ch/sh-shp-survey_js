@@ -13,17 +13,29 @@ class ModuleSurveyJSModel extends BaseModel
 {
 
     /* Constructors ***********************************************************/
+    /**
+     * Survey id, 
+     * if it is > 0  edit/delete survey page     
+     */
+    private $sid;
+
+    /**
+     * the current selected survey
+     */
+    private $survey;
 
     /**
      * The constructor.
      *
-     * @param array $services
-     *  An associative array holding the differnt available services. See the
+     * @param object $services
+     *  An associative array holding the different available services. See the
      *  class definition BasePage for a list of all services.
      */
-    public function __construct($services)
+    public function __construct($services, $sid)
     {
         parent::__construct($services);
+        $this->sid = $sid;
+        $this->survey = $this->fetch_survey($sid);
     }
 
     /**
@@ -74,6 +86,12 @@ class ModuleSurveyJSModel extends BaseModel
                 SURVEYJS_TABLE_SURVEYS,
                 $sid
             );
+            if (!isset($surveyJson['title'])) {
+                $displayName = '';
+            } else {
+                $displayName = is_array($surveyJson['title']) ? $surveyJson['title']['default'] : $surveyJson['title'];
+            }
+            $this->set_dataTables_displayName($this->survey['survey_generated_id'], $displayName);
             $this->db->commit();
             return $sid;
         } catch (Exception $e) {
@@ -83,13 +101,13 @@ class ModuleSurveyJSModel extends BaseModel
     }
 
     /**
-     * Get survey
+     * Fetch survey
      * @param int $sid
      * survey id
-     * @param return object
+     * @return object
      * Return the survey row
      */
-    public function get_survey($sid)
+    public function fetch_survey($sid)
     {
         $sql = "SELECT *, JSON_UNQUOTE(JSON_EXTRACT(config, '$.title')) AS survey_name
                 FROM surveys
@@ -134,7 +152,7 @@ class ModuleSurveyJSModel extends BaseModel
         $res = $this->db->execute_update_db($sql, array(":sid" => $sid));
         if ($res) {
             // add new version of the survey
-            $survey = $this->get_survey($sid);
+            $survey = $this->fetch_survey($sid);
 
             $res = $res &&  $this->db->insert(SURVEYJS_TABLE_SURVEYS_VERSIONS, array(
                 "id_users" => $_SESSION['id_user'],
@@ -144,5 +162,15 @@ class ModuleSurveyJSModel extends BaseModel
             ));
         }
         return $res;
+    }
+
+    /**
+     * Get the survey data
+     * @return object
+     * Return the survey
+     */
+    public function get_survey()
+    {
+        return $this->survey;
     }
 }

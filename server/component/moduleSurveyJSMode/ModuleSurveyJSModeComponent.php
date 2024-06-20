@@ -30,7 +30,7 @@ class ModuleSurveyJSModeComponent extends BaseComponent
     {
         $sid = isset($params['sid']) ? intval($params['sid']) : null;
         $mode = isset($params['mode']) ? $params['mode'] : null;
-        $model = new ModuleSurveyJSModel($services);
+        $model = new ModuleSurveyJSModel($services, $sid);
         $controller = new ModuleSurveyJSController($model, $mode, $sid);
         $view = new ModuleSurveyJSView($model, $controller, $mode, $sid);
         parent::__construct($model, $view, $controller);

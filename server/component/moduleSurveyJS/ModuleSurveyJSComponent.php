@@ -20,7 +20,7 @@ class ModuleSurveyJSComponent extends BaseComponent
      * The constructor creates an instance of the Model class and the View
      * class and passes them to the constructor of the parent class.
      *
-     * @param array $services
+     * @param object $services
      *  An associative array holding the different available services. See the
      *  class definition BasePage for a list of all services.
      * @param number $id_page
@@ -30,7 +30,7 @@ class ModuleSurveyJSComponent extends BaseComponent
     {
         $sid = isset($params['sid']) ? intval($params['sid']) : null;
         $mode = isset($params['mode']) ? $params['mode'] : null;
-        $model = new ModuleSurveyJSModel($services);
+        $model = new ModuleSurveyJSModel($services, $sid);
         $controller = new ModuleSurveyJSController($model, $mode, $sid);
         $view = new ModuleSurveyJSView($model, $controller, $mode, $sid);
         parent::__construct($model, $view, $controller);
