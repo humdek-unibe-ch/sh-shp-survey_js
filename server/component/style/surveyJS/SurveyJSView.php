@@ -105,8 +105,8 @@ class SurveyJSView extends StyleView
     public function output_content()
     {
         if (
-            method_exists($this->model, 'is_cms_page') && $this->model->is_cms_page() &&
-            method_exists($this->model, 'is_cms_page_editing') && $this->model->is_cms_page_editing()
+            (method_exists($this->model, 'is_cms_page') && $this->model->is_cms_page()) &&
+            (method_exists($this->model, 'is_cms_page_editing') && $this->model->is_cms_page_editing())
         ) {
             // cms - do not load the survey
             return;
@@ -136,6 +136,10 @@ class SurveyJSView extends StyleView
                     "save_pdf" => $this->save_pdf,
                     "survey_generated_id" => isset($this->survey['survey_generated_id']) ? $this->survey['survey_generated_id'] : null
                 );
+                if (method_exists($this->model, 'is_cms_page') && $this->model->is_cms_page()) {
+                    // if it is in CMS unset the survey id, we do not want to save it
+                    unset($survey_fields['survey_generated_id']);
+                }
                 if ($this->url_params) {
                     $url_components = parse_url($this->model->get_services()->get_router()->get_url('#self')); // get the requested url
                     $extra_surveyjs_params = isset($url_components['query']) ? $url_components['query'] : ''; // check if the url contains url parameters (the same format as Qualtrics)
@@ -167,11 +171,11 @@ class SurveyJSView extends StyleView
         $redirect_at_end = preg_replace('/^#+/', '', $this->redirect_at_end); // remove the first #
         $redirect_at_end = $this->model->get_link_url(str_replace("/", "", $redirect_at_end));
         $style['redirect_at_end']['content'] = str_replace(BASE_PATH, "", $redirect_at_end);
-        $style['survey_json'] = $this->survey['content'] ? json_decode($this->survey['content']) : [];
+        $style['survey_json'] = isset($this->survey['content']) && $this->survey['content'] ? json_decode($this->survey['content']) : [];
         $style['alert'] = '';
         $style['show_survey'] = true;
         $style['last_response'] = $this->survey['last_response'] ?? [];
-        $style['survey_generated_id'] = $this->survey['survey_generated_id'];
+        $style['survey_generated_id'] = isset($this->survey['survey_generated_id']) ? $this->survey['survey_generated_id'] : null;
         if ($this->model->is_survey_active()) {
             if ($this->model->is_survey_done()) {
                 $style['alert'] = $this->label_survey_done;
