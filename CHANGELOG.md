@@ -1,3 +1,6 @@
+# v1.3.6 - Requires SelfHelp v7.0.0+
+ - add computability with `user_input` refactoring from SelfHelp v7.0.0 
+
 # v1.3.5
 ### Bugfix
  - properly save `Boolean` JSON fields from SurveyJS creator to the DB

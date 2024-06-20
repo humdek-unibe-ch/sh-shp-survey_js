@@ -118,13 +118,13 @@ class SurveyJSModel extends StyleModel
     private function is_survey_done_by_user()
     {
         $form_name = $this->get_raw_survey()['survey_generated_id'];
-        $form_id = $this->user_input->get_form_id($form_name, FORM_EXTERNAL);
+        $form_id = $this->user_input->get_dataTable_id($form_name);
         $filter = ' AND trigger_type = "' . actionTriggerTypes_finished . '"'; // the survey should be completed
         if (!$form_id) {
             // if no form, the survey was never filled, so it is not done
             return false;
         }
-        $res = $this->user_input->get_data($form_id, $filter, true, FORM_EXTERNAL, $_SESSION['id_user'], true);
+        $res = $this->user_input->get_data($form_id, $filter, true, $_SESSION['id_user'], true);
         return $res;
     }
 
@@ -136,10 +136,10 @@ class SurveyJSModel extends StyleModel
     private function is_survey_done_by_user_for_schedule()
     {
         $form_name = $this->get_raw_survey()['survey_generated_id'];
-        $form_id = $this->user_input->get_form_id($form_name, FORM_EXTERNAL);
+        $form_id = $this->user_input->get_dataTable_id($form_name);
         $filter = ' AND trigger_type = "' . actionTriggerTypes_finished . '"'; // the survey should be completed
         $filter = $filter  . ' AND (entry_date BETWEEN "' . $this->start_time_calced . '" AND "' . $this->end_time_calced . '")'; // the survey should be completed between the time
-        $res = $this->user_input->get_data($form_id, $filter, true, FORM_EXTERNAL, $_SESSION['id_user'], true);
+        $res = $this->user_input->get_data($form_id, $filter, true, $_SESSION['id_user'], true);
         return $res;
     }
 
@@ -188,9 +188,9 @@ class SurveyJSModel extends StyleModel
         if (!$survey) {
             return false;
         }
-        $form_id = $this->user_input->get_form_id($survey['survey_generated_id'], FORM_EXTERNAL);
+        $form_id = $this->user_input->get_dataTable_id($survey['survey_generated_id']);
         if ($form_id) {
-            $last_response = $this->user_input->get_data($form_id, 'ORDER BY record_id DESC', true, FORM_EXTERNAL, $_SESSION['id_user'], true);
+            $last_response = $this->user_input->get_data($form_id, 'ORDER BY record_id DESC', true, $_SESSION['id_user'], true);
         }
         if (isset($last_response['_json'])) {
             $last_response_json = json_decode($last_response['_json'], true);
@@ -218,9 +218,9 @@ class SurveyJSModel extends StyleModel
         if (isset($survey['survey_generated_id']) && isset($data['survey_generated_id']) && $data['survey_generated_id'] == $survey['survey_generated_id']) {
             if (isset($data['trigger_type'])) {
                 if ($data['trigger_type'] == actionTriggerTypes_started) {
-                    return $this->user_input->save_external_data(transactionBy_by_user, $data['survey_generated_id'], $data);
+                    return $this->user_input->save_data(transactionBy_by_user, $data['survey_generated_id'], $data);
                 } else {
-                    return $this->user_input->save_external_data(transactionBy_by_user, $data['survey_generated_id'], $data, array(
+                    return $this->user_input->save_data(transactionBy_by_user, $data['survey_generated_id'], $data, array(
                         "response_id" => $data['response_id']
                     ));
                 }
