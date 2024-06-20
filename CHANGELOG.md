@@ -1,4 +1,4 @@
-# v1.3.6 - Requires SelfHelp v7.0.0+
+# v1.3.6 - Requires SelfHelp v7.0.0+ (Not released)
  - add computability with `user_input` refactoring from SelfHelp v7.0.0 
 
 # v1.3.5
