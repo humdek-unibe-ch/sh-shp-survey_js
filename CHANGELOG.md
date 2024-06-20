@@ -3,6 +3,7 @@
  - add computability with `user_input` refactoring from SelfHelp v7.0.0 
  - when a new survey is created it is automatically added to the dataTables.
  - when a survey `title` is set, it is used for `displayName` for the `dataTables`
+ - #10 remove `user_name` from `dashboard`
 ### Bugfix
  - check if there is a selected survey in the style before trying to save
  - do not try to save the survey in CMS mode

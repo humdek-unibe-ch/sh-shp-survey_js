@@ -131,9 +131,6 @@ function initSurveyDashboardTable(survey_results) {
                     name: "code",
                     type: "text"
                 }, {
-                    name: "user_name",
-                    type: "text"
-                }, {
                     name: "pageNo",
                     type: "text"
                 }, {
