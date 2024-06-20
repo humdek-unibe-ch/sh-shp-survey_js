@@ -45,7 +45,7 @@ function initSurveyJS() {
             }
             saveSurveyJS(survey);
         }
-        if (!survey.data['response_id']) {
+        if (!survey.data['response_id'] && surveyFields['survey_generated_id']) {
             var dateNow = Date.now();
             const uniqueId = dateNow.toString(36) + Math.random().toString(36).substring(2, 7);
             survey.setValue('response_id', "RJS_" + uniqueId.substring(uniqueId.length - 16));
@@ -254,7 +254,7 @@ function saveSurveyJS(survey, newPageNo) {
             type: 'post',
             url: window.location,
             data: data,
-            success: function (r) {                
+            success: function (r) {    
                 if (r.result) {
                     resolve(true);
                 } else {

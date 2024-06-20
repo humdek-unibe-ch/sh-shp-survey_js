@@ -1,5 +1,8 @@
 # v1.3.6 - Requires SelfHelp v7.0.0+ (Not released)
+### New Features
  - add computability with `user_input` refactoring from SelfHelp v7.0.0 
+### Bugfix
+ - check if there is selected survey in the style before trying to save
 
 # v1.3.5
 ### Bugfix
