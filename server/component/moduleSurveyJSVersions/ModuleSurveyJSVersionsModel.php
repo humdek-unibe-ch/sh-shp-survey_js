@@ -21,9 +21,9 @@ class ModuleSurveyJSVersionsModel extends ModuleSurveyJSModel
      *  An associative array holding the different available services. See the
      *  class definition BasePage for a list of all services.
      */
-    public function __construct($services)
+    public function __construct($services, $sid)
     {
-        parent::__construct($services);
+        parent::__construct($services, $sid);
     }
 
     /**

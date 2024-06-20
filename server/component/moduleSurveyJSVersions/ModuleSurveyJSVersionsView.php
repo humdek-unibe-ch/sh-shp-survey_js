@@ -42,7 +42,7 @@ class ModuleSurveyJSVersionsView extends BaseView
         $this->sid = $sid;
         if ($this->sid) {
             $this->survey_versions = $this->model->get_survey_versions($this->sid);
-            $this->survey = $this->model->get_survey($this->sid);
+            $this->survey = $this->model->get_survey();
         }
     }
 

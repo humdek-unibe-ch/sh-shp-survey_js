@@ -29,7 +29,7 @@ class ModuleSurveyJSVersionsComponent extends BaseComponent
     public function __construct($services, $params)
     {
         $sid = isset($params['sid']) ? intval($params['sid']) : null;
-        $model = new ModuleSurveyJSVersionsModel($services);
+        $model = new ModuleSurveyJSVersionsModel($services, $sid);
         $controller = new ModuleSurveyJSVersionsController($model, $sid);
         $view = new ModuleSurveyJSVersionsView($model, $controller, $sid);
         parent::__construct($model, $view, $controller);

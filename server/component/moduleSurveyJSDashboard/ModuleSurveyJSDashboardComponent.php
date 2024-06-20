@@ -29,7 +29,7 @@ class ModuleSurveyJSDashboardComponent extends BaseComponent
     public function __construct($services, $params)
     {
         $sid = isset($params['sid']) ? intval($params['sid']) : null;
-        $model = new ModuleSurveyJSDashboardModel($services);
+        $model = new ModuleSurveyJSDashboardModel($services, $sid);
         $controller = new ModuleSurveyJSDashboardController($model, $sid);
         if (isset($_POST['mode']) && $_POST['mode'] == SURVEY_JS_FETCH_RESULTS) {
             header("Content-Type: application/json");

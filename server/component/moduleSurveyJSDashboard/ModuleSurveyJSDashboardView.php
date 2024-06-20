@@ -36,7 +36,7 @@ class ModuleSurveyJSDashboardView extends BaseView
         parent::__construct($model, $controller);
         $this->sid = $sid;
         if ($this->sid) {
-            $this->survey = $this->model->get_survey($this->sid);
+            $this->survey = $this->model->get_survey();
         }
     }
 

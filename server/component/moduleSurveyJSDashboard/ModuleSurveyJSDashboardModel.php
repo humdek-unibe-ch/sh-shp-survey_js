@@ -21,9 +21,9 @@ class ModuleSurveyJSDashboardModel extends ModuleSurveyJSModel
      *  An associative array holding the different available services. See the
      *  class definition BasePage for a list of all services.
      */
-    public function __construct($services)
+    public function __construct($services, $sid)
     {
-        parent::__construct($services);
+        parent::__construct($services, $sid);
     }
 
     /**
@@ -58,7 +58,7 @@ class ModuleSurveyJSDashboardModel extends ModuleSurveyJSModel
             return array();
         } else {
             $survey_results = array();
-            $survey = $this->get_survey($sid);
+            $survey = $this->get_survey();
             $form_id = $this->user_input->get_dataTable_id($survey['survey_generated_id']);
             if ($form_id) {
                 $res =  $this->user_input->get_data($form_id, '', false);

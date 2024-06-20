@@ -109,7 +109,10 @@ class ModuleSurveyJSModel extends BaseModel
      */
     public function fetch_survey($sid)
     {
-        $sql = "SELECT *, JSON_UNQUOTE(JSON_EXTRACT(config, '$.title')) AS survey_name
+        $sql = "SELECT *, IFNULL(
+                    JSON_UNQUOTE(JSON_EXTRACT(config, '$.title.default')), 
+                    JSON_UNQUOTE(JSON_EXTRACT(config, '$.title'))
+                ) AS survey_name
                 FROM surveys
                 WHERE id = :id";
         return $this->db->query_db_first($sql, array(':id' => $sid));

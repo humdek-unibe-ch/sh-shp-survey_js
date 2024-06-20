@@ -6,6 +6,7 @@
 ### Bugfix
  - check if there is a selected survey in the style before trying to save
  - do not try to save the survey in CMS mode
+ - properly show the survey name in the dashboard
 
 # v1.3.5
 ### Bugfix
