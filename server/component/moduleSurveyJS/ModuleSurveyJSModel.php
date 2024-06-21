@@ -58,6 +58,7 @@ class ModuleSurveyJSModel extends BaseModel
                 $sid
             );
             $this->db->commit();
+            $this->db->clear_cache($this->db->get_cache()::CACHE_TYPE_SECTIONS);
             return $sid;
         } catch (Exception $e) {
             $this->db->rollback();
@@ -93,6 +94,7 @@ class ModuleSurveyJSModel extends BaseModel
             }
             $this->set_dataTables_displayName($this->survey['survey_generated_id'], $displayName);
             $this->db->commit();
+            $this->db->clear_cache($this->db->get_cache()::CACHE_TYPE_SECTIONS);
             return $sid;
         } catch (Exception $e) {
             $this->db->rollback();
