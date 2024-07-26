@@ -1,4 +1,4 @@
-# v1.3.6 - Requires SelfHelp v7.0.0+ (Not released)
+# v1.3.6 - Requires SelfHelp v7.0.0+
 ### New Features
  - add computability with `user_input` refactoring from SelfHelp v7.0.0 
  - when a new survey is created it is automatically added to the dataTables.
