@@ -161,6 +161,7 @@ class ModuleSurveyJSView extends BaseView
                 __DIR__ . "/js/5_survey-creator-knockout.min.js",
                 __DIR__ . "/js/6_survey-creator-core.i18n.min.js",
                 __DIR__ . "/js/7_survey.i18n.min.js",
+                __DIR__ . "/js/7_surveyjs-widgets.min.js",
                 __DIR__ . "/js/8_survey.js",
             );
         }

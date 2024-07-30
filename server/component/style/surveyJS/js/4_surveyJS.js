@@ -15,6 +15,7 @@ function initSurveyJS() {
         $(this).removeAttr('data-survey-js');
         $(this).removeAttr('data-survey-js-fields');
         $(this).removeAttr('data-survey-js-last-response');
+        window['surveyjs-widgets'].microphone(Survey);
         Survey.StylesManager.applyTheme(surveyFields['survey_js_theme']);
         var survey = new Survey.Model(surveyContent);
         var currentLocale = $(this).attr("class").split(" ").filter(function (className) {

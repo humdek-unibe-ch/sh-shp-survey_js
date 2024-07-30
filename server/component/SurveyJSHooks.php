@@ -180,7 +180,7 @@ class SurveyJSHooks extends BaseHooks
                     // enable only for 2 pages
                     $value = str_replace("'unsafe-inline'", "'unsafe-inline' 'unsafe-eval'", $value);
                 } else if ($this->router->route && $this->page_has_survey_js($this->router->route['name'])) {
-                    $value = str_replace("'unsafe-inline'", "'unsafe-inline' 'unsafe-eval'", $value);
+                    $value = str_replace("'unsafe-inline'", "'unsafe-inline' 'unsafe-eval'; media-src 'self' data:;", $value);
                 } else if (
                     $this->router->route && in_array($this->router->route['name'], array("cmsSelect", "cmsUpdate")) &&
                     isset($this->router->route['params']['pid']) && $this->page_has_survey_js($this->router->route['name'], $this->router->route['params']['pid'])

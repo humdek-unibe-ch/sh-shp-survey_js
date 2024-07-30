@@ -6,6 +6,7 @@ const creatorOptions = {
 Survey.setLicenseKey(
     "ZWUzYjk4NjctYmYzMi00ZmFiLWFlODQtMGE4OTBjMTNiYTRkOzE9MjAyNC0wNC0yNSwyPTIwMjQtMDQtMjUsND0yMDI0LTA0LTI1"
 );
+window['surveyjs-widgets'].microphone(Survey);
 const creator = new SurveyCreator.SurveyCreator(creatorOptions);
 var published_json = '';
 

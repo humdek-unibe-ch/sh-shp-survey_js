@@ -202,6 +202,7 @@ class SurveyJSView extends StyleView
                 __DIR__ . "/js/1_survey.jquery.min.js",
                 __DIR__ . "/js/2_jspdf.umd.min.js",
                 __DIR__ . "/js/3_survey.pdf.min.js",
+                __DIR__ . "/js/3_surveyjs-widgets.min.js",
                 __DIR__ . "/js/4_surveyJS.js"
             );
         }
