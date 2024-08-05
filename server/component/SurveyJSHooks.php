@@ -178,7 +178,7 @@ class SurveyJSHooks extends BaseHooks
             if (strpos($value, 'script-src') !== false) {
                 if ($this->router->route && in_array($this->router->route['name'], array(PAGE_SURVEY_JS_MODE, PAGE_SURVEY_JS_DASHBOARD))) {
                     // enable only for 2 pages
-                    $value = str_replace("'unsafe-inline'", "'unsafe-inline' 'unsafe-eval'", $value);
+                    $value = str_replace("'unsafe-inline' 'sha256-KbpLpBgfBK+HQ8c31OaBfQvw4Oeuybsrqg6gs+3K1fo='", "'unsafe-inline' 'unsafe-eval' 'sha256-KbpLpBgfBK+HQ8c31OaBfQvw4Oeuybsrqg6gs+3K1fo='; media-src 'self' blob: data:", $value);
                 } else if ($this->router->route && $this->page_has_survey_js($this->router->route['name'])) {
                     $value = str_replace("'unsafe-inline'", "'unsafe-inline' 'unsafe-eval'; media-src 'self' data:;", $value);
                 } else if (
@@ -187,11 +187,10 @@ class SurveyJSHooks extends BaseHooks
                 ) {
                     $value = str_replace("'unsafe-inline'", "'unsafe-inline' 'unsafe-eval'", $value);
                 }
-                $resArr[$key] = $value;
             } else if (strpos($value, 'font-src') !== false) {
                 $value = str_replace("'self'", "'self' https://fonts.gstatic.com", $value);
-                $resArr[$key] = $value;
             }
+            $resArr[$key] = $value;
         }
         return implode(";", $resArr);
     }

@@ -1,8 +1,9 @@
 # v1.3.7
 ### New Features
  - #19 - add voice record question
+ - load the voice record questions in the dashboard
 
- - Requires SelfHelp v7.0.0+
+# v1.3.6 - Requires SelfHelp v7.0.0+
 ### New Features
  - add computability with `user_input` refactoring from SelfHelp v7.0.0 
  - when a new survey is created it is automatically added to the dataTables.

@@ -52,6 +52,7 @@ function initSurveyDashboard(survey_results) {
         Survey.setLicenseKey(
             "ZWUzYjk4NjctYmYzMi00ZmFiLWFlODQtMGE4OTBjMTNiYTRkOzE9MjAyNC0wNC0yNSwyPTIwMjQtMDQtMjUsND0yMDI0LTA0LTI1"
         );
+        window['surveyjs-widgets'].microphone(Survey);
 
         const surveyJSDashboard = new SurveyAnalytics.VisualizationPanel(
             survey.getAllQuestions(),
@@ -163,6 +164,8 @@ function initSurveyDashboardTable(survey_results) {
             survey_results,
             dashboardOptions
         );
+        console.log(surveyJSDashboardTable);
+
 
         if (!!localStorageSurveyDashboardTable) {
             surveyJSDashboardTable.state = JSON.parse(localStorageSurveyDashboardTable);
@@ -172,8 +175,52 @@ function initSurveyDashboardTable(survey_results) {
         });
 
         surveyJSDashboardTable.render("surveyJSTable");
-        setTimeout(() => {
-            surveyJSDashboardTable.layout();
-        }, 10);
+
+        var microphoneQuestions = getMicrophoneQuestions(survey);
+
+        // Iterate through the elements if needed
+        microphoneQuestions.forEach(microphoneQuestion => {
+            var elements = $('[tabulator-field="' + microphoneQuestion + '"]');
+            elements.each(function () {
+                var element = $(this);
+                // Do something with each element
+                var audio = $(element).attr('title');
+                if (audio.includes('data:audio')) {
+                    $(element).html('<audio class="surveyjs-dashboard-microphone" controls src="' + audio + '"></audio>');
+                }
+            });
+        });
+
     }
+}
+
+/**
+ * @brief Retrieves the names of all microphone questions in a SurveyJS survey.
+ *
+ * This function iterates through all the questions in the provided survey and collects
+ * the names of those questions that are of the type 'microphone'.
+ *
+ * @param {Survey.Model} survey - The SurveyJS survey model instance.
+ * @returns {Array<string>} An array containing the names of the microphone questions.
+ *
+ * @example
+ * // Assuming you have a SurveyJS model instance named 'survey'
+ * const survey = new Survey.Model(surveyJson);
+ * const microphoneQuestionNames = getMicrophoneQuestions(survey);
+ * console.log(microphoneQuestionNames);
+ */
+function getMicrophoneQuestions(survey) {
+    // Initialize an array to store the microphone questions
+    const microphoneQuestions = [];
+
+    // Iterate through all the questions in the survey
+    survey.getAllQuestions().forEach((question) => {
+        // Check if the question type is 'microphone'
+        if (question.getType() === 'microphone') {
+            // Add the question to the array
+            microphoneQuestions.push(question.name);
+        }
+    });
+
+    return microphoneQuestions;
 }
