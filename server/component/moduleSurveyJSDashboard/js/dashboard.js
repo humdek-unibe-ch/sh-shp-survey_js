@@ -164,8 +164,6 @@ function initSurveyDashboardTable(survey_results) {
             survey_results,
             dashboardOptions
         );
-        console.log(surveyJSDashboardTable);
-
 
         if (!!localStorageSurveyDashboardTable) {
             surveyJSDashboardTable.state = JSON.parse(localStorageSurveyDashboardTable);

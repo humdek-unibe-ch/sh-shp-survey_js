@@ -1,3 +1,7 @@
+# v1.3.8
+### Bugfix
+ - properly set `csp` rules for the voice recording
+
 # v1.3.7
 ### New Features
  - #19 - add voice record question

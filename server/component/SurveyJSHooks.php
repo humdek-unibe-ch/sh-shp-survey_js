@@ -178,9 +178,9 @@ class SurveyJSHooks extends BaseHooks
             if (strpos($value, 'script-src') !== false) {
                 if ($this->router->route && in_array($this->router->route['name'], array(PAGE_SURVEY_JS_MODE, PAGE_SURVEY_JS_DASHBOARD))) {
                     // enable only for 2 pages
-                    $value = str_replace("'unsafe-inline' 'sha256-KbpLpBgfBK+HQ8c31OaBfQvw4Oeuybsrqg6gs+3K1fo='", "'unsafe-inline' 'unsafe-eval' 'sha256-KbpLpBgfBK+HQ8c31OaBfQvw4Oeuybsrqg6gs+3K1fo='; media-src 'self' blob: data:", $value);
+                    $value = str_replace("'unsafe-inline'", "'unsafe-inline' 'unsafe-eval'", $value);
                 } else if ($this->router->route && $this->page_has_survey_js($this->router->route['name'])) {
-                    $value = str_replace("'unsafe-inline'", "'unsafe-inline' 'unsafe-eval'; media-src 'self' data:;", $value);
+                    $value = str_replace("'unsafe-inline'", "'unsafe-inline' 'unsafe-eval'", $value);
                 } else if (
                     $this->router->route && in_array($this->router->route['name'], array("cmsSelect", "cmsUpdate")) &&
                     isset($this->router->route['params']['pid']) && $this->page_has_survey_js($this->router->route['name'], $this->router->route['params']['pid'])
@@ -189,8 +189,14 @@ class SurveyJSHooks extends BaseHooks
                 }
             } else if (strpos($value, 'font-src') !== false) {
                 $value = str_replace("'self'", "'self' https://fonts.gstatic.com", $value);
+            } else if (strpos($value, 'media-src') !== false) {
+                $value = str_replace("media-src", "media-src 'self' data:;", $value);
             }
             $resArr[$key] = $value;
+        }
+        if (strpos(strval($res), 'media-src') === false) {
+            // there is no media src, set it
+            $resArr[$key] = "media-src 'self' data:;";
         }
         return implode(";", $resArr);
     }
