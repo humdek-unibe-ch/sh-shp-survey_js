@@ -196,13 +196,11 @@ class SurveyJSModel extends StyleModel
             $last_response_json = json_decode($last_response['_json'], true);
             $survey['last_response'] = $last_response_json['trigger_type'] != 'finished' ? $last_response_json : array();
         }
-        $user_name = $this->db->fetch_user_name();
-        $user_code = $this->db->get_user_code();
         $survey['content'] = isset($survey['published']) ? $survey['published'] : '';
         $survey['name'] = 'survey-js';
         $data_config = $this->get_db_field('data_config');
         $survey['section_name'] = $this->section_name;
-        $survey['content'] = $this->calc_dynamic_values($survey, $data_config, $user_name, $user_code);
+        $survey['content'] = $this->calc_dynamic_values($survey, $data_config);
         return $survey;
     }
 
