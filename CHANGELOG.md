@@ -1,3 +1,7 @@
+# v1.3.9
+### Bugfix
+ - properly load dynamic values
+
 # v1.3.8
 ### Bugfix
  - properly set `csp` rules for the voice recording
