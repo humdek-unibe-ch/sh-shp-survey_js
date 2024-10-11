@@ -1,3 +1,8 @@
+# v1.3.10
+### Bugfix
+ - properly update UI after `publish`
+ - send the survey as string instead of JSON object which is accepted as an array and creates many `input_vars`
+
 # v1.3.9
 ### Bugfix
  - properly load dynamic values

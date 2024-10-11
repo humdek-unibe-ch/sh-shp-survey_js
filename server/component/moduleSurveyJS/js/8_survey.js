@@ -84,7 +84,6 @@ function initPublishSurvey() {
 function publishSurvey() {
     var surveyJson = JSON.parse(creator.text);
     var survey_name = surveyJson.title.default || surveyJson.title;
-    console.log(JSON.parse(creator.text));
     if (survey_name) {
         $.confirm({
             title: 'Publish survey: <code>' + survey_name + "</code>",
@@ -96,12 +95,8 @@ function publishSurvey() {
                         window.location,
                         { mode: "publish" },
                         function (data) {
-                            if (data) {
-                                ['#survey-js-publish', '#survey-js-publish-at'].forEach(element => {
-                                    $(element).replaceWith($(data).find(element));
-                                });
-                                initPublishSurvey();
-                                published_json = JSON.stringify($(data).find("#surveyJSCreator").data("config-published")); //after the publish take the new json as published
+                            if (data) {                                
+                                location.reload();
                             }
                             else {
                                 alert("Error while autosaving the Survey");
@@ -126,7 +121,7 @@ function publishSurvey() {
 function autoSaveTheSurvey(surveyJson) {
     $.post(
         window.location,
-        { surveyJson: surveyJson },
+        { surveyJson: JSON.stringify(surveyJson) },
         function (data) {
             if (data) {
                 if (JSON.stringify(surveyJson) != published_json) {

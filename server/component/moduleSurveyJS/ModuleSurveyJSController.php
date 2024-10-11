@@ -60,7 +60,7 @@ class ModuleSurveyJSController extends BaseController
                 header('Location: ' . $url);
             }
         } else if ($mode === UPDATE && $sid > 0 && isset($_POST['surveyJson'])) {
-            $adjustJson = $this->convertStringToBoolean($_POST['surveyJson']); // convert all booleans form string to bool
+            $adjustJson = $this->convertStringToBoolean(json_decode($_POST['surveyJson'], true)); // convert all booleans form string to bool
             $this->model->update_survey($sid, $adjustJson);
         } else if ($mode === UPDATE && $sid > 0 && isset($_POST['mode']) && $_POST['mode'] == 'publish') {
             $this->model->publish_survey($sid);
