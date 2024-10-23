@@ -37,7 +37,8 @@ function initSurveyJS() {
                 var timeoutExpired = checkTimeout(surveyFields['timeout'], notCompletedSurvey);
                 if (!timeoutExpired) {
                     // load the survey if not expired based on the configuration
-                    survey.data = notCompletedSurvey;
+                    survey.mergeData(notCompletedSurvey);
+                    console.log(survey.data);
                     survey.setValue('trigger_type', 'updated');
                     if (survey.data.pageNo) {
                         survey.currentPageNo = survey.data.pageNo;

@@ -1,3 +1,7 @@
+# v1.3.11
+### Bugfix
+ - [bug](https://github.com/humdek-unibe-ch/sh-selfhelp_app/issues/28) - merge the survey data. The default value is kept if not set by the user.
+
 # v1.3.10
 ### Bugfix
  - properly update UI after `publish`
