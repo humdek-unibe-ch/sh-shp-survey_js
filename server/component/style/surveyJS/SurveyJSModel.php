@@ -62,7 +62,7 @@ class SurveyJSModel extends StyleModel
      * @param array $entry_record
      *  An array that contains the entry record information.
      */
-    public function __construct($services, $id, $params, $id_page = -1, $entry_record)
+    public function __construct($services, $id, $params, $id_page = -1, $entry_record = array())
     {
         parent::__construct($services, $id, $params, $id_page, $entry_record);
         $this->once_per_schedule = $this->get_db_field('once_per_schedule', 0);
