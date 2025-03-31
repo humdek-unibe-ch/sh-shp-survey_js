@@ -12,6 +12,9 @@ function initSurveyJS() {
         const surveyContent = $(this).data('survey-js');
         const surveyFields = $(this).data('survey-js-fields');
         const lastResponse = $(this).data('survey-js-last-response');
+        console.log(surveyContent);
+        console.log(surveyFields);
+        console.log(lastResponse);
         $(this).removeAttr('data-survey-js');
         $(this).removeAttr('data-survey-js-fields');
         $(this).removeAttr('data-survey-js-last-response');

@@ -188,13 +188,17 @@ class SurveyJSModel extends StyleModel
         if (!$survey) {
             return false;
         }
-        $form_id = $this->user_input->get_dataTable_id($survey['survey_generated_id']);
-        if ($form_id) {
-            $last_response = $this->user_input->get_data($form_id, 'ORDER BY record_id DESC', true, $_SESSION['id_user'], true);
+        $id_dataTables = $this->user_input->get_dataTable_id($survey['survey_generated_id']);
+        if ($id_dataTables) {
+            $last_response = $this->user_input->get_data($id_dataTables, 'ORDER BY record_id DESC', true, $_SESSION['id_user'], true);
         }
         if (isset($last_response['_json'])) {
             $last_response_json = json_decode($last_response['_json'], true);
             $survey['last_response'] = $last_response_json['trigger_type'] != 'finished' ? $last_response_json : array();
+        }
+        $last_response = $this->load_response_survey_edit_mode($id_dataTables);
+        if($last_response) {
+            $survey['last_response'] = $last_response;
         }
         $survey['content'] = isset($survey['published']) ? $survey['published'] : '';
         $survey['name'] = 'survey-js';
@@ -320,6 +324,25 @@ class SurveyJSModel extends StyleModel
             }
         }
         return $return_files;
+    }
+
+    /**
+     * Load the last response for the survey in edit mode.
+     * 
+     * @param int $id_dataTables The ID of the data table.
+     * 
+     * @return array|false The last response data or false if no response is found.
+     */
+    private function load_response_survey_edit_mode($id_dataTables)
+    {
+        $own_entries_only = true;
+        if ($id_dataTables) {
+            $last_response = $this->user_input->get_data($id_dataTables, 'AND record_id = 1', $own_entries_only, $_SESSION['id_user'], true);
+        }
+        if (isset($last_response['_json'])) {
+            return json_decode($last_response['_json'], true);
+        }
+        return false;
     }
 }
 ?>

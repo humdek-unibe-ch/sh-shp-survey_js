@@ -1,3 +1,7 @@
+# v1.2.12 Not published
+### New Features
+ - load survey in edit mode
+
 # v1.3.11
 ### Bugfix
  - [bug](https://github.com/humdek-unibe-ch/sh-selfhelp_app/issues/28) - merge the survey data. The default value is kept if not set by the user.
