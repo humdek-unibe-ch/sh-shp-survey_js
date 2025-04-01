@@ -196,9 +196,11 @@ class SurveyJSModel extends StyleModel
             $last_response_json = json_decode($last_response['_json'], true);
             $survey['last_response'] = $last_response_json['trigger_type'] != 'finished' ? $last_response_json : array();
         }
-        $last_response = $this->load_response_survey_edit_mode($id_dataTables);
-        if($last_response) {
-            $survey['last_response'] = $last_response;
+        if($this->entry_record) {
+            $last_response = $this->load_response_survey_edit_mode($id_dataTables);
+            if($last_response) {
+                $survey['last_response'] = $last_response;
+            }
         }
         $survey['content'] = isset($survey['published']) ? $survey['published'] : '';
         $survey['name'] = 'survey-js';
@@ -336,8 +338,8 @@ class SurveyJSModel extends StyleModel
     private function load_response_survey_edit_mode($id_dataTables)
     {
         $own_entries_only = true;
-        if ($id_dataTables) {
-            $last_response = $this->user_input->get_data($id_dataTables, 'AND record_id = 1', $own_entries_only, $_SESSION['id_user'], true);
+        if ($id_dataTables && isset($this->entry_record['record_id'])) {
+            $last_response = $this->user_input->get_data($id_dataTables, 'AND record_id  = ' . $this->entry_record['record_id'], $own_entries_only, $_SESSION['id_user'], true);
         }
         if (isset($last_response['_json'])) {
             return json_decode($last_response['_json'], true);
