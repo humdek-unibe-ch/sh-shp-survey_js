@@ -45,6 +45,11 @@ class SurveyJSModel extends StyleModel
      */
     private $end_time_calced;
 
+    /**
+     * If checked a person can edit only their own responses
+     */
+    private $own_entries_only;
+
     /* Constructors ***********************************************************/
 
     /**
@@ -67,6 +72,7 @@ class SurveyJSModel extends StyleModel
         parent::__construct($services, $id, $params, $id_page, $entry_record);
         $this->once_per_schedule = $this->get_db_field('once_per_schedule', 0);
         $this->once_per_user = $this->get_db_field('once_per_user', 0);
+        $this->own_entries_only = $this->get_db_field('own_entries_only', 1);
         $this->start_time = $this->get_db_field('start_time', '00:00');
         $this->end_time = $this->get_db_field('end_time', '00:00');
         $this->calc_times();
@@ -196,9 +202,9 @@ class SurveyJSModel extends StyleModel
             $last_response_json = json_decode($last_response['_json'], true);
             $survey['last_response'] = $last_response_json['trigger_type'] != 'finished' ? $last_response_json : array();
         }
-        if($this->entry_record) {
+        if ($this->entry_record) {
             $last_response = $this->load_response_survey_edit_mode($id_dataTables);
-            if($last_response) {
+            if ($last_response) {
                 $survey['last_response'] = $last_response;
             }
         }
@@ -226,7 +232,7 @@ class SurveyJSModel extends StyleModel
                 } else {
                     return $this->user_input->save_data(transactionBy_by_user, $data['survey_generated_id'], $data, array(
                         "response_id" => $data['response_id']
-                    ));
+                    ), $this->own_entries_only);
                 }
             }
         }
@@ -337,9 +343,8 @@ class SurveyJSModel extends StyleModel
      */
     private function load_response_survey_edit_mode($id_dataTables)
     {
-        $own_entries_only = true;
         if ($id_dataTables && isset($this->entry_record['record_id'])) {
-            $last_response = $this->user_input->get_data($id_dataTables, 'AND record_id  = ' . $this->entry_record['record_id'], $own_entries_only, $_SESSION['id_user'], true);
+            $last_response = $this->user_input->get_data($id_dataTables, 'AND record_id  = ' . $this->entry_record['record_id'], $this->own_entries_only, $this->own_entries_only ? $_SESSION['id_user'] : null, true);
         }
         if (isset($last_response['_json'])) {
             return json_decode($last_response['_json'], true);

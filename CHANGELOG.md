@@ -1,6 +1,7 @@
-# v1.2.12 Not published
+# v1.4.0 Requires SelfHelp v7.3.1+ Not published
 ### New Features
  - load survey in edit mode
+ - add `own_entries_only` to style `surveyJS`. If enabled a person can edit only their own responses, otherwise they can edit a foreign response if they have access
 
 # v1.3.11
 ### Bugfix
