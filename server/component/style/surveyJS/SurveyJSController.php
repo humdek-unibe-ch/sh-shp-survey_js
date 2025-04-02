@@ -25,6 +25,10 @@ class SurveyJSController extends BaseController
     public function __construct($model)
     {
         parent::__construct($model);
+        $router = $model->get_services()->get_router();
+        if(is_array($router->route['params']) && isset($router->route['params']['data'])){
+            return $model->return_data($router->route['params']['data']);
+        }
         if (isset($_POST['trigger_type'])) {
             // survey data is sent
             $data = array_merge([], $_POST); //create a copy

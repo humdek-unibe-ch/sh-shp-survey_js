@@ -351,5 +351,16 @@ class SurveyJSModel extends StyleModel
         }
         return false;
     }
+    
+    public function return_data($key)
+    {
+        $result = array();
+        if (isset($this->interpolation_data['data_config_retrieved']) && isset($this->interpolation_data['data_config_retrieved'][$key])) {    
+            $result = $this->interpolation_data['data_config_retrieved'][$key];
+        }
+        header('Content-Type: application/json');
+        echo json_encode($result);
+        exit(0);
+    }
 }
 ?>
