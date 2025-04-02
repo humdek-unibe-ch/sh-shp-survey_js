@@ -346,8 +346,12 @@ class SurveyJSModel extends StyleModel
         if ($id_dataTables && isset($this->entry_record['record_id'])) {
             $last_response = $this->user_input->get_data($id_dataTables, 'AND record_id  = ' . $this->entry_record['record_id'], $this->own_entries_only, $this->own_entries_only ? $_SESSION['id_user'] : null, true);
         }
-        if (isset($last_response['_json'])) {
-            return json_decode($last_response['_json'], true);
+        if (isset($last_response['_json'])) {            
+            $res = json_decode($last_response['_json'], true);
+            if($res['trigger_type'] == actionTriggerTypes_finished) {
+                $res['pageNo'] = '0';
+            }
+            return $res;
         }
         return false;
     }

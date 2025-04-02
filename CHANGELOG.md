@@ -3,6 +3,7 @@
  - load survey in edit mode
  - add `own_entries_only` to style `surveyJS`. If enabled a person can edit only their own responses, otherwise they can edit a foreign response if they have access
  - load dropdown values from restful service. When creating a page for the survey it should be advanced example: /survey-js/`[v:data]?`where data will be variable name that will search for the retrieved data. The retrieved data should be in JSON format. Do not use scope in the data config. Then in SurveyJS, go to `Choices from RESTful service` set the url of the survey where is, eg: `test.com/survey-js/Task` where the survey is on page survey-js and `Task` is the name of the table. Then in the `values` set the table columns which should be the value and then in `display text` set the column for display text.
+ - always start survey form page `0` on edit mode when is in status `finished`
 
 
 # v1.3.11
