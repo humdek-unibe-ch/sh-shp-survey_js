@@ -50,6 +50,11 @@ class SurveyJSModel extends StyleModel
      */
     private $own_entries_only;
 
+    /**
+     * JSON object where can be defined global translation keys and use the key to load the proper translation based on the selected language. A key is accessed by {{key_name}}, and this will be replaced with the value for the selected language
+     */
+    private $dynamic_replacement;
+
     /* Constructors ***********************************************************/
 
     /**
@@ -75,6 +80,7 @@ class SurveyJSModel extends StyleModel
         $this->own_entries_only = $this->get_db_field('own_entries_only', 1);
         $this->start_time = $this->get_db_field('start_time', '00:00');
         $this->end_time = $this->get_db_field('end_time', '00:00');
+        $this->dynamic_replacement = $this->get_db_field('dynamic_replacement', '');
         $this->calc_times();
     }
 
@@ -213,6 +219,9 @@ class SurveyJSModel extends StyleModel
         $data_config = $this->get_db_field('data_config');
         $survey['section_name'] = $this->section_name;
         $survey['content'] = $this->calc_dynamic_values($survey, $data_config);
+        if($this->dynamic_replacement){
+            $survey['content'] = json_encode($this->dynamic_replacement);
+        }
         return $survey;
     }
 
