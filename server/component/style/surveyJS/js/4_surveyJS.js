@@ -16,8 +16,10 @@ function initSurveyJS() {
         $(this).removeAttr('data-survey-js-fields');
         $(this).removeAttr('data-survey-js-last-response');
         window['surveyjs-widgets'].microphone(Survey);
+        expandSurveyJsForSelfhelp();
         Survey.StylesManager.applyTheme(surveyFields['survey_js_theme']);
-        var survey = new Survey.Model(surveyContent);
+        console.log(surveyContent);
+        var survey = new Survey.Model(surveyContent);        
         var currentLocale = $(this).attr("class").split(" ").filter(function (className) {
             return className.startsWith("selfHelp-locale-");
         });
@@ -75,12 +77,25 @@ function initSurveyJS() {
         }
         $(this).children(".selfHelp-survey-js").first().Survey({ model: survey });
         survey.onCurrentPageChanging.add(async function (sender, options) {
-            options.allow = surveyJSSavedSuccessfully;            
+
+            // Trigger only when going BACK
+            if (!options.isNextPage) {
+                const returningPage = options.newCurrentPage;
+                console.log(returningPage.resetOnBack);
+                if (returningPage && returningPage.getPropertyValue("resetOnBack")) {
+                    returningPage.questions.forEach(q => {
+                        console.log("Clearing", q.name);
+                        sender.clearValue(q.name);
+                    });
+                }
+            }
+
+            options.allow = surveyJSSavedSuccessfully;
             if (surveyJSSavedSuccessfully) {
                 // it was saved move to next page and mark the new page as not saved yet                
                 surveyJSSavedSuccessfully = false;
                 return;
-            }            
+            }
             var dateNow = Date.now();
             var meta = survey.getValue('_meta');
             meta['pages'][meta['pages'].length - 1]['end_time'] = new Date(dateNow);
@@ -95,7 +110,7 @@ function initSurveyJS() {
             saveSurveyJS(sender, survey.visiblePages.indexOf(options.newCurrentPage)).then((res) => {
                 if (res) {
                     surveyJSSavedSuccessfully = true;
-                    survey.currentPage = options.newCurrentPage;                    
+                    survey.currentPage = options.newCurrentPage;
                 }
             });
         });
@@ -255,7 +270,7 @@ function saveSurveyJS(survey, newPageNo) {
             type: 'post',
             url: window.location,
             data: data,
-            success: function (r) {    
+            success: function (r) {
                 if (r.result) {
                     resolve(true);
                 } else {
@@ -347,4 +362,13 @@ function dataNotSaved() {
         content: 'Data not saved!',
         type: "red",
     });
+}
+function expandSurveyJsForSelfhelp() {
+    Survey.Serializer.addProperty("page", {
+        name: "resetOnBack:boolean",
+        category: "SelfHelp",
+        default: false,
+        displayName: "Reset answers when returning to page",
+        description: "If enabled, all answers on this page will be cleared when the user navigates back to it."
+    });   
 }

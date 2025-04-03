@@ -6,6 +6,14 @@ const creatorOptions = {
 Survey.setLicenseKey(
     "ZWUzYjk4NjctYmYzMi00ZmFiLWFlODQtMGE4OTBjMTNiYTRkOzE9MjAyNC0wNC0yNSwyPTIwMjQtMDQtMjUsND0yMDI0LTA0LTI1"
 );
+Survey.Serializer.addProperty("page", {
+    name: "resetOnBack:boolean",
+    category: "SelfHelp",
+    default: false,
+    displayName: "Reset answers when returning to page",
+    description: "If enabled, all answers on this page will be cleared when the user navigates back to it."
+});
+
 window['surveyjs-widgets'].microphone(Survey);
 const creator = new SurveyCreator.SurveyCreator(creatorOptions);
 var published_json = '';
@@ -95,7 +103,7 @@ function publishSurvey() {
                         window.location,
                         { mode: "publish" },
                         function (data) {
-                            if (data) {                                
+                            if (data) {
                                 location.reload();
                             }
                             else {
