@@ -18,8 +18,7 @@ function initSurveyJS() {
         window['surveyjs-widgets'].microphone(Survey);
         expandSurveyJsForSelfhelp();
         Survey.StylesManager.applyTheme(surveyFields['survey_js_theme']);
-        console.log(surveyContent);
-        var survey = new Survey.Model(surveyContent);        
+        var survey = new Survey.Model(surveyContent);
         var currentLocale = $(this).attr("class").split(" ").filter(function (className) {
             return className.startsWith("selfHelp-locale-");
         });
@@ -81,11 +80,18 @@ function initSurveyJS() {
             // Trigger only when going BACK
             if (!options.isNextPage) {
                 const returningPage = options.newCurrentPage;
-                console.log(returningPage.resetOnBack);
                 if (returningPage && returningPage.getPropertyValue("resetOnBack")) {
                     returningPage.questions.forEach(q => {
-                        console.log("Clearing", q.name);
-                        sender.clearValue(q.name);
+                        // Clear only if the value is not the default
+                        const defaultVal = q.defaultValue;
+
+                        if (defaultVal !== undefined) {
+                            // Set it back to default explicitly
+                            sender.setValue(q.name, defaultVal);
+                        } else {
+                            // No default: just clear it
+                            sender.clearValue(q.name);
+                        }
                     });
                 }
             }
@@ -370,5 +376,5 @@ function expandSurveyJsForSelfhelp() {
         default: false,
         displayName: "Reset answers when returning to page",
         description: "If enabled, all answers on this page will be cleared when the user navigates back to it."
-    });   
+    });
 }
