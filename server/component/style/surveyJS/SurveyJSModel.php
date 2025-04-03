@@ -131,7 +131,7 @@ class SurveyJSModel extends StyleModel
     {
         $form_name = $this->get_raw_survey()['survey_generated_id'];
         $form_id = $this->user_input->get_dataTable_id($form_name);
-        $filter = ' AND trigger_type = "' . actionTriggerTypes_finished . '"'; // the survey should be completed
+        $filter = ' AND triggerType = "' . actionTriggerTypes_finished . '"'; // the survey should be completed
         if (!$form_id) {
             // if no form, the survey was never filled, so it is not done
             return false;
@@ -149,7 +149,7 @@ class SurveyJSModel extends StyleModel
     {
         $form_name = $this->get_raw_survey()['survey_generated_id'];
         $form_id = $this->user_input->get_dataTable_id($form_name);
-        $filter = ' AND trigger_type = "' . actionTriggerTypes_finished . '"'; // the survey should be completed
+        $filter = ' AND triggerType = "' . actionTriggerTypes_finished . '"'; // the survey should be completed
         $filter = $filter  . ' AND (entry_date BETWEEN "' . $this->start_time_calced . '" AND "' . $this->end_time_calced . '")'; // the survey should be completed between the time
         $res = $this->user_input->get_data($form_id, $filter, true, $_SESSION['id_user'], true);
         return $res;

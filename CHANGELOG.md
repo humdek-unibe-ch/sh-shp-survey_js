@@ -8,6 +8,9 @@
  - add `resetOnBack` property for SurveyJS Pages. When enabled, all answers on this page will be cleared when the user navigates back to it.
  - adjust `gulpfile.js` to work with `gulp` v4 and remove `run-sequence`
 
+### Bugfix
+ - fix the check if the survey is done for `once_per_user` and `once_per_schedule`
+
 
 # v1.3.11
 ### Bugfix
