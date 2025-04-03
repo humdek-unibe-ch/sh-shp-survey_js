@@ -6,6 +6,7 @@
  - always start survey form page `0` on edit mode when is in status `finished`
  - add field `dynamic_replacement` where the survey JSON can be copied and then the mapper can be used for complex dynamic replacements. If the field is set, it will be used, otherwise the Survey js is pulled from the selected survey from the dropdown
  - add `resetOnBack` property for SurveyJS Pages. When enabled, all answers on this page will be cleared when the user navigates back to it.
+ - adjust `gulpfile.js` to work with `gulp` v4 and remove `run-sequence`
 
 
 # v1.3.11

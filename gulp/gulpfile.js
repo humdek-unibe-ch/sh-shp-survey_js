@@ -1,31 +1,30 @@
-var del = require('del');
-var csso = require('gulp-csso');
-var concat = require('gulp-concat');
-var gulp = require('gulp');
-var htmlmin = require('gulp-htmlmin');
-var runSequence = require('run-sequence');
-var terser = require('gulp-terser');
-var babel = require('gulp-babel');
-
-// Gulp task to minify CSS files
-gulp.task('styles', function () {
-    return gulp.src([
-        '../server/component/**/css/*.css',
-        '../server/component/style/css/*.css',
-        '../server/component/style/**/css/*.css'])
-        // Minify the file
-        .pipe(csso())
-        // Concat
-        .pipe(concat('survey-js.min.css'))
-        // Output
-        .pipe(gulp.dest('../css/ext'))
-});
-
+const gulp = require('gulp');
+const del = require('del');
+const csso = require('gulp-csso');
+const concat = require('gulp-concat');
+const htmlmin = require('gulp-htmlmin');
+const terser = require('gulp-terser');
+const babel = require('gulp-babel');
 
 // Clean output directory
-gulp.task('clean', () => del(['dist']));
+function clean() {
+  return del(['dist']);
+}
 
-// Gulp task to minify all files
-gulp.task('default', gulp.series('clean', 'styles', function (done) {
-    done();
-}));
+// Minify and concat CSS
+function styles() {
+  return gulp.src([
+    '../server/component/**/css/*.css',
+    '../server/component/style/css/*.css',
+    '../server/component/style/**/css/*.css'
+  ])
+    .pipe(csso())
+    .pipe(concat('survey-js.min.css'))
+    .pipe(gulp.dest('../css/ext'));
+}
+
+// Define default task
+exports.default = gulp.series(
+  clean,
+  styles
+);
