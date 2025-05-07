@@ -1,22 +1,46 @@
-# SelfHelp plugin - survey-js
+# SelfHelp Plugin - SurveyJS Integration
 
-This is a SelfHelpPlugin that is used for [SurveyJS](https://surveyjs.io) integration
+A comprehensive SelfHelp plugin that integrates [SurveyJS](https://surveyjs.io) functionality into your SelfHelp platform, providing advanced survey creation, management, and data collection capabilities.
 
+## Overview
 
-# Installation
+This plugin enables you to create, customize, and manage interactive surveys using the powerful SurveyJS library. It includes features for survey creation, versioning, response collection, and data visualization through a dashboard interface.
 
- - Download the code into the `server/plugins` folder
- - Checkout the latest version 
- - Execute all `.sql` script in the DB folder in their version order
- - If there is a survey with upload files, the files are store in the DB. Then it should be adjusted the size `max_allowed_packet` in MYSQL .ini file. The default one is 1MB
+## Requirements
 
-# Requirements
+- SelfHelp v7.3.1+ (for full functionality)
+- MySQL database with adequate `max_allowed_packet` size (recommended >1MB for file uploads)
 
- - SelfHelp v6.2.0+
+## Installation
 
-# Features
+1. Download the code into the `server/plugins` folder
+2. Checkout the latest version
+3. Execute all `.sql` scripts in the DB folder in their version order
+4. If using file uploads in surveys, adjust the `max_allowed_packet` size in your MySQL .ini file (default is 1MB)
 
-## Dynamic Dropdown Values from RESTful Service
+## Key Features
+
+### Survey Creation and Management
+- Built-in SurveyJS Creator interface
+- Survey versioning system
+- Survey activation scheduling with start/end times
+- Auto-save functionality with configurable intervals
+- File upload support (including voice recordings)
+- PDF export capability
+
+### Response Collection
+- Comprehensive metadata collection (start/end times, duration, user agent, etc.)
+- Timeout settings for survey sessions
+- Configurable access controls (own_entries_only mode)
+- Edit mode for existing responses
+
+### Page Navigation Control
+- Reset answers when returning to previous pages (resetOnBack property)
+- Redirect options after survey completion
+
+### Dynamic Content
+
+#### Dynamic Dropdown Values from RESTful Service
 
 To load dropdown values dynamically from a RESTful service:
 
@@ -34,7 +58,7 @@ To load dropdown values dynamically from a RESTful service:
      - "values": Select the column to use as option values
      - "display text": Select the column to show as readable text
 
-## Dynamic Survey JSON Replacement
+#### Dynamic Survey JSON Replacement
 
 The `dynamic_replacement` feature allows complex dynamic content in your surveys:
 
@@ -47,3 +71,14 @@ The `dynamic_replacement` feature allows complex dynamic content in your surveys
    - When empty: System uses the survey selected in the dropdown
    - When filled: System uses this JSON with mapped replacements
    - Useful for surveys needing complex dynamic content or customization
+
+### Response Limitations
+- Configure surveys to be completed once per user
+- Configure surveys to be completed once per schedule
+
+## Dashboard
+
+The plugin includes a comprehensive dashboard for viewing and analyzing survey responses, including:
+- Response filtering and sorting
+- Data visualization
+- Export capabilities
