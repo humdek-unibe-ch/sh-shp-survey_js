@@ -1,5 +1,10 @@
 # SurveyJS Plugin Changelog
 
+## v1.4.1
+
+### New Features
+- [Issue #18](https://github.com/humdek-unibe-ch/sh-selfhelp_app/issues/18): Add `rich-text-editor` question type based on `Quill` editor
+
 ## v1.4.0 (Requires SelfHelp v7.3.1+)
 
 ### New Features

@@ -154,6 +154,7 @@ class ModuleSurveyJSView extends BaseView
     {
         if (empty($local)) {
             $local = array(
+                __DIR__ . "/js/0_quill.min.js",
                 __DIR__ . "/js/1_knockout-latest.js",
                 __DIR__ . "/js/2_survey.core.min.js",
                 __DIR__ . "/js/3_survey-knockout-ui.min.js",
@@ -161,8 +162,9 @@ class ModuleSurveyJSView extends BaseView
                 __DIR__ . "/js/5_survey-creator-knockout.min.js",
                 __DIR__ . "/js/6_survey-creator-core.i18n.min.js",
                 __DIR__ . "/js/7_survey.i18n.min.js",
-                __DIR__ . "/js/7_surveyjs-widgets.min.js",
-                __DIR__ . "/js/8_survey.js",
+                __DIR__ . "/js/7_surveyjs-widgets.min.js",                
+                // __DIR__ . "/js/9_quill_integration.js",
+                __DIR__ . "/js/8_survey.js",                
             );
         }
         return parent::get_js_includes($local);
@@ -184,10 +186,13 @@ class ModuleSurveyJSView extends BaseView
                     __DIR__ . "/../style/surveyJS/css/modern.min.css",
                     __DIR__ . "/../style/surveyJS/css/defaultV2.min.css",
                     __DIR__ . "/css/survey-creator-core.min.css",
+                    __DIR__ . "/css/quill.snow.min.css",
                     __DIR__ . "/css/survey.css"
                 );
             } else {
                 $local = array(__DIR__ . "/../../../css/ext/survey-js.min.css?v=" . rtrim(shell_exec("git describe --tags")));
+                // Add Quill CSS even in production mode
+                $local[] = __DIR__ . "/css/quill.snow.min.css";
             }
         }
         return parent::get_css_includes($local);
