@@ -203,6 +203,7 @@ class SurveyJSView extends StyleView
                 __DIR__ . "/js/2_jspdf.umd.min.js",
                 __DIR__ . "/js/3_survey.pdf.min.js",
                 __DIR__ . "/js/3_surveyjs-widgets.min.js",
+                __DIR__ . "/../../moduleSurveyJS/js/0_quill.min.js", // Add Quill library
                 __DIR__ . "/js/4_surveyJS.js"
             );
         }
@@ -223,10 +224,14 @@ class SurveyJSView extends StyleView
                 $local = array(
                     __DIR__ . "/css/modern.min.css",
                     __DIR__ . "/css/defaultV2.min.css",
-                    __DIR__ . "/css/survey.css"
+                    __DIR__ . "/css/survey.css",
+                    __DIR__ . "/../../moduleSurveyJS/css/quill.snow.min.css" // Add Quill CSS
                 );
             } else {
-                $local = array(__DIR__ . "/../../../../css/ext/survey-js.min.css?v=" . rtrim(shell_exec("git describe --tags")));
+                $local = array(
+                    __DIR__ . "/../../../../css/ext/survey-js.min.css?v=" . rtrim(shell_exec("git describe --tags")),
+                    __DIR__ . "/../../moduleSurveyJS/css/quill.snow.min.css" // Add Quill CSS even in production mode
+                );
             }
         }
         return parent::get_css_includes($local);

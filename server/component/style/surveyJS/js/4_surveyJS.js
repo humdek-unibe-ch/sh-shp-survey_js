@@ -3,6 +3,59 @@ var autoSaveTimers = {};
 const tempFileStorage = {};
 var surveyJSSavedSuccessfully = false;
 
+// --- Quill Rich Text Editor Widget Registration ---
+(function registerQuillWidget() {
+    const componentName = "quill";
+    const widget = {
+        name: componentName,
+        title: "Rich Text Editor",
+        widgetIsLoaded: function () {
+            return typeof Quill !== "undefined";
+        },
+        isFit: function (question) {
+            return question.getType() === componentName;
+        },
+        activatedByChanged: function (activatedBy) {
+            Survey.Serializer.addClass(componentName, [], null, "empty");
+            let registerQuestion = Survey.ElementFactory.Instance.registerCustomQuestion;
+            if (!!registerQuestion) registerQuestion(componentName);
+            Survey.Serializer.addProperty(componentName, {
+                name: "height",
+                default: "200px",
+                category: "layout"
+            });
+        },
+        htmlTemplate: "<div></div>",
+        afterRender: function (question, el) {
+            el.style.height = question.height;
+            var editor = new Quill(el, {
+                theme: "snow"
+            });
+            editor.enable(!question.isReadOnly);
+            var isValueChanging = false;
+            editor.on("text-change", function () {
+                isValueChanging = true;
+                question.value = editor.root.innerHTML;
+                isValueChanging = false;
+            });
+            var updateValueHandler = function () {
+                if (isValueChanging) return;
+                const text = question.value || "";
+                editor.root.innerHTML = text;
+            };
+            question.valueChangedCallback = updateValueHandler;
+            question.readOnlyChangedCallback = function () {
+                editor.enable(!question.isReadOnly);
+            };
+            updateValueHandler();
+        },
+        willUnmount: function (question, el) { }
+    };
+    if (!Survey.Serializer.findClass(componentName)) {
+        Survey.CustomWidgetCollection.Instance.addCustomWidget(widget, "customtype");
+    }
+})();
+
 $(document).ready(function () {
     initSurveyJS();
 });
