@@ -56,6 +56,17 @@ var surveyJSSavedSuccessfully = false;
     }
 })();
 
+// Function to render HTML content correctly
+function applyHtml(survey) {
+    survey.onTextMarkdown.add(function (survey, options) {
+        // Convert the markdown text to html
+        if (options.text.indexOf('<') > -1) {
+            // If the text contains HTML tags, don't process it as markdown
+            options.html = options.text;
+        }
+    });
+}
+
 $(document).ready(function () {
     initSurveyJS();
 });
@@ -76,6 +87,9 @@ function initSurveyJS() {
             return className.startsWith("selfHelp-locale-");
         });
         survey.locale = currentLocale[0].replace('selfHelp-locale-', '');
+        
+        // Apply HTML rendering for rich text content
+        applyHtml(survey);
         if (surveyFields && surveyFields['auto_save_interval'] > 0) {
             // set autosave functionality
             autoSaveTimers[surveyFields['survey_generated_id']] = window.setInterval(() => {
