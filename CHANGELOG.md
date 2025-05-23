@@ -1,5 +1,9 @@
 # SurveyJS Plugin Changelog
 
+## v1.4.2
+### Bugfix
+- load in edit mode only if there are parameters expecting to pass the record id
+
 ## v1.4.1
 
 ### New Features

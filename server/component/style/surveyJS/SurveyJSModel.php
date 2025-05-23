@@ -208,7 +208,8 @@ class SurveyJSModel extends StyleModel
             $last_response_json = json_decode($last_response['_json'], true);
             $survey['last_response'] = $last_response_json['trigger_type'] != 'finished' ? $last_response_json : array();
         }
-        if ($this->entry_record) {
+        if ($this->entry_record && isset($this->params['record_id']) && count($this->params) > 0) {
+            // load in edit mode only if there are parameters expecting to pass the record id
             $last_response = $this->load_response_survey_edit_mode($id_dataTables);
             if ($last_response) {
                 $survey['last_response'] = $last_response;
