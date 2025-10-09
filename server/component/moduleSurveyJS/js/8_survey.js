@@ -73,7 +73,7 @@ window['surveyjs-widgets'].microphone(Survey);
     if (typeof SurveyCreatorCore !== "undefined" && SurveyCreatorCore.PropertyGridEditorCollection) {
         SurveyCreatorCore.PropertyGridEditorCollection.register({
             fit: function (prop) {
-                return prop.type == "text" || prop.type == "html";
+                return prop.type == "text";
             },
             getJSON: function () {
                 return { type: "quill" };

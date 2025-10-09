@@ -1,5 +1,9 @@
 # SurveyJS Plugin Changelog
 
+## v1.4.3
+### Bugfix
+ - Fixed HTML editing for HTML questions by restricting Quill editor to text properties only
+
 ## v1.4.2
 ### Bugfix
 - load in edit mode only if there are parameters expecting to pass the record id
