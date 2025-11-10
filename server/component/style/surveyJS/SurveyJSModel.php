@@ -167,7 +167,7 @@ class SurveyJSModel extends StyleModel
                         unset($data[$key]); // remove the file upload; it is saved in the whole json for now
                     } else if (is_array($value[0]) && $value[0] !== array_values($value[0])) {
                         // this questions is panel with some repetition
-                        $data[$key] = json_encode($value); // encode the data as json
+                        $data[$key] = json_encode($value, JSON_UNESCAPED_UNICODE | JSON_HEX_QUOT | JSON_HEX_APOS | JSON_UNESCAPED_SLASHES); // encode the data as json
                     } else {
                         $data[$key] = implode(',', $value);
                     }
@@ -175,7 +175,7 @@ class SurveyJSModel extends StyleModel
                     // add all children directly in the data        
                     foreach ($value as $val_key => $val_value) {
                         if (is_array($val_value)) {
-                            $data[$key . "_" . $val_key] = json_encode($val_value); // the value is array, save it as json
+                            $data[$key . "_" . $val_key] = json_encode($val_value, JSON_UNESCAPED_UNICODE | JSON_HEX_QUOT | JSON_HEX_APOS | JSON_UNESCAPED_SLASHES); // the value is array, save it as json
                         } else {
                             $data[$key . "_" . $val_key] = $val_value;
                         }

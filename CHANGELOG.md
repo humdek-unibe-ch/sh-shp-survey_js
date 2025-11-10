@@ -1,5 +1,9 @@
 # SurveyJS Plugin Changelog
 
+## v1.4.4
+### Bugfix
+ - properly load special characters in SurveyJs in dynamic panel
+
 ## v1.4.3
 ### Bugfix
  - Fixed HTML editing for HTML questions by restricting Quill editor to text properties only
