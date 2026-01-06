@@ -48,6 +48,27 @@ class ModuleSurveyJSController extends BaseController
     public function __construct($model, $mode, $sid)
     {
         parent::__construct($model);
+
+        // Handle AJAX survey update requests regardless of mode
+        if (isset($_POST['surveyJson'])) {
+            if (!$this->check_acl(UPDATE)) {
+                header('Content-Type: application/json');
+                echo json_encode(array('success' => false, 'error' => 'Authentication required', 'message' => 'Your session has expired. Please log in again.'));
+                exit();
+            }
+            $adjustJson = $this->convertStringToBoolean(json_decode($_POST['surveyJson'], true)); // convert all booleans from string to bool
+            $result = $this->model->update_survey($sid, $adjustJson);
+            if ($result !== false) {
+                header('Content-Type: application/json');
+                echo json_encode(array('success' => true, 'sid' => $result));
+                exit();
+            } else {
+                header('Content-Type: application/json');
+                echo json_encode(array('success' => false, 'error' => 'Failed to update survey'));
+                exit();
+            }
+        }
+
         if (isset($mode) && !$this->check_acl($mode)) {
             // Send authentication error response for AJAX requests
             if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest') {
@@ -64,18 +85,6 @@ class ModuleSurveyJSController extends BaseController
                 // redirect in update mode with the newly created survey id
                 $url = $this->model->get_link_url(PAGE_SURVEY_JS_MODE, array("mode" => UPDATE, "sid" => $sid));
                 header('Location: ' . $url);
-            }
-        } else if ($mode === UPDATE && $sid > 0 && isset($_POST['surveyJson'])) {
-            $adjustJson = $this->convertStringToBoolean(json_decode($_POST['surveyJson'], true)); // convert all booleans form string to bool
-            $result = $this->model->update_survey($sid, $adjustJson);
-            if ($result !== false) {
-                header('Content-Type: application/json');
-                echo json_encode(array('success' => true, 'sid' => $result));
-                exit();
-            } else {
-                header('Content-Type: application/json');
-                echo json_encode(array('success' => false, 'error' => 'Failed to update survey'));
-                exit();
             }
         } else if ($mode === UPDATE && $sid > 0 && isset($_POST['mode']) && $_POST['mode'] == 'publish') {
             $result = $this->model->publish_survey($sid);
