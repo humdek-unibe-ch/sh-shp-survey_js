@@ -53,6 +53,11 @@ class ModuleSurveyJSView extends BaseView
      */
     public function output_content()
     {
+        // Skip rendering for AJAX requests to prevent JSON+HTML concatenation
+        if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest') {
+            return;
+        }
+
         if (!$this->mode) {
             require __DIR__ . "/tpl_moduleSurveyJS.php";
         } else {
@@ -131,6 +136,11 @@ class ModuleSurveyJSView extends BaseView
 
     public function output_content_mobile()
     {
+        // Skip rendering for AJAX requests to prevent JSON+HTML concatenation
+        if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest') {
+            return;
+        }
+
         echo 'mobile';
     }
 
@@ -218,6 +228,11 @@ class ModuleSurveyJSView extends BaseView
      */
     public function output_page_content()
     {
+        // Skip rendering for AJAX requests to prevent JSON+HTML concatenation
+        if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest') {
+            return;
+        }
+
         require __DIR__ . "/tpl_moduleSurveyJS_table.php";
     }
 
