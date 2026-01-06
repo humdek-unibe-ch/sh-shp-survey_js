@@ -52,33 +52,49 @@ class ModuleSurveyJSController extends BaseController
         // Handle AJAX survey update requests regardless of mode
         if (isset($_POST['surveyJson'])) {
             if (!$this->check_acl(UPDATE)) {
+                // Clear all output buffers
+                while (ob_get_level()) {
+                    ob_end_clean();
+                }
                 header('Content-Type: application/json');
                 echo json_encode(array('success' => false, 'error' => 'Authentication required', 'message' => 'Your session has expired. Please log in again.'));
-                ob_end_flush();
-                exit();
+                flush();
+                die();
             }
             $adjustJson = $this->convertStringToBoolean(json_decode($_POST['surveyJson'], true)); // convert all booleans from string to bool
             $result = $this->model->update_survey($sid, $adjustJson);
             if ($result !== false) {
+                // Clear all output buffers
+                while (ob_get_level()) {
+                    ob_end_clean();
+                }
                 header('Content-Type: application/json');
                 echo json_encode(array('success' => true, 'sid' => $result));
-                ob_end_flush();
-                exit();
+                flush();
+                die();
             } else {
+                // Clear all output buffers
+                while (ob_get_level()) {
+                    ob_end_clean();
+                }
                 header('Content-Type: application/json');
                 echo json_encode(array('success' => false, 'error' => 'Failed to update survey'));
-                ob_end_flush();
-                exit();
+                flush();
+                die();
             }
         }
 
         if (isset($mode) && !$this->check_acl($mode)) {
             // Send authentication error response for AJAX requests
             if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest') {
+                // Clear all output buffers
+                while (ob_get_level()) {
+                    ob_end_clean();
+                }
                 header('Content-Type: application/json');
                 echo json_encode(array('success' => false, 'error' => 'Authentication required', 'message' => 'Your session has expired. Please log in again.'));
-                ob_end_flush();
-                exit();
+                flush();
+                die();
             }
             return false;
         }
@@ -93,15 +109,23 @@ class ModuleSurveyJSController extends BaseController
         } else if ($mode === UPDATE && $sid > 0 && isset($_POST['mode']) && $_POST['mode'] == 'publish') {
             $result = $this->model->publish_survey($sid);
             if ($result) {
+                // Clear all output buffers
+                while (ob_get_level()) {
+                    ob_end_clean();
+                }
                 header('Content-Type: application/json');
                 echo json_encode(array('success' => true, 'sid' => $sid));
-                ob_end_flush();
-                exit();
+                flush();
+                die();
             } else {
+                // Clear all output buffers
+                while (ob_get_level()) {
+                    ob_end_clean();
+                }
                 header('Content-Type: application/json');
                 echo json_encode(array('success' => false, 'error' => 'Failed to publish survey'));
-                ob_end_flush();
-                exit();
+                flush();
+                die();
             }
         } else if ($mode === DELETE && $sid > 0) {
             $del_res = $this->model->delete_survey($sid);
