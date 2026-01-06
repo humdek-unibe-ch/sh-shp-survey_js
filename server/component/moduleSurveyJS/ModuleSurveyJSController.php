@@ -49,6 +49,12 @@ class ModuleSurveyJSController extends BaseController
     {
         parent::__construct($model);
         if (isset($mode) && !$this->check_acl($mode)) {
+            // Send authentication error response for AJAX requests
+            if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest') {
+                header('Content-Type: application/json');
+                echo json_encode(array('success' => false, 'error' => 'Authentication required', 'message' => 'Your session has expired. Please log in again.'));
+                exit();
+            }
             return false;
         }
         if ($mode === INSERT) {
@@ -61,9 +67,27 @@ class ModuleSurveyJSController extends BaseController
             }
         } else if ($mode === UPDATE && $sid > 0 && isset($_POST['surveyJson'])) {
             $adjustJson = $this->convertStringToBoolean(json_decode($_POST['surveyJson'], true)); // convert all booleans form string to bool
-            $this->model->update_survey($sid, $adjustJson);
+            $result = $this->model->update_survey($sid, $adjustJson);
+            if ($result !== false) {
+                header('Content-Type: application/json');
+                echo json_encode(array('success' => true, 'sid' => $result));
+                exit();
+            } else {
+                header('Content-Type: application/json');
+                echo json_encode(array('success' => false, 'error' => 'Failed to update survey'));
+                exit();
+            }
         } else if ($mode === UPDATE && $sid > 0 && isset($_POST['mode']) && $_POST['mode'] == 'publish') {
-            $this->model->publish_survey($sid);
+            $result = $this->model->publish_survey($sid);
+            if ($result) {
+                header('Content-Type: application/json');
+                echo json_encode(array('success' => true, 'sid' => $sid));
+                exit();
+            } else {
+                header('Content-Type: application/json');
+                echo json_encode(array('success' => false, 'error' => 'Failed to publish survey'));
+                exit();
+            }
         } else if ($mode === DELETE && $sid > 0) {
             $del_res = $this->model->delete_survey($sid);
             if ($del_res) {

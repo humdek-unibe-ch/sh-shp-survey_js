@@ -218,14 +218,33 @@ function publishSurvey() {
                         window.location,
                         { mode: "publish" },
                         function (data) {
-                            if (data) {
+                            if (data && data.success) {
                                 location.reload();
-                            }
-                            else {
-                                alert("Error while autosaving the Survey");
+                            } else {
+                                $.alert({
+                                    title: 'Publish Error',
+                                    type: 'red',
+                                    content: "Error while publishing the Survey: " + (data && data.error ? data.error : "Unknown error"),
+                                    buttons: {
+                                        ok: function() {
+                                            location.reload();
+                                        }
+                                    }
+                                });
                             }
                         }
-                    );
+                    ).fail(function(jqXHR, textStatus, errorThrown) {
+                        $.alert({
+                            title: 'Publish Error',
+                            type: 'red',
+                            content: "Error while publishing the Survey: " + textStatus,
+                            buttons: {
+                                ok: function() {
+                                    location.reload();
+                                }
+                            }
+                        });
+                    });
                 },
                 cancel: function () {
                 }
@@ -245,19 +264,94 @@ function autoSaveTheSurvey(surveyJson) {
     $.post(
         window.location,
         { surveyJson: JSON.stringify(surveyJson) },
-        function (data) {
-            if (data) {
-                if (JSON.stringify(surveyJson) != published_json) {
-                    $('#survey-js-publish').removeClass('disabled');
+        function (data, textStatus, jqXHR) {
+            // Handle JSON response from server
+            if (data && typeof data === 'object') {
+                if (data.success) {
+                    // Success - update publish button state
+                    if (JSON.stringify(surveyJson) != published_json) {
+                        $('#survey-js-publish').removeClass('disabled');
+                    } else {
+                        $('#survey-js-publish').addClass('disabled');
+                    }
                 } else {
-                    $('#survey-js-publish').addClass('disabled');
+                    // Server returned error
+                    if (data.error === 'Authentication required' || data.error === 'Session expired') {
+                        $.alert({
+                            title: 'Session Expired',
+                            type: 'red',
+                            content: 'Your session has expired. Please refresh the page and log in again.',
+                            buttons: {
+                                ok: function() {
+                                    location.reload();
+                                }
+                            }
+                        });
+                    } else {
+                        $.alert({
+                            title: 'Auto-save Error',
+                            type: 'red',
+                            content: "Error while autosaving the Survey: " + (data.error || "Unknown error"),
+                            buttons: {
+                                ok: function() {
+                                    location.reload();
+                                }
+                            }
+                        });
+                    }
                 }
-            }
-            else {
-                alert("Error while autosaving the Survey");
+            } else {
+                // Unexpected response format
+                $.alert({
+                    title: 'Auto-save Error',
+                    type: 'red',
+                    content: "Error while autosaving the Survey: Invalid response from server",
+                    buttons: {
+                        ok: function() {
+                            location.reload();
+                        }
+                    }
+                });
             }
         }
-    );
+    ).fail(function(jqXHR, textStatus, errorThrown) {
+        // Handle HTTP errors (like 401 Unauthorized, 403 Forbidden)
+        if (jqXHR.status === 401 || jqXHR.status === 403) {
+            $.alert({
+                title: 'Authentication Required',
+                type: 'red',
+                content: 'Your session has expired. Please log in again.',
+                buttons: {
+                    ok: function() {
+                        location.reload();
+                    }
+                }
+            });
+        } else if (jqXHR.status === 302 || jqXHR.status === 301) {
+            // Redirect response - likely session expired
+            $.alert({
+                title: 'Session Expired',
+                type: 'red',
+                content: 'Your session has expired. The page will reload.',
+                buttons: {
+                    ok: function() {
+                        location.reload();
+                    }
+                }
+            });
+        } else {
+            $.alert({
+                title: 'Auto-save Error',
+                type: 'red',
+                content: "Error while autosaving the Survey: " + textStatus + " (" + jqXHR.status + ")",
+                buttons: {
+                    ok: function() {
+                        location.reload();
+                    }
+                }
+            });
+        }
+    });
 }
 
 function initSurveysTable() {

@@ -1,5 +1,13 @@
 # SurveyJS Plugin Changelog
 
+## v1.4.5
+### Bugfix
+- Fixed session expiration handling during survey editing
+  - Users can now continue working after session expiry without losing changes
+  - Added proper JSON responses for AJAX auto-save and publish operations
+  - Improved error detection for authentication failures with user notification
+  - Consistent modal alerts with automatic page reload on errors
+
 ## v1.4.4
 ### Bugfix
  - properly load special characters in SurveyJs in dynamic panel
