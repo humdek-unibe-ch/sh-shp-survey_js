@@ -49,8 +49,12 @@ class ModuleSurveyJSController extends BaseController
         } else {
             flush();
         }
-        
+
         // Terminate script - use exit() which is more reliable than die()
+        // Allow exit when uopz extension is loaded
+        if (function_exists('uopz_allow_exit')) {
+            uopz_allow_exit(true);
+        }
         exit(0);
     }
 
