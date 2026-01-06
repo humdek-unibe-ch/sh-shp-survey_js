@@ -54,6 +54,7 @@ class ModuleSurveyJSController extends BaseController
             if (!$this->check_acl(UPDATE)) {
                 header('Content-Type: application/json');
                 echo json_encode(array('success' => false, 'error' => 'Authentication required', 'message' => 'Your session has expired. Please log in again.'));
+                ob_end_flush();
                 exit();
             }
             $adjustJson = $this->convertStringToBoolean(json_decode($_POST['surveyJson'], true)); // convert all booleans from string to bool
@@ -61,10 +62,12 @@ class ModuleSurveyJSController extends BaseController
             if ($result !== false) {
                 header('Content-Type: application/json');
                 echo json_encode(array('success' => true, 'sid' => $result));
+                ob_end_flush();
                 exit();
             } else {
                 header('Content-Type: application/json');
                 echo json_encode(array('success' => false, 'error' => 'Failed to update survey'));
+                ob_end_flush();
                 exit();
             }
         }
@@ -74,6 +77,7 @@ class ModuleSurveyJSController extends BaseController
             if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest') {
                 header('Content-Type: application/json');
                 echo json_encode(array('success' => false, 'error' => 'Authentication required', 'message' => 'Your session has expired. Please log in again.'));
+                ob_end_flush();
                 exit();
             }
             return false;
@@ -91,10 +95,12 @@ class ModuleSurveyJSController extends BaseController
             if ($result) {
                 header('Content-Type: application/json');
                 echo json_encode(array('success' => true, 'sid' => $sid));
+                ob_end_flush();
                 exit();
             } else {
                 header('Content-Type: application/json');
                 echo json_encode(array('success' => false, 'error' => 'Failed to publish survey'));
+                ob_end_flush();
                 exit();
             }
         } else if ($mode === DELETE && $sid > 0) {
