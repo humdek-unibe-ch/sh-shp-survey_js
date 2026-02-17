@@ -1,5 +1,13 @@
 # SurveyJS Plugin Changelog
 
+## v1.4.6
+### Bugfix
+- Fixed Table of Contents (TOC) navigation so that clicking any page in the TOC jumps directly to that page instead of advancing only one page at a time for forward navigation
+  - Root cause: SurveyJS v1.9.x internally steps through pages one at a time for forward navigation; any synchronous `setValue` calls during the `onCurrentPageChanged` event interrupted this stepping loop
+  - Solution: Deferred all `setValue` and save operations in `onCurrentPageChanged` via `setTimeout` so the internal navigation loop completes before survey data is modified
+  - Removed the `onCurrentPageChanging` handler entirely (no longer needed) to avoid triggering the page-stepping mechanism
+  - Backward navigation, Next/Back button navigation, and data saving on page change all continue to work correctly
+
 ## v1.4.5
 ### Bugfix
 - Fixed session expiration handling during survey editing

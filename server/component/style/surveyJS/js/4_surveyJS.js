@@ -1,7 +1,7 @@
 var autoSaveTimers = {};
 // A variable that will store files until the survey is completed
 const tempFileStorage = {};
-var surveyJSSavedSuccessfully = false;
+var surveyJSIsSaving = false;
 
 // --- Quill Rich Text Editor Widget Registration ---
 (function registerQuillWidget() {
@@ -142,51 +142,64 @@ function initSurveyJS() {
             saveSurveyJS(survey);
         }
         $(this).children(".selfHelp-survey-js").first().Survey({ model: survey });
-        survey.onCurrentPageChanging.add(async function (sender, options) {
 
-            // Trigger only when going BACK
-            if (!options.isNextPage) {
-                const returningPage = options.newCurrentPage;
-                if (returningPage && returningPage.getPropertyValue("resetOnBack")) {
-                    returningPage.questions.forEach(q => {
-                        // Clear only if the value is not the default
-                        const defaultVal = q.defaultValue;
+        // No onCurrentPageChanging handler is registered. In SurveyJS
+        // v1.9.x, the currentPage setter steps through pages one at a time
+        // for forward navigation whenever onCurrentPageChanging has any
+        // handler. Without it, TOC jumps work directly to any page.
+        // All page-change logic (metadata, save, resetOnBack) is handled
+        // in onCurrentPageChanged which fires after the page has changed.
 
+        // After the page has actually changed, update metadata and save.
+        // IMPORTANT: All setValue calls are deferred via setTimeout to avoid
+        // interrupting SurveyJS v1.9.x's internal page-stepping loop for
+        // forward TOC navigation. The currentPage setter steps through pages
+        // one at a time, and any synchronous setValue during that loop breaks it.
+        survey.onCurrentPageChanged.add(function (sender, options) {
+            var newPageIndex = survey.visiblePages.indexOf(options.newCurrentPage);
+            var oldPageIndex = survey.visiblePages.indexOf(options.oldCurrentPage);
+            var isGoingBack = options.isGoingBack || newPageIndex < oldPageIndex;
+            var newPage = options.newCurrentPage;
+
+            setTimeout(function () {
+                // Reset answers on back-navigation for pages with resetOnBack
+                if (isGoingBack && newPage && newPage.getPropertyValue("resetOnBack")) {
+                    newPage.questions.forEach(function (q) {
+                        var defaultVal = q.defaultValue;
                         if (defaultVal !== undefined) {
-                            // Set it back to default explicitly
                             sender.setValue(q.name, defaultVal);
                         } else {
-                            // No default: just clear it
                             sender.clearValue(q.name);
                         }
                     });
                 }
-            }
 
-            options.allow = surveyJSSavedSuccessfully;
-            if (surveyJSSavedSuccessfully) {
-                // it was saved move to next page and mark the new page as not saved yet                
-                surveyJSSavedSuccessfully = false;
-                return;
-            }
-            var dateNow = Date.now();
-            var meta = survey.getValue('_meta');
-            meta['pages'][meta['pages'].length - 1]['end_time'] = new Date(dateNow);
-            meta['pages'][meta['pages'].length - 1]['duration'] = ((dateNow - new Date(meta['pages'][meta['pages'].length - 1]['start_time'])) / 1000);
-            meta['pages'].push({
-                'pageNo': survey.currentPageNo,
-                'start_time': new Date(dateNow)
-            });
-            sender.setValue('trigger_type', 'updated');
-            survey.setValue('_meta', meta);
-            surveyJSSavedSuccessfully = false;
-            saveSurveyJS(sender, survey.visiblePages.indexOf(options.newCurrentPage)).then((res) => {
-                if (res) {
-                    surveyJSSavedSuccessfully = true;
-                    survey.currentPage = options.newCurrentPage;
+                // Update page timing metadata
+                var dateNow = Date.now();
+                var meta = survey.getValue('_meta');
+                if (meta && meta['pages'] && meta['pages'].length > 0) {
+                    meta['pages'][meta['pages'].length - 1]['end_time'] = new Date(dateNow);
+                    meta['pages'][meta['pages'].length - 1]['duration'] = ((dateNow - new Date(meta['pages'][meta['pages'].length - 1]['start_time'])) / 1000);
                 }
-            });
+                if (!meta) { meta = { pages: [] }; }
+                if (!meta['pages']) { meta['pages'] = []; }
+                meta['pages'].push({
+                    'pageNo': newPageIndex,
+                    'start_time': new Date(dateNow)
+                });
+                sender.setValue('trigger_type', 'updated');
+                survey.setValue('_meta', meta);
+
+                // Save data in the background
+                if (!surveyJSIsSaving) {
+                    surveyJSIsSaving = true;
+                    saveSurveyJS(sender, newPageIndex).then(function (res) {
+                        surveyJSIsSaving = false;
+                    });
+                }
+            }, 0);
         });
+
         survey.onComplete.add(function (sender, options) {
             options.showSaveInProgress();
             if (surveyFields && surveyFields['auto_save_interval'] > 0) {
