@@ -1,5 +1,11 @@
 # SurveyJS Plugin Changelog
 
+## v1.4.7
+### Bugfix
+- Fixed an error that prevented opening a finished survey for editing (e.g. `/gfs-survey/<record_id>`). The page now loads without throwing an auto-save error.
+- Fixed previously-saved answers not showing when re-opening a finished survey in edit mode; the form now restores the saved data and opens on the first page as expected.
+- Fixed special characters in saved survey data being mangled in the page HTML, which could corrupt the restored answers.
+
 ## v1.4.6
 ### Bugfix
 - Fixed Table of Contents (TOC) navigation so that clicking any page in the TOC jumps directly to that page instead of advancing only one page at a time for forward navigation

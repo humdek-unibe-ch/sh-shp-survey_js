@@ -100,15 +100,19 @@ function initSurveyJS() {
 
         if (surveyFields && !surveyFields['restart_on_refresh']) {
             // Restore survey results
-            const notCompletedSurvey = lastResponse || null;
+            const notCompletedSurvey = lastResponse && (typeof lastResponse === 'object') && !Array.isArray(lastResponse) ? lastResponse : null;
             if (notCompletedSurvey) {
                 var timeoutExpired = checkTimeout(surveyFields['timeout'], notCompletedSurvey);
                 if (!timeoutExpired) {
                     // load the survey if not expired based on the configuration
                     survey.mergeData(notCompletedSurvey);
                     survey.setValue('trigger_type', 'updated');
-                    if (survey.data.pageNo) {
-                        survey.currentPageNo = survey.data.pageNo;
+                    if (survey.data.pageNo !== undefined && survey.data.pageNo !== null && survey.data.pageNo !== '') {
+                        // pageNo may arrive as a string (e.g. '0') from the server; coerce to number
+                        var restoredPageNo = parseInt(survey.data.pageNo, 10);
+                        if (!isNaN(restoredPageNo)) {
+                            survey.currentPageNo = restoredPageNo;
+                        }
                     }
                 }
             }
@@ -344,7 +348,31 @@ function checkTimeout(timeout, localSurvey) {
  * @param {Number | null} newPageNo - The new page that will be loaded after the save
  */
 function saveSurveyJS(survey, newPageNo) {
-    var data = { ...survey.data };
+    // Deep-sanitize survey.data via JSON round-trip before handing it to jQuery's $.ajax.
+    // Rationale: jQuery's $.param / buildParams recursively iterates object values. If any
+    // nested value is a function or a String-wrapper object (whose inherited enumerable
+    // String.prototype.format added by SurveyJS gets picked up by for..in), jQuery invokes
+    // it with `this === undefined`, which throws
+    //   "Cannot read properties of undefined (reading 'replace')"
+    // inside SurveyJS's String.prototype.format implementation. JSON.stringify normalizes
+    // String/Number wrappers to primitives, converts Dates to ISO strings, and drops
+    // undefined/function values, producing a payload that $.param can safely serialize.
+    //
+    // SAFETY: if serialization fails we ABORT the save entirely. We never want to POST an
+    // empty payload to the backend, because that could overwrite valid existing data with
+    // an empty record. Returning false here ensures no AJAX request is issued.
+    var safeData;
+    try {
+        safeData = JSON.parse(JSON.stringify(survey.data || {}));
+    } catch (e) {
+        console.error('SurveyJS: failed to serialize survey.data for save; aborting save to avoid overwriting backend data', e, survey.data);
+        return false;
+    }
+    if (!safeData || typeof safeData !== 'object' || Array.isArray(safeData) || Object.keys(safeData).length === 0) {
+        // Nothing meaningful to save. Abort rather than risk clobbering the stored record.
+        return false;
+    }
+    var data = { ...safeData };
     data.pageNo = newPageNo != undefined ? newPageNo : survey.currentPageNo;
     data['_json'] = JSON.stringify(data);
     if (!data['trigger_type'] || !data['response_id']) {
