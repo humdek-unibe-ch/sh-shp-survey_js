@@ -103,6 +103,19 @@ $(document).ready(function () {
 
 function initSurveyCreator() {
     if ($("#surveyJSCreator").length > 0) {
+        // Expose SelfHelp's BASE_PATH globally so custom widgets such as
+        // the `video` question can resolve root-relative URLs
+        // (e.g. "/assets/x.mp4") in the Creator preview. This mirrors what
+        // 4_surveyJS.js does for the runtime view, but the Creator never
+        // loads 4_surveyJS.js, so we must set the variable here too.
+        //
+        // Read via .attr() rather than .data(): jQuery's .data() auto-coerces
+        // values that look like JSON / numbers, which can produce surprises
+        // for path-shaped strings.
+        if (typeof window.SELFHELP_BASE_PATH === "undefined") {
+            const basePathFromAttr = $("#surveyJSCreator").attr("data-base-path");
+            window.SELFHELP_BASE_PATH = (typeof basePathFromAttr === "string") ? basePathFromAttr : "";
+        }
         creator.saveSurveyFunc = () => {
             autoSaveTheSurvey(creator.JSON);
         };
@@ -142,6 +155,51 @@ function initSurveyCreator() {
                     toolboxItems.unshift(quillItem);
                 }
             }
+
+            // --- Video question toolbox customization (v1.4.8) ---
+            // The `video` custom widget (5_videoSegmentWidget.js) is a
+            // STANDALONE question type (parent="empty"), so the custom
+            // widget's htmlTemplate is the entire renderer — there is no
+            // file-upload / drag-and-drop affordance to remove.
+            //
+            // The canonical type is `video` (lowercase — SurveyJS'
+            // Serializer lowercases every registered class name).
+            //
+            // The widget exposes the resolved icon name via
+            // window.__videoQuestionIconName: it is "icon-video-question"
+            // when SurveyCreator.SvgRegistry was available and we
+            // registered our own video-camera SVG, or "icon-image" as a
+            // built-in fallback for builds that do not expose the
+            // SvgRegistry.
+            const videoIcon = (typeof window.__videoQuestionIconName === "string" && window.__videoQuestionIconName)
+                ? window.__videoQuestionIconName
+                : "icon-image";
+            let videoToolboxIndex = toolboxItems.findIndex((item) => item.name === "video");
+            // Default JSON for new questions added from the toolbox.
+            // Timestamps are intentionally omitted: the default is "play
+            // the entire file"; designers add timestamps only when they
+            // want to enforce a sub-segment.
+            const videoDefaultJson = {
+                type: "video",
+                name: "video_question",
+                title: "Watch the video",
+                videoUrl: "",
+                videoFit: "contain"
+            };
+            if (videoToolboxIndex !== -1) {
+                let videoItem = toolboxItems[videoToolboxIndex];
+                videoItem.name = "video";
+                videoItem.title = "Video";
+                videoItem.iconName = videoIcon;
+                videoItem.json = videoDefaultJson;
+            } else {
+                creator.toolbox.addItem({
+                    name: "video",
+                    title: "Video",
+                    iconName: videoIcon,
+                    json: videoDefaultJson
+                });
+            }
         }
         // Apply HTML markup to survey contents
         if (creator.survey) {
@@ -150,6 +208,50 @@ function initSurveyCreator() {
         if (creator.onSurveyInstanceCreated) {
             creator.onSurveyInstanceCreated.add((_, options) => {
                 options.survey.onTextMarkdown.add(applyHtml);
+            });
+        }
+
+        // Helper — true when the property panel is editing a `video`
+        // question. SurveyJS lowercases every class name internally so
+        // the canonical (and only) match is "video".
+        const isVideoQuestion = (obj) =>
+            !!(obj && typeof obj.getType === "function" && obj.getType() === "video");
+
+        // Cross-field property validation (start < end) is intentionally
+        // NOT hooked into `creator.onPropertyValidationCustomError`. That
+        // event only re-runs for the property the user is currently
+        // editing, so an error message attached to the OTHER property
+        // (e.g. an error on Start that was set when End was briefly
+        // smaller during typing) is never cleared by subsequent valid
+        // edits — it stays latched even when the configuration becomes
+        // valid. We saw this manifest as start=15 / end=45 (clearly
+        // valid) still showing the cross-field error on both fields.
+        //
+        // Single-field non-negativity is covered declaratively by
+        // `minValue: 0` on the timestamps in the Serializer, so SurveyJS'
+        // built-in number editor handles those without any custom hook.
+        //
+        // The cross-field rule is now enforced exclusively in the runtime
+        // widget (`5_videoSegmentWidget.js → getConfigError`). It surfaces
+        // as a question-level red banner above the live preview / runtime
+        // player, which is impossible to "latch" because the widget
+        // self-clears its question errors on every re-render.
+
+        // Hide a few inherited "empty" properties that don't make sense
+        // for a video question — its value is auto-generated playback
+        // metadata, so there is no point letting the survey designer set
+        // a default value or a correct answer. Everything else they need
+        // is already in the General / Layout categories.
+        const VIDEO_QUESTION_HIDDEN_PROPS = [
+            "defaultValue",
+            "correctAnswer"
+        ];
+        if (creator.onShowingProperty) {
+            creator.onShowingProperty.add((_, options) => {
+                if (!isVideoQuestion(options.obj)) return;
+                if (VIDEO_QUESTION_HIDDEN_PROPS.indexOf(options.property.name) !== -1) {
+                    options.canShow = false;
+                }
             });
         }
         creator.render("surveyJSCreator");

@@ -1,0 +1,55 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
+
+/*
+ * Styles for the `video` custom SurveyJS question (v1.4.8).
+ *
+ * Picked up automatically by
+ *   gulp/gulpfile.js  ->  server/component/style/{star}{star}/css/*.css
+ * and bundled into css/ext/survey-js.min.css. The file name
+ * (`video-segment.css`) is kept on disk for git-history continuity,
+ * while the CSS class prefix is `.sjs-video` so a future grep matches
+ * the question's selectors cleanly.
+ *
+ * The widget JS sets `objectFit`, `height` and `width` directly on the
+ * <video> element via inline styles when the survey designer fills in
+ * the "Video fit" / "Video height" / "Video width" properties. Those
+ * inline styles override the rules below; we only provide sensible
+ * defaults so the player has a visible footprint before metadata loads.
+ */
+
+.sjs-video {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    width: 100%;
+}
+
+.sjs-video__player {
+    width: 100%;          /* default; videoWidth overrides via inline style */
+    max-width: 100%;
+    height: auto;         /* default; videoHeight overrides via inline style */
+    min-height: 240px;    /* avoid 0px collapse before metadata loads */
+    background-color: #000;
+    border-radius: 4px;
+    outline: none;
+    display: block;
+    /* Default object-fit: "contain" — overridden via inline style by the
+     * widget when the survey designer picks a different value. */
+    object-fit: contain;
+}
+
+.sjs-video__error {
+    display: none;
+    padding: 0.75rem 1rem;
+    border: 1px solid #f5c6cb;
+    background-color: #f8d7da;
+    color: #721c24;
+    border-radius: 4px;
+    font-size: 0.9rem;
+}
+
+.sjs-video__error.is-visible {
+    display: block;
+}

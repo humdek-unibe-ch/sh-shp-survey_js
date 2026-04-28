@@ -134,7 +134,12 @@ class SurveyJSView extends StyleView
                     "timeout" => $this->timeout,
                     "survey_js_theme" => $this->survey_js_theme,
                     "save_pdf" => $this->save_pdf,
-                    "survey_generated_id" => isset($this->survey['survey_generated_id']) ? $this->survey['survey_generated_id'] : null
+                    "survey_generated_id" => isset($this->survey['survey_generated_id']) ? $this->survey['survey_generated_id'] : null,
+                    // Expose SelfHelp's BASE_PATH so client-side custom widgets
+                    // (e.g. the `video` question) can resolve root-relative
+                    // URLs such as "/assets/video.mp4" against the SelfHelp
+                    // install path.
+                    "base_path" => defined('BASE_PATH') ? BASE_PATH : ''
                 );
                 if (method_exists($this->model, 'is_cms_page') && $this->model->is_cms_page()) {
                     // if it is in CMS unset the survey id, we do not want to save it
@@ -204,7 +209,8 @@ class SurveyJSView extends StyleView
                 __DIR__ . "/js/3_survey.pdf.min.js",
                 __DIR__ . "/js/3_surveyjs-widgets.min.js",
                 __DIR__ . "/../../moduleSurveyJS/js/0_quill.min.js", // Add Quill library
-                __DIR__ . "/js/4_surveyJS.js"
+                __DIR__ . "/js/4_surveyJS.js",
+                __DIR__ . "/js/5_videoSegmentWidget.js" // Custom `video` question type (v1.4.8; file name kept on disk for git-history continuity)
             );
         }
         return parent::get_js_includes($local);
@@ -225,6 +231,7 @@ class SurveyJSView extends StyleView
                     __DIR__ . "/css/modern.min.css",
                     __DIR__ . "/css/defaultV2.min.css",
                     __DIR__ . "/css/survey.css",
+                    __DIR__ . "/css/video-segment.css", // Custom `video` question styles (v1.4.8; file name kept on disk for git-history continuity)
                     __DIR__ . "/../../moduleSurveyJS/css/quill.snow.min.css" // Add Quill CSS
                 );
             } else {

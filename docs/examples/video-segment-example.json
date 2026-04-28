@@ -1,0 +1,72 @@
+{
+    "title": "Video question example survey",
+    "description": "A minimal survey demonstrating the `video` custom question type introduced in plugin v1.4.8. Page 1 plays a sub-segment with both timestamps set and `isRequired: true` (the participant must watch to `endTimestamp` before advancing — the alert message is taken from the per-question `requiredWatchMessage` when set, otherwise from the built-in translation table indexed by `survey.locale`). Page 2 plays the entire video without segment enforcement and demonstrates `autoStart: true` — because page 2 is reached via the Next button (a user gesture), the browser allows autoplay-with-sound. The URL goes into 'videoUrl'; layout is controlled by 'videoFit' / 'videoHeight' / 'videoWidth'.",
+    "logoPosition": "right",
+    "pages": [
+        {
+            "name": "page_segment",
+            "title": "Watch the excerpt",
+            "elements": [
+                {
+                    "type": "html",
+                    "name": "intro_html",
+                    "html": "<p>Please watch the highlighted excerpt of the video below. Playback is restricted to the configured range. You can pause, resume, and seek freely <em>inside</em> that range; replays restart from the beginning of the segment.</p>"
+                },
+                {
+                    "type": "video",
+                    "name": "intro_excerpt",
+                    "title": "Watch the introduction excerpt (12s – 47s)",
+                    "videoUrl": "/assets/intro.mp4",
+                    "startTimestamp": 12,
+                    "endTimestamp": 47,
+                    "videoFit": "contain",
+                    "videoHeight": "360px",
+                    "isRequired": true,
+                    "requiredWatchMessage": "Please watch the entire excerpt before continuing."
+                }
+            ]
+        },
+        {
+            "name": "page_full_video",
+            "title": "Now watch the full clip",
+            "elements": [
+                {
+                    "type": "html",
+                    "name": "full_html",
+                    "html": "<p>This time the entire file plays — there is no segment enforcement, since neither <code>startTimestamp</code> nor <code>endTimestamp</code> is set. <code>autoStart</code> is <code>true</code>, so the video begins playing as soon as you reach this page (the Next-button click counts as the user gesture browsers require for autoplay-with-sound).</p>"
+                },
+                {
+                    "type": "video",
+                    "name": "full_video",
+                    "title": "Watch the entire clip",
+                    "videoUrl": "/assets/intro.mp4",
+                    "videoFit": "contain",
+                    "videoHeight": "360px",
+                    "autoStart": true
+                }
+            ]
+        },
+        {
+            "name": "page_questions",
+            "title": "Follow-up questions",
+            "elements": [
+                {
+                    "type": "radiogroup",
+                    "name": "watched_completely",
+                    "title": "Did you watch both videos to the end?",
+                    "isRequired": true,
+                    "choices": [
+                        { "value": "yes", "text": "Yes" },
+                        { "value": "no",  "text": "No"  }
+                    ]
+                },
+                {
+                    "type": "comment",
+                    "name": "feedback",
+                    "title": "Any comments on the videos?"
+                }
+            ]
+        }
+    ],
+    "showQuestionNumbers": "off"
+}
