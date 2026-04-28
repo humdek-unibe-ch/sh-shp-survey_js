@@ -72,10 +72,12 @@
   - As a safety net, an explicit `endTimestamp` greater than the actual file duration is now capped at `video.duration` on `loadedmetadata`, so a misconfigured upper bound can never make `watched` permanently unreachable
 
 - **Localised required-watch alert** (`requiredWatchMessage`)
-  - New optional property `requiredWatchMessage:text` on the `video` question class. Designers can type a custom alert string per question in the property panel.
-  - When the property is left blank (the default) the widget falls back to a built-in translation table indexed by `survey.locale`. The CMS already pushes the active locale into `survey.locale` via `4_surveyJS.js`, so a German-locale page automatically gets the German alert with no per-question configuration.
+  - New optional property `requiredWatchMessage:text` on the `video` question class, registered with `isLocalizable: true` so SurveyJS treats it the same way as the question's built-in `title` / `description`:
+    - It appears in the Creator's **Translation** tab — designers see a row labelled "Required-watch alert" under each video question with one input column per language defined in *Language Settings*. Filling those in produces JSON like `"requiredWatchMessage": { "default": "…", "de": "…" }` instead of a flat string.
+    - `question.requiredWatchMessage` automatically resolves to the entry for `survey.locale`, falls back to the `default` locale entry if the active-locale entry is missing, and yields `""` when neither has been set.
+  - On top of the SurveyJS-resolved value the widget layers a built-in translation backstop in `getRequiredWatchMessage(question)`: if the resolved value is empty (designer hasn't filled in anything), it looks the message up in `DEFAULT_REQUIRED_WATCH_MESSAGES` keyed by `survey.locale`. The CMS already pushes the active locale into `survey.locale` via `4_surveyJS.js`, so a German-locale page automatically gets the German alert with no per-question configuration.
   - Built-in locales: `en`, `de`, `fr`, `it`. Adding a locale is a one-line change to `DEFAULT_REQUIRED_WATCH_MESSAGES` in `5_videoSegmentWidget.js` — no other code edits needed.
-  - Resolution order: per-question custom string → built-in translation for `survey.locale` → English default.
+  - Resolution order: SurveyJS-resolved per-locale string (Translation tab / property panel) → built-in translation for `survey.locale` → English default.
 
 - **Auto-start playback** (`autoStart`)
   - New optional boolean property `autoStart` (default `false`) on the `video` question class. Toggle it on for "one-video-per-page" surveys where the participant should land on the page and have the video begin playing without an extra click.

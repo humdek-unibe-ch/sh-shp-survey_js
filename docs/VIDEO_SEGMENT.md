@@ -161,7 +161,7 @@ JS/CSS and stores its configuration inside the SurveyJS JSON.
 | `videoFit`              | enum    | no       | `"contain"`   | "Video fit" — `none`/`contain`/`cover`/`fill`                               |
 | `videoHeight`           | string  | no       | `""`          | "Video height (CSS-accepted values)"                                        |
 | `videoWidth`            | string  | no       | `""`          | "Video width (CSS-accepted values)"                                         |
-| `requiredWatchMessage`  | text    | no       | `""`          | "Required-watch alert (optional, falls back to localized default)"          |
+| `requiredWatchMessage`  | text (localizable) | no | *(unset)* | "Required-watch alert (optional, falls back to localized default)"          |
 
 `defaultValue` and `correctAnswer` are hidden from the property panel
 because the value is auto-generated playback metadata; setting them by
@@ -421,29 +421,41 @@ some browsers will block until the participant interacts.
 
 ### Translatable required-watch alert
 
-The required-watch alert ships with built-in translations and a
-per-question override. The resolution order in
-`getRequiredWatchMessage(question)` is:
+The `requiredWatchMessage` property is registered with
+`isLocalizable: true`, which means SurveyJS treats it the same way as
+the question's built-in `title` / `description`:
 
-1. **Custom designer-provided string** — if the question's
-   `requiredWatchMessage` property is a non-empty string, that exact
-   text is shown, ignoring the survey locale. Use this for surveys
-   that need wording other than the built-in defaults (e.g. "Please
-   watch the entire training video before answering the questions
-   below.").
+1. **It appears in the Creator's Translation tab.** Designers open
+   *Translation* and see a row labelled "Required-watch alert" under
+   each video question, with one input column per language defined in
+   *Language Settings*. Filling those in produces JSON like
+   `"requiredWatchMessage": { "default": "…", "de": "…", "fr": "…" }`
+   instead of a flat string.
+2. **`question.requiredWatchMessage` already does locale resolution.**
+   At runtime SurveyJS' `LocalizableString` returns the entry for
+   `survey.locale`, falls back to the `default` locale entry if the
+   active-locale entry is missing, and yields `""` when neither has
+   been set in the Creator.
+
+The widget then layers a built-in translation backstop on top:
+
+1. **SurveyJS-resolved per-locale string** — if the designer filled in
+   anything (Translation tab or property panel), the resolved value
+   for the active locale is used as-is.
 2. **Built-in translation for the active locale** — if
-   `requiredWatchMessage` is blank, the widget reads `survey.locale`
-   (which the CMS pushes from the SelfHelp page locale via
-   `4_surveyJS.js`) and looks the message up in
+   `requiredWatchMessage` resolved to `""` (empty in every locale),
+   the widget reads `survey.locale` and looks the message up in
    `DEFAULT_REQUIRED_WATCH_MESSAGES`. Bundled locales: `en`, `de`,
    `fr`, `it`.
 3. **English default** — if no entry matches the active locale (or
    `survey.locale` is blank, the SurveyJS default state), the English
    message is shown.
 
-To bundle a new locale, add one line to
-`DEFAULT_REQUIRED_WATCH_MESSAGES` in `5_videoSegmentWidget.js` — no
-other code changes are required.
+The two layers compose cleanly: designers who care about exact wording
+override per question via the Translation tab, designers who just want
+"sane defaults" leave the property blank and inherit the bundled
+translations. To add a locale to the built-in table, append one line
+to `DEFAULT_REQUIRED_WATCH_MESSAGES` in `5_videoSegmentWidget.js`.
 
 ## Toolbox icon
 
@@ -529,7 +541,8 @@ A complete example survey is in
 | Toolbox icon is empty                                               | Old cached JS or missing icon registration. The plugin falls back to `icon-image` automatically.                                                                                  |
 | "startTimestamp must be strictly less than endTimestamp" appears in the Creator property panel for valid configurations (e.g. `start=15`, `end=45`) | A pre-release v1.4.8 widget hooked `creator.onPropertyValidationCustomError` for the cross-field rule. That event only re-runs for the property currently being edited, so an error attached to the OTHER property could never be cleared by subsequent valid edits and stayed latched. The shipped v1.4.8 widget moves cross-field validation to a question-level red banner (above the live preview / runtime player) which self-clears on every re-render. Hard-refresh to drop cached JS. |
 | Cross-field error stays in the Creator preview banner after fix      | The widget self-clears errors tagged `__fromVideoQuestion` on every `afterRender`, but a re-render is only triggered on a property change. Click anywhere in the property panel (or change/restore any property) to force a re-render. |
-| Required-watch alert appears in English on a German page             | `survey.locale` is empty (the SurveyJS default). Confirm `4_surveyJS.js` is reading the locale from the `selfHelp-locale-<locale>` class on `.selfHelp-survey-js-holder`. As a fallback, set `requiredWatchMessage` on the question to your preferred wording. |
+| Required-watch alert appears in English on a German page             | `survey.locale` is empty (the SurveyJS default). Confirm `4_surveyJS.js` is reading the locale from the `selfHelp-locale-<locale>` class on `.selfHelp-survey-js-holder`. Either fill in the German entry in the Creator's Translation tab (`requiredWatchMessage` is `isLocalizable: true` and shows up there next to the question title), or rely on the built-in `de` backstop in `DEFAULT_REQUIRED_WATCH_MESSAGES`. |
+| `requiredWatchMessage` row missing from the Translation tab          | Old cached JS — the property is registered with `isLocalizable: true` since v1.4.8. Hard-refresh the Creator (Ctrl+Shift+R) and reopen the survey. |
 | "Video URL is required"                                              | Configuration error — fix the property value in the Creator.                                                                                                                      |
 
 ## Files of interest

@@ -81,10 +81,16 @@ The plugin validates configuration in two complementary ways:
 When the question is `isRequired`, the participant must additionally
 watch to the configured `endTimestamp` (or the file's natural end if
 no `endTimestamp` is set) before the survey lets them advance. The
-alert text is taken from the per-question `requiredWatchMessage`
-property when set; otherwise it falls back to a built-in translation
-table indexed by `survey.locale` (currently bundled: `en`, `de`, `fr`,
-`it`).
+alert text comes from the question's `requiredWatchMessage` property,
+which is **fully translatable**: it is registered with
+`isLocalizable: true` and appears in the Creator's **Translation tab**
+under each video question, with one column per language defined in
+*Language Settings* — fill in the German / French / etc. translation
+right next to the question's `title`. If the property is left blank in
+every locale, the widget falls back to a built-in translation table
+indexed by `survey.locale` (currently bundled: `en`, `de`, `fr`, `it`)
+and finally to the English default. See
+[VIDEO_SEGMENT.md → Translatable required-watch alert](VIDEO_SEGMENT.md#translatable-required-watch-alert).
 
 For "one-video-per-page" surveys, toggle the **`autoStart`** property
 on the video question and the widget will automatically begin playback

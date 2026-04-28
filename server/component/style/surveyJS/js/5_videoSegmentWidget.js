@@ -230,17 +230,26 @@
                  * watching to the end of the configured segment (or to
                  * the file's natural end if no `endTimestamp` is set).
                  *
-                 * UX model:
-                 *   - The survey designer can override this per question
-                 *     by typing a custom message into the property panel.
-                 *   - When the property is left blank (the default), the
-                 *     widget falls back to a built-in translation table
-                 *     keyed by the survey's active locale (see
-                 *     `DEFAULT_REQUIRED_WATCH_MESSAGES` and
-                 *     `getRequiredWatchMessage` below). The CMS already
-                 *     pushes the active locale into `survey.locale` via
-                 *     `4_surveyJS.js`, so a German-locale page shows the
-                 *     German message automatically.
+                 * The property is registered as `isLocalizable: true`, so
+                 * SurveyJS:
+                 *   1. Creates a `LocalizableString` on the question
+                 *      automatically (named `locRequiredWatchMessage`)
+                 *      and wires the `requiredWatchMessage` getter/setter
+                 *      to delegate to it for `survey.locale`.
+                 *   2. Auto-includes the property in the Creator's
+                 *      Translation tab — designers can fill in per-locale
+                 *      strings (German, French, …) right next to the
+                 *      question's `title`/`description`. JSON is then
+                 *      serialised as `{ default: "…", de: "…", fr: "…" }`
+                 *      instead of a flat string.
+                 *
+                 * Resolution order at runtime (see `getRequiredWatchMessage`):
+                 *   1. SurveyJS-resolved locale value (LocalizableString
+                 *      returns the active-locale entry, or the default,
+                 *      or "" if neither is set).
+                 *   2. Built-in `DEFAULT_REQUIRED_WATCH_MESSAGES[locale]`
+                 *      backstop (en/de/fr/it bundled).
+                 *   3. English default.
                  *
                  * `:text` selects a textarea editor in the property panel
                  * (instead of a single-line input), which is appropriate
@@ -248,7 +257,7 @@
                  */
                 {
                     name: "requiredWatchMessage:text",
-                    default: "",
+                    isLocalizable: true,
                     category: "general",
                     displayName: "Required-watch alert (optional, falls back to localized default)"
                 }
@@ -455,11 +464,12 @@
     /**
      * Built-in translations for the required-watch alert.
      *
-     * The survey designer can override the message per question by
-     * setting `requiredWatchMessage` in the property panel. When that
-     * property is left blank, `getRequiredWatchMessage` looks up the
-     * message here using the survey's active locale (which the CMS
-     * pushes into `survey.locale` via `4_surveyJS.js`).
+     * Acts as a backstop when the survey designer has not provided a
+     * per-locale string via the Creator's Translation tab — in that
+     * case `question.requiredWatchMessage` resolves to the empty
+     * string and `getRequiredWatchMessage` falls through to this table
+     * keyed by `survey.locale` (which the CMS pushes via
+     * `4_surveyJS.js`).
      *
      * Keys are SurveyJS locale codes (`en`, `de`, `fr`, …). The
      * `default` entry is used when `survey.locale` is empty (the
@@ -478,11 +488,19 @@
     /**
      * Resolve the required-watch alert message for a question.
      *
-     * Resolution order:
-     *   1. `question.requiredWatchMessage` if the survey designer
-     *      provided a non-empty custom string.
-     *   2. The built-in translation table indexed by `survey.locale`.
-     *   3. The English default as a final fallback.
+     * The property is `isLocalizable: true`, so reading
+     * `question.requiredWatchMessage` already does locale resolution
+     * via SurveyJS' LocalizableString machinery: it returns the entry
+     * for `survey.locale`, or the property's `default` locale entry,
+     * or `""` when neither has been set in the Creator's Translation
+     * tab.
+     *
+     * Resolution order in priority:
+     *   1. SurveyJS-resolved per-locale string when the designer
+     *      filled in something (Translation tab or property panel).
+     *   2. Built-in `DEFAULT_REQUIRED_WATCH_MESSAGES[survey.locale]`
+     *      backstop when nothing has been provided.
+     *   3. English default as the final fallback.
      */
     function getRequiredWatchMessage(question) {
         var custom = question && question.requiredWatchMessage;
