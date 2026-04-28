@@ -79,6 +79,13 @@ function initSurveyJS() {
         $(this).removeAttr('data-survey-js');
         $(this).removeAttr('data-survey-js-fields');
         $(this).removeAttr('data-survey-js-last-response');
+        // Expose SelfHelp's BASE_PATH globally so custom widgets such as
+        // videoSegment can resolve root-relative URLs like "/assets/video.mp4"
+        // against the actual SelfHelp install path. Only set once; if the
+        // page hosts multiple surveys the same value applies.
+        if (typeof window.SELFHELP_BASE_PATH === "undefined" && surveyFields && typeof surveyFields.base_path !== "undefined") {
+            window.SELFHELP_BASE_PATH = surveyFields.base_path || "";
+        }
         window['surveyjs-widgets'].microphone(Survey);
         expandSurveyJsForSelfhelp();
         Survey.StylesManager.applyTheme(surveyFields['survey_js_theme']);

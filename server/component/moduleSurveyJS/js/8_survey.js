@@ -103,6 +103,19 @@ $(document).ready(function () {
 
 function initSurveyCreator() {
     if ($("#surveyJSCreator").length > 0) {
+        // Expose SelfHelp's BASE_PATH globally so custom widgets such as
+        // videoSegment can resolve root-relative URLs (e.g. "/assets/x.mp4")
+        // in the Creator preview. This mirrors what 4_surveyJS.js does for
+        // the runtime view, but the Creator never loads 4_surveyJS.js, so
+        // we must set the variable here too.
+        //
+        // Read via .attr() rather than .data(): jQuery's .data() auto-coerces
+        // values that look like JSON / numbers, which can produce surprises
+        // for path-shaped strings.
+        if (typeof window.SELFHELP_BASE_PATH === "undefined") {
+            const basePathFromAttr = $("#surveyJSCreator").attr("data-base-path");
+            window.SELFHELP_BASE_PATH = (typeof basePathFromAttr === "string") ? basePathFromAttr : "";
+        }
         creator.saveSurveyFunc = () => {
             autoSaveTheSurvey(creator.JSON);
         };
@@ -142,6 +155,53 @@ function initSurveyCreator() {
                     toolboxItems.unshift(quillItem);
                 }
             }
+
+            // --- Video Segment toolbox customization (v1.4.7) ---
+            // The videoSegment custom widget (5_videoSegmentWidget.js) is a
+            // STANDALONE question type (parent="empty"), so the custom
+            // widget's htmlTemplate is the entire renderer — there is no
+            // file-upload / drag-and-drop affordance to remove.
+            //
+            // SurveyJS internally lowercases every registered class name
+            // (Survey.Serializer.addClass("videoSegment", ...) is stored as
+            // "videosegment"), so the canonical type name is "videosegment".
+            // We use the lowercased name everywhere — toolbox lookup,
+            // default JSON, isFit comparison — and rely on
+            // surveyLocalization.qt.videosegment = "Video Segment" for the
+            // human-facing label.
+            //
+            // The widget exposes the resolved icon name via
+            // window.__videoSegmentIconName: it is "icon-video-segment" if
+            // SurveyCreator.SvgRegistry was available and we registered our
+            // own video-camera SVG, or "icon-image" as a built-in fallback
+            // for builds that do not expose the SvgRegistry.
+            const videoSegmentIcon = (typeof window.__videoSegmentIconName === "string" && window.__videoSegmentIconName)
+                ? window.__videoSegmentIconName
+                : "icon-image";
+            let videoSegmentIndex = toolboxItems.findIndex((item) => item.name === "videosegment" || item.name === "videoSegment");
+            const videoSegmentDefaultJson = {
+                type: "videosegment",
+                name: "video_segment",
+                title: "Watch the video segment",
+                videoUrl: "",
+                startTimestamp: 0,
+                endTimestamp: 30,
+                videoFit: "contain"
+            };
+            if (videoSegmentIndex !== -1) {
+                let videoSegmentItem = toolboxItems[videoSegmentIndex];
+                videoSegmentItem.name = "videosegment";
+                videoSegmentItem.title = "Video Segment";
+                videoSegmentItem.iconName = videoSegmentIcon;
+                videoSegmentItem.json = videoSegmentDefaultJson;
+            } else {
+                creator.toolbox.addItem({
+                    name: "videosegment",
+                    title: "Video Segment",
+                    iconName: videoSegmentIcon,
+                    json: videoSegmentDefaultJson
+                });
+            }
         }
         // Apply HTML markup to survey contents
         if (creator.survey) {
@@ -150,6 +210,52 @@ function initSurveyCreator() {
         if (creator.onSurveyInstanceCreated) {
             creator.onSurveyInstanceCreated.add((_, options) => {
                 options.survey.onTextMarkdown.add(applyHtml);
+            });
+        }
+
+        // Cross-field property validation for the videoSegment question:
+        // SurveyJS' built-in `isRequired`/`minValue` already cover
+        // missing-or-negative values; this hook adds the "start < end" rule
+        // which depends on two properties at once and so cannot be expressed
+        // statically via Survey.Serializer.addClass.
+        if (creator.onPropertyValidationCustomError) {
+            creator.onPropertyValidationCustomError.add((_, options) => {
+                // SurveyJS lowercases every class name; getType() returns
+                // "videosegment" even though we register "videoSegment".
+                if (!options.obj || options.obj.getType() !== "videosegment") return;
+                const propName = options.propertyName;
+                if (propName !== "startTimestamp" && propName !== "endTimestamp") return;
+
+                const start = parseFloat(options.obj.startTimestamp);
+                const end = parseFloat(options.obj.endTimestamp);
+                if (isNaN(start) || isNaN(end)) return; // isRequired covers this
+
+                if (start < 0 || end < 0) {
+                    options.error = "Timestamps must be greater than or equal to 0";
+                } else if (start >= end) {
+                    options.error = "startTimestamp must be strictly less than endTimestamp";
+                }
+            });
+        }
+
+        // Hide a few inherited "empty" properties that don't make sense
+        // for a videoSegment — its value is auto-generated playback
+        // metadata ({ watched, currentTime, completedAt, reason }), so
+        // there is no point letting the survey designer set a default value
+        // or a correct answer. Everything else they need is already in the
+        // General / Layout categories.
+        const VIDEO_SEGMENT_HIDDEN_PROPS = [
+            "defaultValue",
+            "correctAnswer"
+        ];
+        if (creator.onShowingProperty) {
+            creator.onShowingProperty.add((_, options) => {
+                // SurveyJS lowercases every class name; getType() returns
+                // "videosegment" even though we register "videoSegment".
+                if (!options.obj || options.obj.getType() !== "videosegment") return;
+                if (VIDEO_SEGMENT_HIDDEN_PROPS.indexOf(options.property.name) !== -1) {
+                    options.canShow = false;
+                }
             });
         }
         creator.render("surveyJSCreator");

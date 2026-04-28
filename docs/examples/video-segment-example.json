@@ -1,0 +1,51 @@
+{
+    "title": "Video Segment example survey",
+    "description": "A minimal survey demonstrating the videoSegment custom question type introduced in plugin v1.4.7 and finalized in v1.4.8. The question is a standalone custom widget (not derived from the image question). The URL goes into 'videoUrl'; layout is controlled by 'videoFit' / 'videoHeight' / 'videoWidth'.",
+    "logoPosition": "right",
+    "pages": [
+        {
+            "name": "page_intro",
+            "title": "Watch the excerpt",
+            "elements": [
+                {
+                    "type": "html",
+                    "name": "intro_html",
+                    "html": "<p>Please watch the highlighted excerpt of the video below. Playback is restricted to the configured range. You can pause, resume, and seek freely <em>inside</em> that range; replays restart from the beginning of the segment.</p>"
+                },
+                {
+                    "type": "videosegment",
+                    "name": "intro_excerpt",
+                    "title": "Watch the introduction excerpt (12s – 47s)",
+                    "videoUrl": "/assets/intro.mp4",
+                    "startTimestamp": 12,
+                    "endTimestamp": 47,
+                    "videoFit": "contain",
+                    "videoHeight": "360px",
+                    "isRequired": true
+                }
+            ]
+        },
+        {
+            "name": "page_questions",
+            "title": "Follow-up questions",
+            "elements": [
+                {
+                    "type": "radiogroup",
+                    "name": "watched_completely",
+                    "title": "Did you watch the full segment?",
+                    "isRequired": true,
+                    "choices": [
+                        { "value": "yes", "text": "Yes" },
+                        { "value": "no",  "text": "No"  }
+                    ]
+                },
+                {
+                    "type": "comment",
+                    "name": "feedback",
+                    "title": "Any comments on the excerpt?"
+                }
+            ]
+        }
+    ],
+    "showQuestionNumbers": "off"
+}

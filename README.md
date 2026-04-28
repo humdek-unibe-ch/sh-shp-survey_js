@@ -28,6 +28,10 @@ This plugin enables you to create, customize, and manage interactive surveys usi
 - File upload support (including voice recordings)
 - PDF export capability
 
+### Custom Question Types
+- **Rich Text Editor** (`quill`): Markdown/HTML rich text input.
+- **Video Segment** (`videoSegment`, since v1.4.7): standalone custom question that plays an HTML5 video clamped between `startTimestamp` and `endTimestamp` (seconds). The URL is in the `videoUrl` property — root-relative paths such as `/assets/video.mp4` are resolved against the PHP `BASE_PATH` constant. Drag-and-drop and direct file upload are disabled by design — only URLs are accepted. Optional `videoFit` / `videoHeight` / `videoWidth` properties are applied directly to the `<video>` element. Useful for "watch this excerpt and answer" workflows. See [`docs/VIDEO_SEGMENT.md`](docs/VIDEO_SEGMENT.md).
+
 ### Response Collection
 - Comprehensive metadata collection (start/end times, duration, user agent, etc.)
 - Timeout settings for survey sessions
@@ -82,3 +86,9 @@ The plugin includes a comprehensive dashboard for viewing and analyzing survey r
 - Response filtering and sorting
 - Data visualization
 - Export capabilities
+
+## Documentation
+
+- [Survey usage guide](docs/SURVEY_USAGE.md) — how to create/configure/test surveys in SelfHelp.
+- [Video Segment question type](docs/VIDEO_SEGMENT.md) — properties, playback rules, validation and examples.
+- [`docs/examples/video-segment-example.json`](docs/examples/video-segment-example.json) — minimal SurveyJS JSON using the new question.
