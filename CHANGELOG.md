@@ -1,125 +1,88 @@
 # SurveyJS Plugin Changelog
 
 ## v1.4.8
+
 ### New Features
-- **Video Segment custom question type** (`videoSegment`)
-  - New SurveyJS custom question type (`5_videoSegmentWidget.js`) that plays
-    a restricted video range.
-  - Implemented as a **standalone class** (`Survey.Serializer.addClass(...,
-    null, "empty")`); the custom widget's `htmlTemplate` is the sole
-    renderer for the question. We deliberately do **not** extend the
-    built-in `image` question — extending it caused the native image
-    renderer to take over (full video playing, no segment clamping, no
-    BASE_PATH resolution and a stray drag-and-drop / upload affordance for
-    empty values).
-  - Required properties:
-    - `videoUrl` — "Video URL" (required)
-    - `startTimestamp` — "Start timestamp (seconds)" (required, ≥ 0)
-    - `endTimestamp` — "End timestamp (seconds)" (required, ≥ 0, must be
-      strictly greater than `startTimestamp`)
-  - Optional layout properties (renamed from the equivalent image-question
-    properties so the Creator UI says "Video ..." everywhere) and now
-    **functionally applied** to the `<video>` element:
-    - `videoFit` — "Video fit" (`none` | `contain` | `cover` | `fill`,
-      default `contain`) — applied as `object-fit` inline style.
-    - `videoHeight` — "Video height (CSS-accepted values)" — applied as
-      `style.height`.
-    - `videoWidth` — "Video width (CSS-accepted values)" — applied as
-      `style.width`.
-    All three are reactive: editing them in the Creator updates the
-    preview live via `registerFunctionOnPropertyValueChanged`.
-  - **No upload, no drag-and-drop**: because the question type does not
-    inherit from `image`, there is no native upload UI ever. The empty
-    state shows the `<video>` element placeholder and the configuration
-    error banner — URL is the only way to point at a file.
-  - **Toolbox icon**: a video-camera SVG is registered via
-    `SurveyCreator.SvgRegistry.registerIconFromSvg` when available; if the
-    current Creator build does not expose `SvgRegistry`, the widget falls
-    back to the always-present built-in `icon-image`. The resolved name is
-    handed to `8_survey.js` via `window.__videoSegmentIconName`.
-  - **Question-type display name** localized to "Video Segment" by writing
-    `qt.videosegment` (lowercase key — SurveyJS' Serializer lowercases
-    every registered class name internally) into every locale of
-    `Survey.surveyLocalization`, `SurveyCreator.editorLocalization` and
-    `SurveyCreator.localization` (the namespace varies between
-    survey-creator-knockout builds), so the question card dropdown no
-    longer shows the unreadable lowercase `"videosegment"`.
-  - All `getType()` comparisons in the widget, the toolbox refinement and
-    the cross-field validator use the lowercased canonical type
-    `"videosegment"`. Comparing against the camelCase `"videoSegment"`
-    silently never matched (because SurveyJS internally lowercases the
-    name), which previously caused the question card to render an empty
-    `<div>` with the title visible but no video player.
-  - **Root-relative URL support**: `videoUrl` now accepts paths like
-    `/assets/video.mp4`. They are resolved against
-    `window.SELFHELP_BASE_PATH`, which is exposed from the PHP `BASE_PATH`
-    constant via `SurveyJSView::output_content()` (`survey_fields.base_path`
-    in the `data-survey-js-fields` attribute) and read by `4_surveyJS.js`
-    before survey rendering. Absolute (`https://`), protocol-relative
-    (`//cdn...`), `data:` and `blob:` URLs are passed through unchanged.
-  - Playback always begins at `startTimestamp`; the user can pause, resume
-    and seek freely **within** `[startTimestamp, endTimestamp]`. Seeks
-    outside the window are immediately clamped via the `seeking` / `seeked`
-    handlers, so the timeline scrubber cannot rewind past the start or
-    fast-forward past the end.
-  - Playback is hard-stopped at `endTimestamp` (clamped + paused) and on
-    replay restarts from `startTimestamp` (handled in the `play` event).
-  - Configuration validation: missing URL/timestamps, negative values, and
-    `startTimestamp >= endTimestamp` are reported in both the Survey Creator
-    property panel (single-field via `isRequired`/`minValue`, cross-field
-    via `onPropertyValidationCustomError`) and at runtime as a visible
-    question error banner.
-  - **Continuous playback tracking**: the question value is updated on
-    every meaningful playback event (`play`, `pause`, `seek`, `clamp`,
-    `ended`), not only when the segment finishes. The schema is:
-    ```jsonc
-    {
-        "watched":        boolean,
-        "currentTime":    number,
-        "startTimestamp": number,
-        "endTimestamp":   number,
-        "duration":       number,
-        "watchedSeconds": number,   // wall-clock seconds actually played, seeks excluded
-        "percentWatched": number,   // 0..1
-        "startedAt":      string,   // ISO of first play
-        "lastUpdatedAt":  string,   // ISO of last event
-        "lastEvent":      "play"|"pause"|"seek"|"clamp"|"ended",
-        "completedAt":    string|null
-    }
-    ```
-    A submission made while the participant was still partway through the
-    segment now contains an accurate snapshot of where they stopped and
-    what they did last. A per-event log was intentionally **not** added —
-    the cumulative snapshot is enough for current analytics needs and a
-    per-event array would needlessly inflate every survey response.
-    `defaultValue` and `correctAnswer` are hidden from the property panel
-    since the value is auto-generated.
-  - **BASE_PATH wiring also added to the Creator preview**: the runtime
-    view (`SurveyJSView`) already exposed `BASE_PATH` via
-    `data-survey-js-fields` for `4_surveyJS.js` to consume. The Creator
-    preview never loaded `4_surveyJS.js`, so root-relative `videoUrl`
-    values like `/assets/intro.mp4` resolved against the host root and
-    404ed. The Creator's container (`tpl_moduleSurveyCreatorJS.php`) now
-    carries a `data-base-path` attribute populated from the PHP
-    `BASE_PATH` constant, and `8_survey.js → initSurveyCreator()` reads
-    it via `attr("data-base-path")` (not `.data()` — jQuery's `.data()`
-    auto-coerces values that look like JSON / numbers) and assigns
-    `window.SELFHELP_BASE_PATH`.
-  - Removed the on-screen "Playback restricted to X.XXs – Y.YYs" hint
-    text below the player; the segment boundaries are already implied by
-    the timeline, and the hint cluttered the UI.
-  - See [`docs/VIDEO_SEGMENT.md`](docs/VIDEO_SEGMENT.md) and the example at
-    [`docs/examples/video-segment-example.json`](docs/examples/video-segment-example.json).
-- New CSS file `server/component/style/surveyJS/css/video-segment.css`
-  - Picked up by the existing gulp `styles` task (matches the
-    `server/component/style/**/css/*.css` glob) and bundled into
-    `css/ext/survey-js.min.css`.
-  - Also added to the `DEBUG` CSS include lists in both
-    `SurveyJSView::get_css_includes()` (runtime) and
-    `ModuleSurveyJSView::get_css_includes()` (Creator) so it loads on the
-    development environment without needing the gulp bundle.
-- Added survey usage documentation: [`docs/SURVEY_USAGE.md`](docs/SURVEY_USAGE.md).
-- Compatible with SurveyJS v1.9.124 (no library upgrade).
+
+- **Video custom question type** (`video`)  
+  - New SurveyJS custom question type (`5_videoSegmentWidget.js`) that supports both **full-video playback** and **restricted segment playback**.
+  - Implemented as a **standalone class** (`Survey.Serializer.addClass(..., null, "empty")`); the custom widget's `htmlTemplate` is the sole renderer for the question. We deliberately do **not** extend the built-in `image` question — extending it caused the native image renderer to take over (full video playing, no segment clamping, no BASE_PATH resolution and a stray drag-and-drop / upload affordance for empty values).
+
+- **Question properties**
+  - Required:
+    - `videoUrl` — "Video URL"
+  - Optional (no defaults — the property-panel fields render blank, and the widget treats blank fields as "not configured"):
+    - `startTimestamp` — start time in seconds (≥ 0)
+    - `endTimestamp` — end time in seconds (≥ 0; `0` is treated as "not set" since a 0-second segment is nonsensical)
+  - Behaviour:
+    - Both unset (or end ≤ 0) → plays the entire video.
+    - Only `startTimestamp` set → starts there and continues to natural end.
+    - Only `endTimestamp` set → plays from 0 until that timestamp.
+    - Both set with end > start → enforces exact playback segment.
+
+- **Optional layout properties**  
+  (renamed from image-question equivalents so the Creator UI says "Video ..." everywhere)
+  - `videoFit` — "Video fit" (`none` | `contain` | `cover` | `fill`, default `contain`) → applied as `object-fit`
+  - `videoHeight` — applied as CSS height
+  - `videoWidth` — applied as CSS width
+
+  All three update live in the Survey Creator preview through `registerFunctionOnPropertyValueChanged`.
+
+- **No upload / drag-and-drop UI**  
+  Because the type does not inherit from `image`, no native upload controls are shown. The only source is `videoUrl`.
+
+- **Toolbox icon**
+  - Video-camera SVG registered under `video-question`
+  - Exposed globally as `window.__videoQuestionIconName`
+  - When the host build does not expose `SurveyCreator.SvgRegistry`, the widget falls back to the built-in `icon-image`
+
+- **Display name localization**
+  - Creator / toolbox / dropdown labels display **Video**
+  - Localization entries written into SurveyJS locale stores so the internal lowercase type key no longer appears raw.
+
+- **Root-relative URL support**
+  - `videoUrl` accepts paths like `/assets/video.mp4`
+  - These resolve against `window.SELFHELP_BASE_PATH`
+  - Absolute (`https://`), protocol-relative (`//...`), `data:` and `blob:` URLs pass through unchanged
+
+- **Playback controls**
+  - Playback begins at `startTimestamp` when provided
+  - Users may pause, resume and seek freely within allowed bounds
+  - Seeking outside bounds is automatically clamped
+  - If `endTimestamp` is set, playback hard-stops there
+  - Replay restarts from `startTimestamp` when relevant
+  - If no `endTimestamp` is configured, the browser's normal end-of-file behaviour applies
+
+- **Internal timestamp handling**
+  - Unset `endTimestamp` is treated as `Infinity` until metadata loads
+  - After `loadedmetadata`, it resolves to `video.duration`
+  - Bound checks use `isFinite(end)` so missing end timestamps cleanly mean "no upper limit"
+
+- **Validation**
+  - URL is the only required field
+  - `startTimestamp ≥ 0` and `endTimestamp ≥ 0` when provided
+  - Cross-field rule `startTimestamp < endTimestamp` applies only when `endTimestamp` is a meaningful upper bound (set AND > 0)
+  - Missing timestamps and `endTimestamp === 0` are valid and not flagged — the property panel can render number editors as `0` for blank fields, and we deliberately do not show a "0 must be < 0" error in that case
+
+- **Continuous playback tracking**
+  - Question value updates on meaningful playback events (`play`, `pause`, `seek`, `clamp`, `ended`)
+  - Snapshot schema:
+
+```jsonc
+{
+  "watched": true,
+  "currentTime": 12.4,
+  "startTimestamp": 5,
+  "endTimestamp": null,
+  "duration": null,
+  "watchedSeconds": 7.4,
+  "percentWatched": 0.32,
+  "startedAt": "ISO timestamp",
+  "lastUpdatedAt": "ISO timestamp",
+  "lastEvent": "pause",
+  "completedAt": null
+}
+```
 
 ## v1.4.7
 ### Bugfix

@@ -173,7 +173,7 @@ class ModuleSurveyJSView extends BaseView
                 __DIR__ . "/js/6_survey-creator-core.i18n.min.js",
                 __DIR__ . "/js/7_survey.i18n.min.js",
                 __DIR__ . "/js/7_surveyjs-widgets.min.js",
-                __DIR__ . "/../style/surveyJS/js/5_videoSegmentWidget.js", // Custom videoSegment question type (v1.4.7)
+                __DIR__ . "/../style/surveyJS/js/5_videoSegmentWidget.js", // Custom `video` question type (v1.4.8; file name kept on disk for git-history continuity)
                 // __DIR__ . "/js/9_quill_integration.js",
                 __DIR__ . "/js/8_survey.js",                
             );
@@ -199,7 +199,7 @@ class ModuleSurveyJSView extends BaseView
                     __DIR__ . "/css/survey-creator-core.min.css",
                     __DIR__ . "/css/quill.snow.min.css",
                     __DIR__ . "/css/survey.css",
-                    __DIR__ . "/../style/surveyJS/css/video-segment.css" // Custom videoSegment styles (v1.4.7)
+                    __DIR__ . "/../style/surveyJS/css/video-segment.css" // Custom `video` question styles (v1.4.8; file name kept on disk for git-history continuity)
                 );
             } else {
                 $local = array(__DIR__ . "/../../../css/ext/survey-js.min.css?v=" . rtrim(shell_exec("git describe --tags")));

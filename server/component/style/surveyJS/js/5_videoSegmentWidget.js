@@ -3,9 +3,14 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
 /**
- * Video Segment custom SurveyJS question widget (v1.4.7).
+ * Video custom SurveyJS question widget (v1.4.8).
  *
  * Built against SurveyJS v1.9.124 (do NOT upgrade).
+ *
+ * The question type is **`video`**, all lowercase (SurveyJS' Serializer
+ * lowercases every registered class name internally). It is a brand
+ * new addition in v1.4.8; no backward compatibility with any earlier
+ * working name is needed and none is provided.
  *
  * Why a standalone class (NOT extending the built-in `image` question)?
  * --------------------------------------------------------------------
@@ -23,17 +28,40 @@
  *
  * The class therefore inherits from `empty` (no built-in renderer) and
  * the custom widget's `htmlTemplate` is the sole source of truth for
- * how a `videoSegment` question is drawn. The `<video>` element with
- * native controls is the only UI; configuration is in the property panel.
+ * how a `video` question is drawn. The `<video>` element with native
+ * controls is the only UI; configuration is in the property panel.
  *
  * Property surface
  * ----------------
  *   videoUrl        (string, required)            -> "Video URL"
- *   startTimestamp  (number, required, >= 0)      -> "Start timestamp (seconds)"
- *   endTimestamp    (number, required, > start)   -> "End timestamp (seconds)"
+ *   startTimestamp  (number, optional, no default) -> "Start timestamp (seconds, optional)"
+ *   endTimestamp    (number, optional, no default) -> "End timestamp (seconds, optional)"
  *   videoFit        ("none"|"contain"|"cover"|"fill", default "contain") -> "Video fit"
  *   videoHeight     (CSS string, default "")      -> "Video height (CSS-accepted values)"
  *   videoWidth      (CSS string, default "")      -> "Video width (CSS-accepted values)"
+ *
+ * Property-panel UX note: BOTH timestamps deliberately have NO default,
+ * not `0`. Setting `default: 0` causes the Creator's number editor to
+ * pre-fill `0` into the field, which then flips the cross-field
+ * validator into "0 >= 0" and shows a spurious "startTimestamp must be
+ * strictly less than endTimestamp" error before the user has typed
+ * anything. Leaving the default unset means the editor renders a blank
+ * field for both, and the user simply leaves them blank to indicate
+ * "no segment, play the whole video".
+ *
+ * Playback semantics
+ * ------------------
+ *   - When `startTimestamp` AND `endTimestamp` are set (and `end > 0`),
+ *     the segment is enforced exactly: seeks before `start` snap
+ *     forward, seeks past `end` snap back, the player auto-pauses at
+ *     `end`, and pressing play after the end restarts at `start`.
+ *   - When `endTimestamp` is omitted (or 0 — that's nonsensical for an
+ *     end timestamp so we treat it as "not set"), the user can watch
+ *     the entire video. We still respect a non-zero `startTimestamp`
+ *     if provided, so an "intro skip" use case (start at 12s, play to
+ *     natural end) works.
+ *   - When both timestamps are omitted (the common case), the question
+ *     behaves like a plain video player with progress tracking.
  *
  * URL resolution
  * --------------
@@ -44,21 +72,26 @@
  *   "assets/video.mp4"             -> unchanged (page-relative)
  *
  * BASE_PATH is exposed to JS via `window.SELFHELP_BASE_PATH`, set by
- * `4_surveyJS.js` from the `data-survey-js-fields` attribute, which is
- * populated by `SurveyJSView::output_content()` from the PHP `BASE_PATH`
- * constant.
+ * `4_surveyJS.js` from the `data-survey-js-fields` attribute (runtime)
+ * and by `8_survey.js` from the Creator container's `data-base-path`
+ * attribute (Creator preview). Both are populated by PHP from the
+ * `BASE_PATH` constant.
  *
  * Question value
  * --------------
- * When the segment is fully watched (natural playback or seek-clamped to
- * `endTimestamp`), the widget assigns:
+ * The widget continuously persists a snapshot of the user's playback
+ * state to `question.value` on every play / pause / seek / clamp /
+ * ended event. See the doc-comment on `attachPlaybackEnforcement` for
+ * the exact schema; in short:
  *
- *   { watched: true, currentTime: <end>, completedAt: <ISO>, reason: "ended"|"clamp" }
+ *   { watched, currentTime, startTimestamp, endTimestamp, duration,
+ *     watchedSeconds, percentWatched, startedAt, lastUpdatedAt,
+ *     lastEvent, completedAt }
  *
- * This is purely auto-generated metadata; there is no `defaultValue` /
- * `correctAnswer` editor exposed in the property panel.
+ * This is purely auto-generated; the property panel intentionally hides
+ * the standard `defaultValue` / `correctAnswer` editors.
  */
-(function registerVideoSegmentWidget() {
+(function registerVideoQuestionWidget() {
     "use strict";
 
     if (typeof Survey === "undefined" || !Survey || !Survey.Serializer) {
@@ -86,11 +119,24 @@
      * If you forget this, isFit() never matches, the custom widget is
      * never attached, and the question card renders an empty <div>.
      */
-    var COMPONENT_NAME  = "videosegment";   // canonical lowercased type
-    var COMPONENT_TITLE = "Video Segment";  // human-facing display label
+    var COMPONENT_NAME      = "video";          // canonical lowercased type
+    var COMPONENT_TITLE     = "Video";           // human-facing display label
 
     // -------------------------------------------------------------------
     // 1) Class registration
+    //
+    // Properties are intentionally minimal:
+    //   - videoUrl       : required (no useful default)
+    //   - startTimestamp : optional, NO default (blank field by default)
+    //   - endTimestamp   : optional, NO default (blank field by default)
+    //   - videoFit / videoHeight / videoWidth : optional layout overrides
+    //
+    // Both timestamps deliberately omit `default: 0` — see the file
+    // header for the rationale.
+    //
+    // When `endTimestamp` is unset (or 0) we treat the segment as the
+    // full video and resolve `end` lazily against `video.duration` on
+    // `loadedmetadata`.
     // -------------------------------------------------------------------
     if (!Survey.Serializer.findClass(COMPONENT_NAME)) {
         Survey.Serializer.addClass(
@@ -103,28 +149,29 @@
                     displayName: "Video URL"
                 },
                 {
+                    // No `default` value -> property is omitted from the
+                    // saved JSON when left blank. The widget then plays
+                    // from the start of the file.
                     name: "startTimestamp:number",
-                    isRequired: true,
-                    default: 0,
                     minValue: 0,
                     category: "general",
-                    displayName: "Start timestamp (seconds)"
+                    displayName: "Start timestamp (seconds, optional)"
                 },
                 {
+                    // No `default` value -> property is omitted from the
+                    // saved JSON when left blank. The widget then plays
+                    // the full video (end = video.duration after
+                    // loadedmetadata).
                     name: "endTimestamp:number",
-                    isRequired: true,
-                    default: 30,
                     minValue: 0,
                     category: "general",
-                    displayName: "End timestamp (seconds)"
+                    displayName: "End timestamp (seconds, optional)"
                 },
                 /*
-                 * "Video fit" / height / width — replicated (with `video*`
-                 * names so the property panel reads "Video ...") and wired
-                 * to the <video> element via inline style + object-fit.
-                 *
-                 * Default is "contain" because that's what most users
-                 * expect for a video player (fit inside without distortion).
+                 * "Video fit" / height / width — wired to the <video>
+                 * element via inline style + object-fit. Default is
+                 * "contain" because that's what most users expect for a
+                 * video player (fit inside without distortion).
                  */
                 {
                     name: "videoFit",
@@ -163,9 +210,10 @@
     // -------------------------------------------------------------------
     // 2) Localized question-type display name.
     //
-    // The Creator's question card has a dropdown showing the current type;
-    // by default it falls back to `type.toLowerCase()` -> "videosegment"
-    // (one word, hard to read). The label is read from
+    // SurveyJS' Serializer lowercases the registered class name, so the
+    // canonical type returned by `question.getType()` is `"video"`. By
+    // default the Creator's question-type dropdown falls back to that
+    // lowercased type as the display label. We override it via:
     //   - Survey.surveyLocalization.locales[<loc>].qt[<type>]                (runtime / Creator preview)
     //   - SurveyCreator.editorLocalization.locales[<loc>].qt[<type>]         (Creator UI in some builds)
     //
@@ -193,6 +241,8 @@
             defaultLocale.qt[name] = displayName;
         }
     }
+    // Seed the canonical "video" type in every locale namespace SurveyJS /
+    // survey-creator-knockout might consult.
     setQuestionTypeName(Survey.surveyLocalization, COMPONENT_NAME, COMPONENT_TITLE);
     if (typeof SurveyCreator !== "undefined" && SurveyCreator.editorLocalization) {
         setQuestionTypeName(SurveyCreator.editorLocalization, COMPONENT_NAME, COMPONENT_TITLE);
@@ -206,9 +256,9 @@
     // -------------------------------------------------------------------
     // 3) Toolbox icon.
     //
-    // We expose the resolved icon name via window.__videoSegmentIconName so
-    // 8_survey.js can use whichever icon actually exists in this build of
-    // survey-creator-knockout. We try, in order:
+    // We expose the resolved icon name via window.__videoQuestionIconName
+    // so 8_survey.js can use whichever icon actually exists in this build
+    // of survey-creator-knockout. We try, in order:
     //   a) Register a custom video-camera SVG via SurveyCreator.SvgRegistry
     //   b) Fall back to the built-in "icon-image" (always present).
     //
@@ -245,13 +295,16 @@
         var registry = findSvgRegistry();
         if (registry) {
             // SvgRegistry expects the icon name without the "icon-" prefix.
-            registry.registerIconFromSvg("video-segment", VIDEO_ICON_SVG);
-            iconName = "icon-video-segment";
+            registry.registerIconFromSvg("video-question", VIDEO_ICON_SVG);
+            iconName = "icon-video-question";
         }
     } catch (e) {
         // keep fallback
     }
-    window.__videoSegmentIconName = iconName;
+    // Exposed for 8_survey.js (Creator init) so the toolbox item can use
+    // whichever icon actually exists in this build of
+    // survey-creator-knockout.
+    window.__videoQuestionIconName = iconName;
 
     // -------------------------------------------------------------------
     // 4) Helpers
@@ -295,18 +348,41 @@
         return url;
     }
 
+    /**
+     * Validate the configuration of a video question.
+     *
+     * URL is the only mandatory field. Both timestamps are optional —
+     * an unset (null/undefined/empty) endTimestamp means "play the full
+     * file"; an unset startTimestamp means "start at 0". When timestamps
+     * ARE provided we still validate them: non-negative, and (when end
+     * is a meaningful upper bound — set AND > 0) strictly start < end.
+     *
+     * `endTimestamp === 0` is treated as "not set" because 0 is
+     * nonsensical as an end (a 0-second segment), and we don't want to
+     * surface a spurious "start must be < end" error when the property
+     * panel happens to render empty number fields as 0.
+     *
+     * Note: `parseSeconds` returns `null` for unset, empty-string and
+     * non-finite values; that's our "not provided" signal.
+     */
     function getConfigError(question) {
-        var url   = question.videoUrl;
-        var start = parseSeconds(question.startTimestamp);
-        var end   = parseSeconds(question.endTimestamp);
-
+        var url = question.videoUrl;
         if (!url || (typeof url === "string" && !url.trim())) {
             return "Video URL is required";
         }
-        if (start === null) return "startTimestamp is required and must be a number";
-        if (end   === null) return "endTimestamp is required and must be a number";
-        if (start < 0 || end < 0) return "Timestamps must be greater than or equal to 0";
-        if (start >= end) return "startTimestamp must be strictly less than endTimestamp";
+        var start = parseSeconds(question.startTimestamp);
+        var end   = parseSeconds(question.endTimestamp);
+
+        if (start !== null && start < 0) {
+            return "startTimestamp must be greater than or equal to 0";
+        }
+        if (end !== null && end < 0) {
+            return "endTimestamp must be greater than or equal to 0";
+        }
+        // Cross-field rule only applies when end is a real upper bound.
+        if (end !== null && end > 0 && start !== null && start >= end) {
+            return "startTimestamp must be strictly less than endTimestamp";
+        }
         return null;
     }
 
@@ -339,14 +415,24 @@
      * [start, end] playback window AND records the current playback state
      * in the question's value. Returns a cleanup function.
      *
+     * Bound resolution
+     * ----------------
+     * The question's `startTimestamp` defaults to 0 (start of file) when
+     * unset. The question's `endTimestamp` is OPTIONAL: when unset (the
+     * common "play the whole video" case) we treat `end` as +Infinity
+     * until `loadedmetadata` fires, then promote it to `video.duration`.
+     * This keeps the segment-clamping logic (timeupdate/seek/play/pause
+     * handlers) untouched — they all just compare against `end` and
+     * `Infinity` simply means "no upper bound".
+     *
      * Question value schema (always assigned, even on partial playback):
      *
      *   {
      *     watched:        boolean,       // true once the user reached `end`
      *     currentTime:    number,        // last observed currentTime, clamped to [start, end]
      *     startTimestamp: number,        // segment start (echoed for audits)
-     *     endTimestamp:  number,         // segment end   (echoed for audits)
-     *     duration:       number,        // (end - start)
+     *     endTimestamp:  number|null,    // segment end (null when undetermined / full file)
+     *     duration:       number|null,   // (end - start), null when end is undetermined
      *     watchedSeconds: number,        // wall-clock seconds actually played, seeks excluded
      *     percentWatched: number,        // 0..1, watchedSeconds / duration
      *     startedAt:     ISO-8601 string,// first time the user pressed play
@@ -360,13 +446,29 @@
      * answers every question we have today and a per-event array makes
      * survey responses needlessly large).
      */
-    function attachPlaybackEnforcement(video, question, start, end) {
+    function attachPlaybackEnforcement(video, question) {
+        // ---- segment bounds ---------------------------------------------
+        var startRaw = parseSeconds(question.startTimestamp);
+        var start    = (startRaw === null || startRaw < 0) ? 0 : startRaw;
+
+        var endRaw         = parseSeconds(question.endTimestamp);
+        // `endTimestamp === 0` is treated as "not set" (a 0-second
+        // segment is nonsensical and would only happen because the
+        // property-panel number editor pre-filled 0 in a blank field).
+        // We only consider end "explicit" when it is a real upper bound
+        // strictly greater than `start`.
+        var hasExplicitEnd = endRaw !== null && endRaw > 0 && endRaw > start;
+        // `end` will be promoted to `video.duration` on `loadedmetadata`
+        // when the survey designer didn't pin it explicitly.
+        var end      = hasExplicitEnd ? endRaw : Infinity;
+        var duration = isFinite(end) ? (end - start) : Infinity;
+
+        // ---- mutable state ----------------------------------------------
         var enforcing       = false;
         var watchedSeconds  = 0;
         var lastTickAt      = null;       // wall-clock of the previous timeupdate
         var startedAt       = null;       // ISO of the very first "play"
         var completedAt     = null;       // ISO of the moment watched became true
-        var duration        = end - start;
 
         function safeISO() {
             try { return new Date().toISOString(); } catch (e) { return null; }
@@ -384,17 +486,23 @@
         function persistState(eventType) {
             try {
                 var t = video.currentTime;
-                var watched = t >= end - 0.05;
+                // We can only declare the video "watched" once we know how
+                // long it actually is.
+                var watched = isFinite(end) ? (t >= end - 0.05) : false;
                 if (watched && !completedAt) completedAt = safeISO();
+
+                var clampedTime = Math.max(start, isFinite(end) ? Math.min(end, t) : t);
 
                 question.value = {
                     watched:        watched,
-                    currentTime:    Math.max(start, Math.min(end, t)),
+                    currentTime:    clampedTime,
                     startTimestamp: start,
-                    endTimestamp:   end,
-                    duration:       duration,
+                    endTimestamp:   isFinite(end) ? end : null,
+                    duration:       isFinite(duration) ? duration : null,
                     watchedSeconds: Math.round(watchedSeconds * 1000) / 1000,
-                    percentWatched: duration > 0 ? Math.min(1, watchedSeconds / duration) : 0,
+                    percentWatched: (isFinite(duration) && duration > 0)
+                        ? Math.min(1, watchedSeconds / duration)
+                        : 0,
                     startedAt:      startedAt,
                     lastUpdatedAt:  safeISO(),
                     lastEvent:      eventType,
@@ -404,6 +512,13 @@
         }
 
         var onLoadedMetadata = function () {
+            // Promote an unset endTimestamp to the real video duration now
+            // that we know it. This keeps clamping logic happy and lets
+            // the saved value record a meaningful `endTimestamp`.
+            if (!hasExplicitEnd && isFinite(video.duration) && video.duration > start) {
+                end      = video.duration;
+                duration = end - start;
+            }
             // Snap to the segment start so the timeline thumb is in the
             // right place from the get-go. Do NOT record this as an event;
             // it's an automatic positioning step.
@@ -426,15 +541,18 @@
                     var deltaSeconds = (now - lastTickAt) / 1000;
                     if (deltaSeconds > 0 && deltaSeconds < 1.0) {
                         watchedSeconds += deltaSeconds;
-                        if (watchedSeconds > duration) watchedSeconds = duration;
+                        if (isFinite(duration) && watchedSeconds > duration) {
+                            watchedSeconds = duration;
+                        }
                     }
                 }
                 lastTickAt = now;
             } else {
                 lastTickAt = null;
             }
-            // Hard-stop: pause exactly at `end`.
-            if (video.currentTime >= end) {
+            // Hard-stop: pause exactly at `end`. Skipped when end is the
+            // full video duration (the browser fires `ended` naturally).
+            if (isFinite(end) && video.currentTime >= end) {
                 enforcing = true;
                 video.currentTime = end;
                 video.pause();
@@ -456,7 +574,10 @@
                 persistState("seek");
                 return;
             }
-            if (t > end) {
+            // Only clamp upward when we have an explicit end bound; for
+            // full-video playback the browser handles "you can't seek past
+            // the end" itself.
+            if (isFinite(end) && t > end) {
                 enforcing = true;
                 video.currentTime = end;
                 if (!video.paused) video.pause();
@@ -470,8 +591,11 @@
         var onPlay = function () {
             if (enforcing) return;
             // Replay snap-back: pressing play after reaching the end
-            // restarts at `start`.
-            if (video.currentTime >= end - 0.05 || video.currentTime < start) {
+            // restarts at `start`. Without an explicit end bound, only
+            // bring the play head up to `start` (covers the case when
+            // start > 0 and the user rewinds before the segment).
+            var atOrPastEnd = isFinite(end) && video.currentTime >= end - 0.05;
+            if (atOrPastEnd || video.currentTime < start) {
                 enforcing = true;
                 video.currentTime = start;
                 enforcing = false;
@@ -485,8 +609,10 @@
             if (enforcing) return;
             // The browser fires a "pause" event right before "ended" and
             // again when we clamp at `end`; skip if we're at the end so
-            // we don't double-record over the natural-end event.
-            if (video.currentTime >= end - 0.05) return;
+            // we don't double-record over the natural-end event. (When
+            // end is unknown / Infinity, that condition is never true, so
+            // the pause is recorded normally.)
+            if (isFinite(end) && video.currentTime >= end - 0.05) return;
             lastTickAt = null;
             persistState("pause");
         };
@@ -524,7 +650,7 @@
     var widget = {
         name: COMPONENT_NAME,
         title: COMPONENT_TITLE,
-        // The toolbox icon name is set later from window.__videoSegmentIconName
+        // The toolbox icon name is set later from window.__videoQuestionIconName
         // via 8_survey.js (where the toolbox item is created/refined).
         iconName: iconName,
 
@@ -538,14 +664,14 @@
         activatedByChanged: function () { /* intentionally empty */ },
 
         htmlTemplate:
-            '<div class="sjs-video-segment">' +
-                '<video class="sjs-video-segment__player" preload="metadata" controls playsinline></video>' +
-                '<div class="sjs-video-segment__error" role="alert"></div>' +
+            '<div class="sjs-video">' +
+                '<video class="sjs-video__player" preload="metadata" controls playsinline></video>' +
+                '<div class="sjs-video__error" role="alert"></div>' +
             '</div>',
 
         afterRender: function (question, el) {
-            var video   = el.querySelector(".sjs-video-segment__player");
-            var errorEl = el.querySelector(".sjs-video-segment__error");
+            var video   = el.querySelector(".sjs-video__player");
+            var errorEl = el.querySelector(".sjs-video__error");
 
             // Always apply layout first, even on error path, so the error
             // banner has the configured width/height.
@@ -553,7 +679,7 @@
 
             var configError = getConfigError(question);
             if (configError) {
-                errorEl.textContent = "Video Segment configuration error: " + configError;
+                errorEl.textContent = "Video question configuration error: " + configError;
                 errorEl.classList.add("is-visible");
                 video.style.display = "none";
                 if (typeof question.addError === "function" && typeof Survey.SurveyError === "function") {
@@ -564,12 +690,12 @@
                 return;
             }
 
-            var start = parseSeconds(question.startTimestamp);
-            var end   = parseSeconds(question.endTimestamp);
-
             video.src = resolveVideoUrl(question.videoUrl);
 
-            video.__videoSegmentDetach = attachPlaybackEnforcement(video, question, start, end);
+            // attachPlaybackEnforcement now reads start/end from the
+            // question itself so it can resolve the optional endTimestamp
+            // lazily once the metadata loads.
+            video.__videoQuestionDetach = attachPlaybackEnforcement(video, question);
 
             // Read-only state: hide native controls and prevent interaction.
             if (question.isReadOnly) {
@@ -585,7 +711,7 @@
                 if (typeof question.registerFunctionOnPropertyValueChanged === "function") {
                     question.registerFunctionOnPropertyValueChanged(propName, function () {
                         applyLayout(video, question);
-                    }, "videoSegmentLayout-" + propName);
+                    }, "videoQuestionLayout-" + propName);
                 }
             });
             // videoUrl edits in the Creator should update the player's
@@ -594,18 +720,18 @@
                 question.registerFunctionOnPropertyValueChanged("videoUrl", function () {
                     var newUrl = resolveVideoUrl(question.videoUrl);
                     if (newUrl !== video.src) video.src = newUrl;
-                }, "videoSegmentUrl");
+                }, "videoQuestionUrl");
             }
         },
 
         willUnmount: function (question, el) {
             if (!el || typeof el.querySelector !== "function") return;
-            var video = el.querySelector(".sjs-video-segment__player");
+            var video = el.querySelector(".sjs-video__player");
             if (!video) return;
             try {
-                if (typeof video.__videoSegmentDetach === "function") {
-                    video.__videoSegmentDetach();
-                    video.__videoSegmentDetach = null;
+                if (typeof video.__videoQuestionDetach === "function") {
+                    video.__videoQuestionDetach();
+                    video.__videoQuestionDetach = null;
                 }
                 video.pause();
                 video.removeAttribute("src");
@@ -618,7 +744,7 @@
                     try {
                         question.unRegisterFunctionOnPropertyValueChanged(
                             propName,
-                            propName === "videoUrl" ? "videoSegmentUrl" : "videoSegmentLayout-" + propName
+                            propName === "videoUrl" ? "videoQuestionUrl" : "videoQuestionLayout-" + propName
                         );
                     } catch (e) {}
                 });

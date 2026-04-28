@@ -104,10 +104,10 @@ $(document).ready(function () {
 function initSurveyCreator() {
     if ($("#surveyJSCreator").length > 0) {
         // Expose SelfHelp's BASE_PATH globally so custom widgets such as
-        // videoSegment can resolve root-relative URLs (e.g. "/assets/x.mp4")
-        // in the Creator preview. This mirrors what 4_surveyJS.js does for
-        // the runtime view, but the Creator never loads 4_surveyJS.js, so
-        // we must set the variable here too.
+        // the `video` question can resolve root-relative URLs
+        // (e.g. "/assets/x.mp4") in the Creator preview. This mirrors what
+        // 4_surveyJS.js does for the runtime view, but the Creator never
+        // loads 4_surveyJS.js, so we must set the variable here too.
         //
         // Read via .attr() rather than .data(): jQuery's .data() auto-coerces
         // values that look like JSON / numbers, which can produce surprises
@@ -156,50 +156,48 @@ function initSurveyCreator() {
                 }
             }
 
-            // --- Video Segment toolbox customization (v1.4.7) ---
-            // The videoSegment custom widget (5_videoSegmentWidget.js) is a
+            // --- Video question toolbox customization (v1.4.8) ---
+            // The `video` custom widget (5_videoSegmentWidget.js) is a
             // STANDALONE question type (parent="empty"), so the custom
             // widget's htmlTemplate is the entire renderer — there is no
             // file-upload / drag-and-drop affordance to remove.
             //
-            // SurveyJS internally lowercases every registered class name
-            // (Survey.Serializer.addClass("videoSegment", ...) is stored as
-            // "videosegment"), so the canonical type name is "videosegment".
-            // We use the lowercased name everywhere — toolbox lookup,
-            // default JSON, isFit comparison — and rely on
-            // surveyLocalization.qt.videosegment = "Video Segment" for the
-            // human-facing label.
+            // The canonical type is `video` (lowercase — SurveyJS'
+            // Serializer lowercases every registered class name).
             //
             // The widget exposes the resolved icon name via
-            // window.__videoSegmentIconName: it is "icon-video-segment" if
-            // SurveyCreator.SvgRegistry was available and we registered our
-            // own video-camera SVG, or "icon-image" as a built-in fallback
-            // for builds that do not expose the SvgRegistry.
-            const videoSegmentIcon = (typeof window.__videoSegmentIconName === "string" && window.__videoSegmentIconName)
-                ? window.__videoSegmentIconName
+            // window.__videoQuestionIconName: it is "icon-video-question"
+            // when SurveyCreator.SvgRegistry was available and we
+            // registered our own video-camera SVG, or "icon-image" as a
+            // built-in fallback for builds that do not expose the
+            // SvgRegistry.
+            const videoIcon = (typeof window.__videoQuestionIconName === "string" && window.__videoQuestionIconName)
+                ? window.__videoQuestionIconName
                 : "icon-image";
-            let videoSegmentIndex = toolboxItems.findIndex((item) => item.name === "videosegment" || item.name === "videoSegment");
-            const videoSegmentDefaultJson = {
-                type: "videosegment",
-                name: "video_segment",
-                title: "Watch the video segment",
+            let videoToolboxIndex = toolboxItems.findIndex((item) => item.name === "video");
+            // Default JSON for new questions added from the toolbox.
+            // Timestamps are intentionally omitted: the default is "play
+            // the entire file"; designers add timestamps only when they
+            // want to enforce a sub-segment.
+            const videoDefaultJson = {
+                type: "video",
+                name: "video_question",
+                title: "Watch the video",
                 videoUrl: "",
-                startTimestamp: 0,
-                endTimestamp: 30,
                 videoFit: "contain"
             };
-            if (videoSegmentIndex !== -1) {
-                let videoSegmentItem = toolboxItems[videoSegmentIndex];
-                videoSegmentItem.name = "videosegment";
-                videoSegmentItem.title = "Video Segment";
-                videoSegmentItem.iconName = videoSegmentIcon;
-                videoSegmentItem.json = videoSegmentDefaultJson;
+            if (videoToolboxIndex !== -1) {
+                let videoItem = toolboxItems[videoToolboxIndex];
+                videoItem.name = "video";
+                videoItem.title = "Video";
+                videoItem.iconName = videoIcon;
+                videoItem.json = videoDefaultJson;
             } else {
                 creator.toolbox.addItem({
-                    name: "videosegment",
-                    title: "Video Segment",
-                    iconName: videoSegmentIcon,
-                    json: videoSegmentDefaultJson
+                    name: "video",
+                    title: "Video",
+                    iconName: videoIcon,
+                    json: videoDefaultJson
                 });
             }
         }
@@ -213,47 +211,65 @@ function initSurveyCreator() {
             });
         }
 
-        // Cross-field property validation for the videoSegment question:
-        // SurveyJS' built-in `isRequired`/`minValue` already cover
-        // missing-or-negative values; this hook adds the "start < end" rule
-        // which depends on two properties at once and so cannot be expressed
-        // statically via Survey.Serializer.addClass.
+        // Helper — true when the property panel is editing a `video`
+        // question. SurveyJS lowercases every class name internally so
+        // the canonical (and only) match is "video".
+        const isVideoQuestion = (obj) =>
+            !!(obj && typeof obj.getType === "function" && obj.getType() === "video");
+
+        // Cross-field property validation for the video question:
+        // SurveyJS' built-in `minValue` covers the single-field
+        // non-negativity case; this hook only enforces `start < end`,
+        // and ONLY when `endTimestamp` is a real upper bound (set AND
+        // > 0). Either side may legitimately be unset, and we
+        // additionally treat `endTimestamp === 0` as "no segment
+        // configured" — the property panel's number editor renders a
+        // blank field as 0 in some builds, and we don't want to show a
+        // spurious "0 >= 0" error in that case.
         if (creator.onPropertyValidationCustomError) {
             creator.onPropertyValidationCustomError.add((_, options) => {
-                // SurveyJS lowercases every class name; getType() returns
-                // "videosegment" even though we register "videoSegment".
-                if (!options.obj || options.obj.getType() !== "videosegment") return;
+                if (!isVideoQuestion(options.obj)) return;
                 const propName = options.propertyName;
                 if (propName !== "startTimestamp" && propName !== "endTimestamp") return;
 
-                const start = parseFloat(options.obj.startTimestamp);
-                const end = parseFloat(options.obj.endTimestamp);
-                if (isNaN(start) || isNaN(end)) return; // isRequired covers this
+                const startRaw = options.obj.startTimestamp;
+                const endRaw   = options.obj.endTimestamp;
+                const start = (startRaw === null || startRaw === undefined || startRaw === "")
+                    ? null : parseFloat(startRaw);
+                const end   = (endRaw   === null || endRaw   === undefined || endRaw   === "")
+                    ? null : parseFloat(endRaw);
 
-                if (start < 0 || end < 0) {
-                    options.error = "Timestamps must be greater than or equal to 0";
-                } else if (start >= end) {
+                if (start !== null && !isNaN(start) && start < 0) {
+                    options.error = "startTimestamp must be greater than or equal to 0";
+                    return;
+                }
+                if (end !== null && !isNaN(end) && end < 0) {
+                    options.error = "endTimestamp must be greater than or equal to 0";
+                    return;
+                }
+                // Only enforce start < end when end is a meaningful
+                // upper bound (i.e. a positive number). end === 0 / null
+                // / NaN means "no segment", so start has no upper rival.
+                if (end !== null && !isNaN(end) && end > 0 &&
+                    start !== null && !isNaN(start) && start >= end) {
                     options.error = "startTimestamp must be strictly less than endTimestamp";
                 }
             });
         }
 
         // Hide a few inherited "empty" properties that don't make sense
-        // for a videoSegment — its value is auto-generated playback
-        // metadata ({ watched, currentTime, completedAt, reason }), so
-        // there is no point letting the survey designer set a default value
-        // or a correct answer. Everything else they need is already in the
-        // General / Layout categories.
-        const VIDEO_SEGMENT_HIDDEN_PROPS = [
+        // for a video question — its value is auto-generated playback
+        // metadata, so there is no point letting the survey designer set
+        // a default value or a correct answer. Everything else they need
+        // is already in the General / Layout categories.
+        const VIDEO_QUESTION_HIDDEN_PROPS = [
             "defaultValue",
             "correctAnswer"
         ];
         if (creator.onShowingProperty) {
             creator.onShowingProperty.add((_, options) => {
-                // SurveyJS lowercases every class name; getType() returns
-                // "videosegment" even though we register "videoSegment".
-                if (!options.obj || options.obj.getType() !== "videosegment") return;
-                if (VIDEO_SEGMENT_HIDDEN_PROPS.indexOf(options.property.name) !== -1) {
+                if (!isVideoQuestion(options.obj)) return;
+                if (VIDEO_QUESTION_HIDDEN_PROPS.indexOf(options.property.name) !== -1) {
                     options.canShow = false;
                 }
             });

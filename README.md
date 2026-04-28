@@ -30,7 +30,29 @@ This plugin enables you to create, customize, and manage interactive surveys usi
 
 ### Custom Question Types
 - **Rich Text Editor** (`quill`): Markdown/HTML rich text input.
-- **Video Segment** (`videoSegment`, since v1.4.7): standalone custom question that plays an HTML5 video clamped between `startTimestamp` and `endTimestamp` (seconds). The URL is in the `videoUrl` property — root-relative paths such as `/assets/video.mp4` are resolved against the PHP `BASE_PATH` constant. Drag-and-drop and direct file upload are disabled by design — only URLs are accepted. Optional `videoFit` / `videoHeight` / `videoWidth` properties are applied directly to the `<video>` element. Useful for "watch this excerpt and answer" workflows. See [`docs/VIDEO_SEGMENT.md`](docs/VIDEO_SEGMENT.md).
+- **Video** (`video`, since v1.4.8): standalone custom question that
+  plays an HTML5 video. The URL is in the `videoUrl` property —
+  root-relative paths such as `/assets/video.mp4` are resolved against
+  the PHP `BASE_PATH` constant, both at runtime and in the Survey
+  Creator preview. Drag-and-drop and direct file upload are disabled
+  by design — only URLs are accepted.
+
+  `startTimestamp` and `endTimestamp` (seconds) are **optional**, with
+  no defaults — leaving them blank in the property panel means "play
+  the whole file". Set them to enforce a sub-segment: with both set
+  the segment is seek-clamped at both ends, hard-paused at
+  `endTimestamp`, and replays snap back to `startTimestamp`. Either
+  side can be set on its own to skip an intro or cap a trailer.
+  `endTimestamp === 0` is treated the same as "not set" so the
+  property-panel's number editor displaying a blank field as `0`
+  doesn't surface a spurious validation error. The widget
+  continuously persists a structured snapshot of playback state to
+  the question's value (last position, watched seconds, percent
+  watched, start / last-update / completion timestamps, last event).
+  Optional `videoFit` / `videoHeight` / `videoWidth` properties are
+  applied directly to the `<video>` element. Useful both for plain
+  "watch this video" prompts and for "watch this excerpt and answer"
+  workflows. See [`docs/VIDEO_SEGMENT.md`](docs/VIDEO_SEGMENT.md).
 
 ### Response Collection
 - Comprehensive metadata collection (start/end times, duration, user agent, etc.)
@@ -90,5 +112,5 @@ The plugin includes a comprehensive dashboard for viewing and analyzing survey r
 ## Documentation
 
 - [Survey usage guide](docs/SURVEY_USAGE.md) — how to create/configure/test surveys in SelfHelp.
-- [Video Segment question type](docs/VIDEO_SEGMENT.md) — properties, playback rules, validation and examples.
+- [Video question type](docs/VIDEO_SEGMENT.md) — properties, playback rules, validation and examples.
 - [`docs/examples/video-segment-example.json`](docs/examples/video-segment-example.json) — minimal SurveyJS JSON using the new question.

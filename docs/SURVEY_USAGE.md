@@ -3,7 +3,7 @@
 This document is the user-facing guide for working with the SurveyJS plugin
 (`sh-shp-survey_js`) in SelfHelp. It complements the
 [plugin README](../README.md) and the dedicated guide for the
-[Video Segment question type](VIDEO_SEGMENT.md).
+[Video question type](VIDEO_SEGMENT.md).
 
 > All examples target **SurveyJS v1.9.124** (the version shipped with the
 > plugin). Do not upgrade the SurveyJS library — the plugin and all custom
@@ -33,7 +33,7 @@ The Creator **toolbox** lists every available question type, including:
 - The standard SurveyJS questions (text, checkbox, radio, dropdown, matrix,
   file, panel, ...)
 - The **Rich Text Editor** (`quill`) custom question.
-- The **Video Segment** (`videoSegment`) custom question — see
+- The **Video** (`video`) custom question — see
   [VIDEO_SEGMENT.md](VIDEO_SEGMENT.md).
 
 Drag any item from the toolbox onto a page, or click **Add Question** within
@@ -41,36 +41,41 @@ a page, then pick the type. Each question's properties are edited via the
 right-hand **property panel**, grouped into categories (General, Logic,
 Layout, ...).
 
-### Adding the Video Segment question
+### Adding the Video question
 
-The **Video Segment** question type is a standalone custom question. It
-accepts URLs only — drag-and-drop and direct file upload are intentionally
-not available.
+The **Video** question type is a standalone custom question. It accepts
+URLs only — drag-and-drop and direct file upload are intentionally not
+available.
 
-1. Drag **Video Segment** from the toolbox onto a page (look for the
-   video-camera icon).
+1. Drag **Video** from the toolbox onto a page (look for the video-camera
+   icon).
 2. In the property panel set:
    - **Video URL** — full URL (`https://...`) or root-relative path
      (`/assets/video.mp4`, resolved against the SelfHelp `BASE_PATH`).
-   - **Start timestamp (seconds)** — playback start position.
-   - **End timestamp (seconds)** — playback max stop position.
+   - **Start timestamp (seconds, optional)** — playback start position.
+     Leave blank to start at 0.
+   - **End timestamp (seconds, optional)** — segment hard-stop. Leave
+     blank (or `0`) to play the whole file.
 3. Optionally tweak the layout (the **Layout** category in the property panel):
    - **Video fit** — `none` / `contain` / `cover` / `fill`. Applied to the
      `<video>` element via `object-fit`. Default: `contain`.
    - **Video height (CSS-accepted values)** — e.g. `360px`, `30vh`, `auto`.
    - **Video width (CSS-accepted values)** — e.g. `100%`, `640px`.
-4. Optionally toggle **Required** so the participant has to watch (i.e. the
-   question's value must be set) before submitting.
+4. Optionally toggle **Required** so the participant has to watch (i.e.
+   the question's value must be set) before submitting.
 
-The plugin enforces validation in the property panel: required fields are
-marked, negative values are rejected, and `startTimestamp >= endTimestamp`
-is flagged via the cross-field validator (see
-[VIDEO_SEGMENT.md → Validation](VIDEO_SEGMENT.md#validation)).
+The plugin enforces validation in the property panel: required fields
+are marked, negative values are rejected, and the `startTimestamp <
+endTimestamp` cross-field rule fires only when `endTimestamp` is set
+to a positive value (see [VIDEO_SEGMENT.md →
+Validation](VIDEO_SEGMENT.md#validation)).
 
 > The question's value is an auto-generated playback metadata object
-> (`{ watched, currentTime, completedAt, reason }`), not user input. The
-> `defaultValue` and `correctAnswer` editors are hidden from the property
-> panel because setting them by hand would not have a meaningful effect.
+> (continuous snapshot of `watched`, `currentTime`, `lastEvent`, etc.;
+> see [VIDEO_SEGMENT.md → Question value](VIDEO_SEGMENT.md#question-value)
+> for the full schema), not user input. The `defaultValue` and
+> `correctAnswer` editors are hidden from the property panel because
+> setting them by hand would not have a meaningful effect.
 
 ## 3. Survey lifecycle
 
@@ -133,7 +138,7 @@ Because every change is auto-saved, the fastest test workflow is:
    In-progress sessions are restored from the database (`restart_on_refresh = 0`)
    so you can test continuation behaviour as well.
 
-For the **Video Segment** question type, recommended manual checks:
+For the **Video** question type, recommended manual checks:
 
 | Check | Expected outcome |
 |-------|------------------|
@@ -165,19 +170,21 @@ download earlier versions through the **Versions** module page.
    send it to the database.
 5. Click **Publish** to make the imported survey live.
 
-Custom question types (`videoSegment`, `quill`) survive export/import as long
-as the importing instance also runs plugin v1.4.7 or later — the type names
-(`type: "videoSegment"`) and property names are stable.
+Custom question types (`video`, `quill`) survive export/import as long
+as the importing instance also runs plugin v1.4.8 or later — the type
+names (`type: "video"`) and property names are stable.
 
 ## 7. Troubleshooting
 
 | Problem | Resolution |
 |---------|------------|
-| Toolbox does not show **Video Segment** | The Creator page was opened before the v1.4.7 deploy. Hard-refresh (`Ctrl+Shift+R`). |
+| Toolbox does not show **Video** | The Creator page was opened before the v1.4.8 deploy. Hard-refresh (`Ctrl+Shift+R`). |
 | Survey does not save | Check the browser console for HTTP 401/403; your session may have expired (the plugin shows a modal in this case). Re-login. |
-| Property panel red borders | A required property is empty or violates `minValue`/cross-field rules. Hover the field to read the error. |
+| Property panel red borders | A required property (only `videoUrl` is required) is empty or violates `minValue`/cross-field rules. Hover the field to read the error. |
 | Mobile playback never starts | iOS/Android block autoplay — the user must manually press play. The widget never autoplays by design. |
 | `media-src` blocked errors in the browser console | Verify the page is configured under SurveyJS Hooks' CSP — pages containing the `surveyJS` style automatically receive a relaxed `media-src` directive. |
 
-For deeper questions on the Video Segment question type specifically see
-[VIDEO_SEGMENT.md](VIDEO_SEGMENT.md).
+For deeper questions on the Video question type specifically see
+[VIDEO_SEGMENT.md](VIDEO_SEGMENT.md). (Doc file name kept on disk for
+stable links from older notes; the document is the reference for the
+`video` question.)

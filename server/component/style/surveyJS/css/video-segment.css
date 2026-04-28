@@ -3,27 +3,30 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
 /*
- * Styles for the videoSegment custom SurveyJS question.
- * Picked up automatically by gulp/gulpfile.js
- *   (server/component/style/{star}{star}/css/*.css)
- * and bundled into css/ext/survey-js.min.css. The CSS is also referenced
- * directly from SurveyJSView::get_css_includes() and
- * ModuleSurveyJSView::get_css_includes() in DEBUG mode.
+ * Styles for the `video` custom SurveyJS question (v1.4.8).
+ *
+ * Picked up automatically by
+ *   gulp/gulpfile.js  ->  server/component/style/{star}{star}/css/*.css
+ * and bundled into css/ext/survey-js.min.css. The file name
+ * (`video-segment.css`) is kept on disk for git-history continuity,
+ * while the CSS class prefix is `.sjs-video` so a future grep matches
+ * the question's selectors cleanly.
  *
  * The widget JS sets `objectFit`, `height` and `width` directly on the
- * <video> element via inline styles when the survey designer fills in the
- * "Video fit" / "Video height" / "Video width" properties. Those inline
- * styles override the rules below; we only provide sensible defaults.
+ * <video> element via inline styles when the survey designer fills in
+ * the "Video fit" / "Video height" / "Video width" properties. Those
+ * inline styles override the rules below; we only provide sensible
+ * defaults so the player has a visible footprint before metadata loads.
  */
 
-.sjs-video-segment {
+.sjs-video {
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
     width: 100%;
 }
 
-.sjs-video-segment__player {
+.sjs-video__player {
     width: 100%;          /* default; videoWidth overrides via inline style */
     max-width: 100%;
     height: auto;         /* default; videoHeight overrides via inline style */
@@ -37,7 +40,7 @@
     object-fit: contain;
 }
 
-.sjs-video-segment__error {
+.sjs-video__error {
     display: none;
     padding: 0.75rem 1rem;
     border: 1px solid #f5c6cb;
@@ -47,6 +50,6 @@
     font-size: 0.9rem;
 }
 
-.sjs-video-segment__error.is-visible {
+.sjs-video__error.is-visible {
     display: block;
 }

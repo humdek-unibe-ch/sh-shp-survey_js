@@ -1,10 +1,10 @@
 {
-    "title": "Video Segment example survey",
-    "description": "A minimal survey demonstrating the videoSegment custom question type introduced in plugin v1.4.7 and finalized in v1.4.8. The question is a standalone custom widget (not derived from the image question). The URL goes into 'videoUrl'; layout is controlled by 'videoFit' / 'videoHeight' / 'videoWidth'.",
+    "title": "Video question example survey",
+    "description": "A minimal survey demonstrating the `video` custom question type introduced in plugin v1.4.8. Page 1 plays a sub-segment with both timestamps set; page 2 plays the entire video without any segment enforcement (timestamps omitted). The question is a standalone custom widget (not derived from the image question). The URL goes into 'videoUrl'; layout is controlled by 'videoFit' / 'videoHeight' / 'videoWidth'.",
     "logoPosition": "right",
     "pages": [
         {
-            "name": "page_intro",
+            "name": "page_segment",
             "title": "Watch the excerpt",
             "elements": [
                 {
@@ -13,7 +13,7 @@
                     "html": "<p>Please watch the highlighted excerpt of the video below. Playback is restricted to the configured range. You can pause, resume, and seek freely <em>inside</em> that range; replays restart from the beginning of the segment.</p>"
                 },
                 {
-                    "type": "videosegment",
+                    "type": "video",
                     "name": "intro_excerpt",
                     "title": "Watch the introduction excerpt (12s – 47s)",
                     "videoUrl": "/assets/intro.mp4",
@@ -26,13 +26,32 @@
             ]
         },
         {
+            "name": "page_full_video",
+            "title": "Now watch the full clip",
+            "elements": [
+                {
+                    "type": "html",
+                    "name": "full_html",
+                    "html": "<p>This time the entire file plays — there is no segment enforcement, since neither <code>startTimestamp</code> nor <code>endTimestamp</code> is set.</p>"
+                },
+                {
+                    "type": "video",
+                    "name": "full_video",
+                    "title": "Watch the entire clip",
+                    "videoUrl": "/assets/intro.mp4",
+                    "videoFit": "contain",
+                    "videoHeight": "360px"
+                }
+            ]
+        },
+        {
             "name": "page_questions",
             "title": "Follow-up questions",
             "elements": [
                 {
                     "type": "radiogroup",
                     "name": "watched_completely",
-                    "title": "Did you watch the full segment?",
+                    "title": "Did you watch both videos to the end?",
                     "isRequired": true,
                     "choices": [
                         { "value": "yes", "text": "Yes" },
@@ -42,7 +61,7 @@
                 {
                     "type": "comment",
                     "name": "feedback",
-                    "title": "Any comments on the excerpt?"
+                    "title": "Any comments on the videos?"
                 }
             ]
         }
