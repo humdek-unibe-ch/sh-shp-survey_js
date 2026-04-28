@@ -55,7 +55,11 @@ library. The implementation only uses public v1.9.x APIs:
 - `SurveyCreator.SvgRegistry.registerIconFromSvg` (with graceful fallback
   to the built-in `icon-image` when the registry isn't exposed in this
   build)
-- `creator.onPropertyValidationCustomError` and `creator.onShowingProperty`
+- `creator.onShowingProperty` (used to hide `defaultValue` /
+  `correctAnswer` from the property panel — the question's value is
+  auto-generated playback metadata)
+- `survey.onValidateQuestion` (used to require a complete watch when
+  the question has `isRequired: true`)
 
 ## Architecture
 
@@ -148,14 +152,15 @@ JS/CSS and stores its configuration inside the SurveyJS JSON.
 
 ## Property reference
 
-| Property         | Type   | Required | Default       | Editor / display name                                |
-| ---------------- | ------ | -------- | ------------- | ---------------------------------------------------- |
-| `videoUrl`       | string | yes      | `""`          | "Video URL"                                          |
-| `startTimestamp` | number | no       | *(unset)*     | "Start timestamp (seconds, optional)"                |
-| `endTimestamp`   | number | no       | *(unset)*     | "End timestamp (seconds, optional)"                  |
-| `videoFit`       | enum   | no       | `"contain"`   | "Video fit" — `none`/`contain`/`cover`/`fill`        |
-| `videoHeight`    | string | no       | `""`          | "Video height (CSS-accepted values)"                 |
-| `videoWidth`     | string | no       | `""`          | "Video width (CSS-accepted values)"                  |
+| Property                | Type   | Required | Default       | Editor / display name                                                       |
+| ----------------------- | ------ | -------- | ------------- | --------------------------------------------------------------------------- |
+| `videoUrl`              | string | yes      | `""`          | "Video URL"                                                                 |
+| `startTimestamp`        | number | no       | *(unset)*     | "Start timestamp (seconds, optional)"                                       |
+| `endTimestamp`          | number | no       | *(unset)*     | "End timestamp (seconds, optional)"                                         |
+| `videoFit`              | enum   | no       | `"contain"`   | "Video fit" — `none`/`contain`/`cover`/`fill`                               |
+| `videoHeight`           | string | no       | `""`          | "Video height (CSS-accepted values)"                                        |
+| `videoWidth`            | string | no       | `""`          | "Video width (CSS-accepted values)"                                         |
+| `requiredWatchMessage`  | text   | no       | `""`          | "Required-watch alert (optional, falls back to localized default)"          |
 
 `defaultValue` and `correctAnswer` are hidden from the property panel
 because the value is auto-generated playback metadata; setting them by
@@ -302,27 +307,103 @@ starts the values are stable.
 
 ## Validation
 
-Configuration errors are reported in two places:
+Configuration errors are reported as **question-level** alerts:
 
-1. **Survey Creator** — single-field via the `isRequired` / `minValue`
-   declarations on the property; cross-field via
-   `creator.onPropertyValidationCustomError` (only enforces
-   `startTimestamp < endTimestamp` when **both** values are set).
-2. **Runtime** — when the survey is rendered, the widget's `afterRender`
-   calls `getConfigError(question)` and, if it returns an error message,
-   shows a visible red banner above the video and adds the error to the
-   question via `Survey.SurveyError`.
+1. **Single-field non-negativity** is declared on the Serializer
+   (`minValue: 0` on `startTimestamp` / `endTimestamp`). SurveyJS'
+   built-in number editor handles this without any custom hook.
+2. **Cross-field validation** (`startTimestamp < endTimestamp` and
+   "videoUrl required") is enforced exclusively in the runtime
+   widget's `afterRender`, surfaced as a red banner above the live
+   preview / runtime player.
+
+> **Why no `creator.onPropertyValidationCustomError`?** That hook only
+> re-runs for the property currently being edited. An error message
+> attached to the OTHER property is never cleared by subsequent valid
+> edits and stays latched — we observed this manifest as `start=15` /
+> `end=45` (clearly valid) still showing the cross-field error on both
+> property fields, because earlier in the keystroke sequence the
+> values had briefly satisfied `start >= end` and that error never got
+> wiped from the property that wasn't the one currently being edited.
+> Moving the cross-field rule to a question-level banner sidesteps the
+> entire latching problem.
+
+The runtime banner has **no** latching: the widget self-clears its
+own question-level errors on every `afterRender` (errors it created
+are tagged `__fromVideoQuestion`, so we never accidentally drop
+unrelated errors set by SurveyJS' required-question validator or
+other custom code) and re-evaluates `getConfigError` from scratch
+each time.
 
 Validated conditions:
 
 - `videoUrl` is required and must be non-empty.
 - If provided, `startTimestamp` and `endTimestamp` must be finite,
   non-negative numbers.
-- If both are provided, `startTimestamp` must be **strictly less than**
-  `endTimestamp`.
+- The cross-field rule "`startTimestamp` strictly less than
+  `endTimestamp`" only fires when **both** timestamps are *meaningful*
+  — i.e. concrete numbers strictly greater than zero.
 
-A missing timestamp is **not** an error: it means "no bound on this
-side" (start defaults to 0, end defaults to the natural file duration).
+`null` / `undefined` / empty string / `0` on either timestamp are all
+treated as "not configured": the user can clear either field at any
+time without the property panel complaining, and the runtime widget
+falls back to `start = 0` / `end = video.duration`.
+
+### Required questions: enforce a complete watch
+
+When the question is marked `isRequired: true`, the widget additionally
+attaches a `survey.onValidateQuestion` hook that blocks survey
+navigation / completion until `value.watched === true` — i.e. until
+the participant has reached the configured `endTimestamp` (or the
+file's natural end if no `endTimestamp` is set).
+
+The error message is resolved through `getRequiredWatchMessage(q)`
+(see [Translatable required-watch alert](#translatable-required-watch-alert)
+below), so the alert respects both per-question custom strings and
+the survey's active locale.
+
+The hook is attached lazily on first `afterRender` and tagged on the
+survey instance (`survey.__videoQuestionRequiredHookAttached`), so it
+attaches once even if a survey contains multiple video questions.
+
+This is necessary because SurveyJS' built-in `isRequired` check only
+asks "is the value non-empty?". Our widget continuously persists
+playback state to `question.value` from the very first
+`loadedmetadata` snapshot, so by the time the user sees the player
+there is already a value object in place and the stock check is
+vacuously true.
+
+As a safety net, an explicit `endTimestamp` greater than the actual
+file duration is capped at `video.duration` on `loadedmetadata`.
+Without that cap, a misconfigured upper bound would make `watched`
+(which compares `currentTime >= end - 0.05`) impossible to satisfy and
+a required question would be permanently un-passable.
+
+### Translatable required-watch alert
+
+The required-watch alert ships with built-in translations and a
+per-question override. The resolution order in
+`getRequiredWatchMessage(question)` is:
+
+1. **Custom designer-provided string** — if the question's
+   `requiredWatchMessage` property is a non-empty string, that exact
+   text is shown, ignoring the survey locale. Use this for surveys
+   that need wording other than the built-in defaults (e.g. "Please
+   watch the entire training video before answering the questions
+   below.").
+2. **Built-in translation for the active locale** — if
+   `requiredWatchMessage` is blank, the widget reads `survey.locale`
+   (which the CMS pushes from the SelfHelp page locale via
+   `4_surveyJS.js`) and looks the message up in
+   `DEFAULT_REQUIRED_WATCH_MESSAGES`. Bundled locales: `en`, `de`,
+   `fr`, `it`.
+3. **English default** — if no entry matches the active locale (or
+   `survey.locale` is blank, the SurveyJS default state), the English
+   message is shown.
+
+To bundle a new locale, add one line to
+`DEFAULT_REQUIRED_WATCH_MESSAGES` in `5_videoSegmentWidget.js` — no
+other code changes are required.
 
 ## Toolbox icon
 
@@ -393,8 +474,10 @@ A complete example survey is in
   autoplay, set `muted` on the `<video>` element (currently you would
   do that by editing the widget's `htmlTemplate`).
 - The configured timestamps are validated against each other, but not
-  against the actual video duration. If `endTimestamp` exceeds the file
-  length, the segment effectively ends at the file's natural end.
+  against the actual video duration. An `endTimestamp` greater than the
+  file length is automatically capped at `video.duration` on
+  `loadedmetadata` so `watched` (and therefore required-question
+  validation) stays satisfiable.
 
 ## Troubleshooting
 
@@ -404,7 +487,9 @@ A complete example survey is in
 | Full video plays even though both timestamps are set                | Hard-refresh the browser to drop cached JS. Confirm both timestamps are numbers and that `endTimestamp > startTimestamp`.                                                         |
 | Question card renders an empty `<div>` (no video, no error banner)  | Custom-widget `isFit()` is not matching. SurveyJS lowercases all class names; comparing `getType() === "Video"` (camelCase) silently never matches. The widget compares against `"video"`. Hard-refresh to drop cached JS. |
 | Toolbox icon is empty                                               | Old cached JS or missing icon registration. The plugin falls back to `icon-image` automatically.                                                                                  |
-| "startTimestamp must be strictly less than endTimestamp" while both fields show `0` | This was a v1.4.8-pre-release UX bug — both timestamps had `default: 0` and the property panel rendered them as `0`. The shipped v1.4.8 widget removes both defaults; if you still see this, hard-refresh to drop cached JS. |
+| "startTimestamp must be strictly less than endTimestamp" appears in the Creator property panel for valid configurations (e.g. `start=15`, `end=45`) | A pre-release v1.4.8 widget hooked `creator.onPropertyValidationCustomError` for the cross-field rule. That event only re-runs for the property currently being edited, so an error attached to the OTHER property could never be cleared by subsequent valid edits and stayed latched. The shipped v1.4.8 widget moves cross-field validation to a question-level red banner (above the live preview / runtime player) which self-clears on every re-render. Hard-refresh to drop cached JS. |
+| Cross-field error stays in the Creator preview banner after fix      | The widget self-clears errors tagged `__fromVideoQuestion` on every `afterRender`, but a re-render is only triggered on a property change. Click anywhere in the property panel (or change/restore any property) to force a re-render. |
+| Required-watch alert appears in English on a German page             | `survey.locale` is empty (the SurveyJS default). Confirm `4_surveyJS.js` is reading the locale from the `selfHelp-locale-<locale>` class on `.selfHelp-survey-js-holder`. As a fallback, set `requiredWatchMessage` on the question to your preferred wording. |
 | "Video URL is required"                                              | Configuration error — fix the property value in the Creator.                                                                                                                      |
 
 ## Files of interest
@@ -415,7 +500,7 @@ A complete example survey is in
 | `server/component/style/surveyJS/css/video-segment.css`                         | Styles for the player and error banner (CSS classes prefixed `.sjs-video`).                |
 | `server/component/style/surveyJS/SurveyJSView.php`                              | Runtime view — exposes `BASE_PATH` to JS via `data-survey-js-fields`.                    |
 | `server/component/style/surveyJS/js/4_surveyJS.js`                              | Reads `BASE_PATH` and assigns `window.SELFHELP_BASE_PATH`.                               |
-| `server/component/moduleSurveyJS/js/8_survey.js`                                | Toolbox refinement (icon, default JSON), property-panel hiding, cross-field validator, Creator-side `BASE_PATH` wiring. |
+| `server/component/moduleSurveyJS/js/8_survey.js`                                | Toolbox refinement (icon, default JSON), property-panel hiding for `defaultValue` / `correctAnswer`, Creator-side `BASE_PATH` wiring. Cross-field validation is **not** done here — see `getConfigError` in the widget for the runtime banner. |
 | `server/component/moduleSurveyJS/tpl_moduleSurveyCreatorJS.php`                 | Creator container — emits `data-base-path` for the Creator preview.                      |
 | `server/component/moduleSurveyJS/ModuleSurveyJSView.php`                        | Creator view — DEBUG-mode CSS includes.                                                  |
 | `docs/examples/video-segment-example.json`                                      | Ready-to-import sample survey covering both segment-enforced and full-video usage.       |

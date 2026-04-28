@@ -60,9 +60,22 @@
 
 - **Validation**
   - URL is the only required field
-  - `startTimestamp ≥ 0` and `endTimestamp ≥ 0` when provided
-  - Cross-field rule `startTimestamp < endTimestamp` applies only when `endTimestamp` is a meaningful upper bound (set AND > 0)
-  - Missing timestamps and `endTimestamp === 0` are valid and not flagged — the property panel can render number editors as `0` for blank fields, and we deliberately do not show a "0 must be < 0" error in that case
+  - `startTimestamp ≥ 0` and `endTimestamp ≥ 0` when provided — enforced declaratively via `minValue: 0` on the Serializer, so SurveyJS' built-in number editor handles them with no custom hook
+  - Cross-field rule `startTimestamp < endTimestamp` applies only when **both** timestamps are meaningful — i.e. concrete numbers strictly greater than zero
+  - `null` / `undefined` / empty string / `0` on either timestamp are all treated as "not configured" — the user can clear either field at any time without the property panel complaining, and the runtime widget falls back to `start = 0` / `end = video.duration`
+  - **Cross-field validation is enforced exclusively in the runtime widget**, surfaced as a question-level red banner above the live preview / runtime player. The original implementation hooked `creator.onPropertyValidationCustomError`, but that event only re-runs for the property currently being edited — an error attached to the OTHER property (e.g. an error on Start latched while End was briefly smaller during typing) would never be cleared by subsequent valid edits and would stay visible even when the configuration became valid (e.g. `start=15` / `end=45` still flashing "start must be < end"). The runtime banner has no per-property latching: the widget self-clears its question-level errors on every `afterRender` (errors are tagged `__fromVideoQuestion` so we never accidentally drop unrelated errors set by other code paths) and re-evaluates `getConfigError` from scratch each time
+
+- **Required questions enforce a complete watch**
+  - When a `video` question has `isRequired: true`, the user MUST watch to the configured `endTimestamp` (or to the file's natural end if no `endTimestamp` is set) before the survey lets them advance / submit
+  - Implemented as a lazy, idempotent `survey.onValidateQuestion` hook attached on first render; emits the error message resolved by `getRequiredWatchMessage(question)` (see below)
+  - `value.watched === true` is the gate — set by `attachPlaybackEnforcement` once `currentTime >= end - 0.05`. Anything weaker (never-played, paused mid-segment, abandoned near the end) keeps the question failing required-validation
+  - As a safety net, an explicit `endTimestamp` greater than the actual file duration is now capped at `video.duration` on `loadedmetadata`, so a misconfigured upper bound can never make `watched` permanently unreachable
+
+- **Localised required-watch alert** (`requiredWatchMessage`)
+  - New optional property `requiredWatchMessage:text` on the `video` question class. Designers can type a custom alert string per question in the property panel.
+  - When the property is left blank (the default) the widget falls back to a built-in translation table indexed by `survey.locale`. The CMS already pushes the active locale into `survey.locale` via `4_surveyJS.js`, so a German-locale page automatically gets the German alert with no per-question configuration.
+  - Built-in locales: `en`, `de`, `fr`, `it`. Adding a locale is a one-line change to `DEFAULT_REQUIRED_WATCH_MESSAGES` in `5_videoSegmentWidget.js` — no other code edits needed.
+  - Resolution order: per-question custom string → built-in translation for `survey.locale` → English default.
 
 - **Continuous playback tracking**
   - Question value updates on meaningful playback events (`play`, `pause`, `seek`, `clamp`, `ended`)

@@ -64,11 +64,27 @@ available.
 4. Optionally toggle **Required** so the participant has to watch (i.e.
    the question's value must be set) before submitting.
 
-The plugin enforces validation in the property panel: required fields
-are marked, negative values are rejected, and the `startTimestamp <
-endTimestamp` cross-field rule fires only when `endTimestamp` is set
-to a positive value (see [VIDEO_SEGMENT.md →
-Validation](VIDEO_SEGMENT.md#validation)).
+The plugin validates configuration in two complementary ways:
+
+- **Single-field validation** runs in the property panel — required
+  fields are marked, negative values are rejected (`minValue: 0` on
+  both timestamps).
+- **Cross-field validation** (URL required, `startTimestamp <
+  endTimestamp`) is enforced as a question-level red banner above the
+  live preview / runtime player, NOT as a per-property error in the
+  property panel. Per-property cross-field errors latch on the
+  not-currently-edited side and never clear, so we surface
+  configuration mistakes on the question itself instead. See
+  [VIDEO_SEGMENT.md → Validation](VIDEO_SEGMENT.md#validation) for
+  details.
+
+When the question is `isRequired`, the participant must additionally
+watch to the configured `endTimestamp` (or the file's natural end if
+no `endTimestamp` is set) before the survey lets them advance. The
+alert text is taken from the per-question `requiredWatchMessage`
+property when set; otherwise it falls back to a built-in translation
+table indexed by `survey.locale` (currently bundled: `en`, `de`, `fr`,
+`it`).
 
 > The question's value is an auto-generated playback metadata object
 > (continuous snapshot of `watched`, `currentTime`, `lastEvent`, etc.;

@@ -217,45 +217,25 @@ function initSurveyCreator() {
         const isVideoQuestion = (obj) =>
             !!(obj && typeof obj.getType === "function" && obj.getType() === "video");
 
-        // Cross-field property validation for the video question:
-        // SurveyJS' built-in `minValue` covers the single-field
-        // non-negativity case; this hook only enforces `start < end`,
-        // and ONLY when `endTimestamp` is a real upper bound (set AND
-        // > 0). Either side may legitimately be unset, and we
-        // additionally treat `endTimestamp === 0` as "no segment
-        // configured" — the property panel's number editor renders a
-        // blank field as 0 in some builds, and we don't want to show a
-        // spurious "0 >= 0" error in that case.
-        if (creator.onPropertyValidationCustomError) {
-            creator.onPropertyValidationCustomError.add((_, options) => {
-                if (!isVideoQuestion(options.obj)) return;
-                const propName = options.propertyName;
-                if (propName !== "startTimestamp" && propName !== "endTimestamp") return;
-
-                const startRaw = options.obj.startTimestamp;
-                const endRaw   = options.obj.endTimestamp;
-                const start = (startRaw === null || startRaw === undefined || startRaw === "")
-                    ? null : parseFloat(startRaw);
-                const end   = (endRaw   === null || endRaw   === undefined || endRaw   === "")
-                    ? null : parseFloat(endRaw);
-
-                if (start !== null && !isNaN(start) && start < 0) {
-                    options.error = "startTimestamp must be greater than or equal to 0";
-                    return;
-                }
-                if (end !== null && !isNaN(end) && end < 0) {
-                    options.error = "endTimestamp must be greater than or equal to 0";
-                    return;
-                }
-                // Only enforce start < end when end is a meaningful
-                // upper bound (i.e. a positive number). end === 0 / null
-                // / NaN means "no segment", so start has no upper rival.
-                if (end !== null && !isNaN(end) && end > 0 &&
-                    start !== null && !isNaN(start) && start >= end) {
-                    options.error = "startTimestamp must be strictly less than endTimestamp";
-                }
-            });
-        }
+        // Cross-field property validation (start < end) is intentionally
+        // NOT hooked into `creator.onPropertyValidationCustomError`. That
+        // event only re-runs for the property the user is currently
+        // editing, so an error message attached to the OTHER property
+        // (e.g. an error on Start that was set when End was briefly
+        // smaller during typing) is never cleared by subsequent valid
+        // edits — it stays latched even when the configuration becomes
+        // valid. We saw this manifest as start=15 / end=45 (clearly
+        // valid) still showing the cross-field error on both fields.
+        //
+        // Single-field non-negativity is covered declaratively by
+        // `minValue: 0` on the timestamps in the Serializer, so SurveyJS'
+        // built-in number editor handles those without any custom hook.
+        //
+        // The cross-field rule is now enforced exclusively in the runtime
+        // widget (`5_videoSegmentWidget.js → getConfigError`). It surfaces
+        // as a question-level red banner above the live preview / runtime
+        // player, which is impossible to "latch" because the widget
+        // self-clears its question errors on every re-render.
 
         // Hide a few inherited "empty" properties that don't make sense
         // for a video question — its value is auto-generated playback

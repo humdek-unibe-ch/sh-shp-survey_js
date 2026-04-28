@@ -1,6 +1,6 @@
 {
     "title": "Video question example survey",
-    "description": "A minimal survey demonstrating the `video` custom question type introduced in plugin v1.4.8. Page 1 plays a sub-segment with both timestamps set; page 2 plays the entire video without any segment enforcement (timestamps omitted). The question is a standalone custom widget (not derived from the image question). The URL goes into 'videoUrl'; layout is controlled by 'videoFit' / 'videoHeight' / 'videoWidth'.",
+    "description": "A minimal survey demonstrating the `video` custom question type introduced in plugin v1.4.8. Page 1 plays a sub-segment with both timestamps set and `isRequired: true` (the participant must watch to `endTimestamp` before advancing — the alert message is taken from the per-question `requiredWatchMessage` when set, otherwise from the built-in translation table indexed by `survey.locale`). Page 2 plays the entire video without any segment enforcement (timestamps omitted) and is not required. The URL goes into 'videoUrl'; layout is controlled by 'videoFit' / 'videoHeight' / 'videoWidth'.",
     "logoPosition": "right",
     "pages": [
         {
@@ -21,7 +21,8 @@
                     "endTimestamp": 47,
                     "videoFit": "contain",
                     "videoHeight": "360px",
-                    "isRequired": true
+                    "isRequired": true,
+                    "requiredWatchMessage": "Please watch the entire excerpt before continuing."
                 }
             ]
         },

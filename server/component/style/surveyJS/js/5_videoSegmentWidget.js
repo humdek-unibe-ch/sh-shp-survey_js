@@ -191,6 +191,34 @@
                     default: "",
                     category: "layout",
                     displayName: "Video width (CSS-accepted values)"
+                },
+                /*
+                 * Translatable alert shown to the participant when the
+                 * question is `isRequired` and they try to advance before
+                 * watching to the end of the configured segment (or to
+                 * the file's natural end if no `endTimestamp` is set).
+                 *
+                 * UX model:
+                 *   - The survey designer can override this per question
+                 *     by typing a custom message into the property panel.
+                 *   - When the property is left blank (the default), the
+                 *     widget falls back to a built-in translation table
+                 *     keyed by the survey's active locale (see
+                 *     `DEFAULT_REQUIRED_WATCH_MESSAGES` and
+                 *     `getRequiredWatchMessage` below). The CMS already
+                 *     pushes the active locale into `survey.locale` via
+                 *     `4_surveyJS.js`, so a German-locale page shows the
+                 *     German message automatically.
+                 *
+                 * `:text` selects a textarea editor in the property panel
+                 * (instead of a single-line input), which is appropriate
+                 * for short multi-sentence alerts.
+                 */
+                {
+                    name: "requiredWatchMessage:text",
+                    default: "",
+                    category: "general",
+                    displayName: "Required-watch alert (optional, falls back to localized default)"
                 }
             ],
             null,
@@ -352,15 +380,18 @@
      * Validate the configuration of a video question.
      *
      * URL is the only mandatory field. Both timestamps are optional —
-     * an unset (null/undefined/empty) endTimestamp means "play the full
-     * file"; an unset startTimestamp means "start at 0". When timestamps
-     * ARE provided we still validate them: non-negative, and (when end
-     * is a meaningful upper bound — set AND > 0) strictly start < end.
+     * an unset (null/undefined/empty/0) endTimestamp means "play the
+     * full file"; an unset (null/undefined/empty/0) startTimestamp
+     * means "start at 0". When BOTH timestamps are meaningful (set
+     * AND strictly > 0) we additionally require `start < end`.
      *
-     * `endTimestamp === 0` is treated as "not set" because 0 is
-     * nonsensical as an end (a 0-second segment), and we don't want to
-     * surface a spurious "start must be < end" error when the property
-     * panel happens to render empty number fields as 0.
+     * `0` is treated as "not configured" for both timestamps. This is
+     * deliberate: the property panel's number editor in some builds
+     * renders blank fields as `0`, and we don't want to surface a
+     * spurious "start must be < end" error in that case. Even when
+     * the user explicitly types `0`, the resulting playback
+     * (`startTimestamp = 0`, full video) is identical to
+     * "left blank", so collapsing the two states is harmless.
      *
      * Note: `parseSeconds` returns `null` for unset, empty-string and
      * non-finite values; that's our "not provided" signal.
@@ -379,11 +410,106 @@
         if (end !== null && end < 0) {
             return "endTimestamp must be greater than or equal to 0";
         }
-        // Cross-field rule only applies when end is a real upper bound.
-        if (end !== null && end > 0 && start !== null && start >= end) {
+        // Cross-field rule only applies when BOTH timestamps are
+        // meaningful upper bounds — i.e. concrete numbers strictly
+        // greater than zero.
+        var isMeaningful = function (n) { return n !== null && n > 0; };
+        if (isMeaningful(start) && isMeaningful(end) && start >= end) {
             return "startTimestamp must be strictly less than endTimestamp";
         }
         return null;
+    }
+
+    /**
+     * Built-in translations for the required-watch alert.
+     *
+     * The survey designer can override the message per question by
+     * setting `requiredWatchMessage` in the property panel. When that
+     * property is left blank, `getRequiredWatchMessage` looks up the
+     * message here using the survey's active locale (which the CMS
+     * pushes into `survey.locale` via `4_surveyJS.js`).
+     *
+     * Keys are SurveyJS locale codes (`en`, `de`, `fr`, …). The
+     * `default` entry is used when `survey.locale` is empty (the
+     * SurveyJS default state) or when no entry exists for the active
+     * locale. To add a locale, just append a new key — no other code
+     * changes required.
+     */
+    var DEFAULT_REQUIRED_WATCH_MESSAGES = {
+        "default": "Please watch the video to the end before continuing.",
+        "en":      "Please watch the video to the end before continuing.",
+        "de":      "Bitte sehen Sie sich das Video bis zum Ende an, bevor Sie fortfahren.",
+        "fr":      "Veuillez regarder la vidéo jusqu'à la fin avant de continuer.",
+        "it":      "Si prega di guardare il video fino alla fine prima di continuare."
+    };
+
+    /**
+     * Resolve the required-watch alert message for a question.
+     *
+     * Resolution order:
+     *   1. `question.requiredWatchMessage` if the survey designer
+     *      provided a non-empty custom string.
+     *   2. The built-in translation table indexed by `survey.locale`.
+     *   3. The English default as a final fallback.
+     */
+    function getRequiredWatchMessage(question) {
+        var custom = question && question.requiredWatchMessage;
+        if (typeof custom === "string" && custom.trim()) {
+            return custom;
+        }
+        var locale = (question && question.survey && question.survey.locale) || "";
+        if (locale && DEFAULT_REQUIRED_WATCH_MESSAGES[locale]) {
+            return DEFAULT_REQUIRED_WATCH_MESSAGES[locale];
+        }
+        return DEFAULT_REQUIRED_WATCH_MESSAGES["default"];
+    }
+
+    /**
+     * Lazy-attach a survey-level validator that requires the user to
+     * watch the video to the end (or to the configured segment end)
+     * before a `video` question with `isRequired: true` can satisfy
+     * `survey.tryComplete()` / `survey.nextPage()`.
+     *
+     * Why a survey-level hook and not a per-question validator?
+     * SurveyJS' built-in `isRequired` handling considers any
+     * non-`isEmpty()` value as "answered". Our widget continuously
+     * persists playback state to `question.value` from the very first
+     * `loadedmetadata` snapshot, so by the time the user sees the
+     * player there is already a value object in place. That makes the
+     * stock `isRequired` check vacuously true and the user could
+     * `next`/`complete` without ever pressing play. We instead bolt a
+     * stricter `watched === true` check onto `onValidateQuestion`,
+     * which fires AFTER `isRequired` and can `addError()` to block
+     * submission.
+     *
+     * The error message is resolved through `getRequiredWatchMessage`
+     * so it honours both per-question custom strings and the active
+     * survey locale.
+     *
+     * Idempotent: tagged on the survey instance so we attach once even
+     * if multiple video questions share a survey.
+     */
+    function attachRequiredWatchValidator(question) {
+        var survey = question && question.survey;
+        if (!survey || !survey.onValidateQuestion ||
+            typeof survey.onValidateQuestion.add !== "function") return;
+        if (survey.__videoQuestionRequiredHookAttached) return;
+        survey.__videoQuestionRequiredHookAttached = true;
+        survey.onValidateQuestion.add(function (_, options) {
+            var q = options && options.question;
+            if (!q || typeof q.getType !== "function") return;
+            if (q.getType() !== "video") return;
+            if (!q.isRequired) return;
+            var v = q.value;
+            // `watched` only becomes true once the player reached
+            // `end - 0.05` seconds (segment end if configured, file
+            // duration otherwise). Anything else — undefined value,
+            // never-played, paused mid-segment, abandoned at 90 % —
+            // counts as "not yet completed".
+            if (!v || v.watched !== true) {
+                options.error = getRequiredWatchMessage(q);
+            }
+        });
     }
 
     /**
@@ -518,6 +644,21 @@
             if (!hasExplicitEnd && isFinite(video.duration) && video.duration > start) {
                 end      = video.duration;
                 duration = end - start;
+            }
+            // Cap an explicit endTimestamp at the actual file length.
+            // Without this, a misconfigured `endTimestamp` greater than
+            // the video's real duration would make `watched` (which
+            // compares `currentTime >= end - 0.05`) impossible to
+            // satisfy — and since required questions block submission
+            // until `watched === true`, the participant would be
+            // permanently stuck on the question. Capping at the real
+            // duration matches the behaviour documented in
+            // `docs/VIDEO_SEGMENT.md` ("if endTimestamp exceeds the
+            // file length, the segment effectively ends at the file's
+            // natural end").
+            if (hasExplicitEnd && isFinite(video.duration) && end > video.duration) {
+                end      = video.duration;
+                duration = Math.max(0, end - start);
             }
             // Snap to the segment start so the timeline thumb is in the
             // right place from the get-go. Do NOT record this as an event;
@@ -677,6 +818,29 @@
             // banner has the configured width/height.
             applyLayout(video, question);
 
+            // Clear any config errors we attached on previous renders.
+            // Without this, `question.addError(new SurveyError(...))`
+            // accumulates errors on every re-render — so a question
+            // that briefly went through an invalid state would keep
+            // showing stale errors in the Creator preview even after
+            // the survey designer fixed the configuration. We tag our
+            // own errors with `__fromVideoQuestion` so we don't
+            // accidentally drop unrelated errors that other validators
+            // (e.g. SurveyJS' required-question validator) attached.
+            if (question && Array.isArray(question.errors)) {
+                for (var i = question.errors.length - 1; i >= 0; i--) {
+                    if (question.errors[i] && question.errors[i].__fromVideoQuestion) {
+                        question.errors.splice(i, 1);
+                    }
+                }
+            }
+
+            // Reset the in-template banner too, in case the previous
+            // render left it visible from a stale config.
+            errorEl.textContent = "";
+            errorEl.classList.remove("is-visible");
+            video.style.display = "";
+
             var configError = getConfigError(question);
             if (configError) {
                 errorEl.textContent = "Video question configuration error: " + configError;
@@ -684,7 +848,11 @@
                 video.style.display = "none";
                 if (typeof question.addError === "function" && typeof Survey.SurveyError === "function") {
                     try {
-                        question.addError(new Survey.SurveyError(configError, question));
+                        var err = new Survey.SurveyError(configError, question);
+                        // Tag the error so the next render can drop it
+                        // without touching errors added by other code.
+                        err.__fromVideoQuestion = true;
+                        question.addError(err);
                     } catch (e) { /* older builds may signal differently */ }
                 }
                 return;
@@ -696,6 +864,14 @@
             // question itself so it can resolve the optional endTimestamp
             // lazily once the metadata loads.
             video.__videoQuestionDetach = attachPlaybackEnforcement(video, question);
+
+            // When the question is marked required, block survey
+            // navigation/completion until the video has been watched
+            // to the configured end (or to the file's natural end if
+            // no `endTimestamp` is set). The validator is attached to
+            // the survey instance the first time any video question
+            // renders, and idempotently no-ops on subsequent calls.
+            attachRequiredWatchValidator(question);
 
             // Read-only state: hide native controls and prevent interaction.
             if (question.isReadOnly) {
