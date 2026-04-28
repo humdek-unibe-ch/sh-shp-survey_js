@@ -152,15 +152,16 @@ JS/CSS and stores its configuration inside the SurveyJS JSON.
 
 ## Property reference
 
-| Property                | Type   | Required | Default       | Editor / display name                                                       |
-| ----------------------- | ------ | -------- | ------------- | --------------------------------------------------------------------------- |
-| `videoUrl`              | string | yes      | `""`          | "Video URL"                                                                 |
-| `startTimestamp`        | number | no       | *(unset)*     | "Start timestamp (seconds, optional)"                                       |
-| `endTimestamp`          | number | no       | *(unset)*     | "End timestamp (seconds, optional)"                                         |
-| `videoFit`              | enum   | no       | `"contain"`   | "Video fit" — `none`/`contain`/`cover`/`fill`                               |
-| `videoHeight`           | string | no       | `""`          | "Video height (CSS-accepted values)"                                        |
-| `videoWidth`            | string | no       | `""`          | "Video width (CSS-accepted values)"                                         |
-| `requiredWatchMessage`  | text   | no       | `""`          | "Required-watch alert (optional, falls back to localized default)"          |
+| Property                | Type    | Required | Default       | Editor / display name                                                       |
+| ----------------------- | ------- | -------- | ------------- | --------------------------------------------------------------------------- |
+| `videoUrl`              | string  | yes      | `""`          | "Video URL"                                                                 |
+| `startTimestamp`        | number  | no       | *(unset)*     | "Start timestamp (seconds, optional)"                                       |
+| `endTimestamp`          | number  | no       | *(unset)*     | "End timestamp (seconds, optional)"                                         |
+| `autoStart`             | boolean | no       | `false`       | "Auto-start playback when the question is shown"                            |
+| `videoFit`              | enum    | no       | `"contain"`   | "Video fit" — `none`/`contain`/`cover`/`fill`                               |
+| `videoHeight`           | string  | no       | `""`          | "Video height (CSS-accepted values)"                                        |
+| `videoWidth`            | string  | no       | `""`          | "Video width (CSS-accepted values)"                                         |
+| `requiredWatchMessage`  | text    | no       | `""`          | "Required-watch alert (optional, falls back to localized default)"          |
 
 `defaultValue` and `correctAnswer` are hidden from the property panel
 because the value is auto-generated playback metadata; setting them by
@@ -378,6 +379,45 @@ file duration is capped at `video.duration` on `loadedmetadata`.
 Without that cap, a misconfigured upper bound would make `watched`
 (which compares `currentTime >= end - 0.05`) impossible to satisfy and
 a required question would be permanently un-passable.
+
+### Auto-start playback (`autoStart`)
+
+Set the `autoStart` property to `true` on the question to have the
+widget call `video.play()` automatically once the metadata has loaded
+and the player has snapped to `startTimestamp` (or `0`, if unset).
+Useful for "one-video-per-page" surveys where the participant lands on
+the page and the video should just start playing.
+
+The autoplay attempt is suppressed in two situations:
+
+1. **Read-only mode** (`question.isReadOnly === true`). When a survey
+   is reloaded for review of a previously submitted answer, the video
+   should not restart — the participant has already watched it.
+2. **Creator Designer tab** (`survey.isDesignMode === true`). Otherwise
+   every property edit would re-fire playback in the preview pane and
+   overlap audio across multiple video questions in the same survey.
+   Switch to the Creator's **Test** tab if you want to confirm the
+   autoplay behaviour in a designer session.
+
+The widget never mutes the video implicitly. **Browser autoplay
+policies still apply**: most modern browsers block autoplay-with-sound
+unless there has been a recent user gesture in the same tab. In
+practice that means:
+
+- On a video question reached via the survey's **Next** button (or any
+  other click), `autoStart` works reliably — the click counts as the
+  required user gesture.
+- On the **very first page** of a directly-opened survey link (no
+  prior gesture), the browser is likely to reject the `play()` call.
+  The widget swallows the rejection silently; the user sees a paused
+  player and clicks play themselves. The configuration error banner
+  is **not** shown — autoplay being blocked is an expected,
+  non-erroneous outcome.
+
+If you absolutely need autoplay-with-sound on a directly-opened first
+page, host the video on a survey page that's reached after at least
+one click (e.g. an intro page with a "Start" button), or accept that
+some browsers will block until the participant interacts.
 
 ### Translatable required-watch alert
 

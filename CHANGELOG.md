@@ -77,6 +77,14 @@
   - Built-in locales: `en`, `de`, `fr`, `it`. Adding a locale is a one-line change to `DEFAULT_REQUIRED_WATCH_MESSAGES` in `5_videoSegmentWidget.js` — no other code edits needed.
   - Resolution order: per-question custom string → built-in translation for `survey.locale` → English default.
 
+- **Auto-start playback** (`autoStart`)
+  - New optional boolean property `autoStart` (default `false`) on the `video` question class. Toggle it on for "one-video-per-page" surveys where the participant should land on the page and have the video begin playing without an extra click.
+  - Wired in `attachPlaybackEnforcement → onLoadedMetadata`: after seeking to `startTimestamp` (or `0` if unset), the widget calls `video.play()` and silently swallows the autoplay-policy rejection promise. The participant sees a paused player and presses play manually if the browser blocked it; nothing else changes.
+  - **Suppressed** in two situations:
+    1. Read-only mode (`question.isReadOnly`) — we should never restart a video the participant has already submitted an answer for.
+    2. Creator Designer tab (`survey.isDesignMode === true`) — otherwise every property edit would re-fire playback in the preview pane and overlap audio across multiple video questions in the same survey.
+  - **No implicit muting**: the video plays with its natural sound. Browser autoplay policies still apply — autoplay-with-sound usually requires a recent user gesture, so on the very first page of a directly-opened survey the browser may block the play attempt; on subsequent pages reached via the Next button it generally works.
+
 - **Continuous playback tracking**
   - Question value updates on meaningful playback events (`play`, `pause`, `seek`, `clamp`, `ended`)
   - Snapshot schema:

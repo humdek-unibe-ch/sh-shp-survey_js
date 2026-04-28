@@ -1,6 +1,6 @@
 {
     "title": "Video question example survey",
-    "description": "A minimal survey demonstrating the `video` custom question type introduced in plugin v1.4.8. Page 1 plays a sub-segment with both timestamps set and `isRequired: true` (the participant must watch to `endTimestamp` before advancing — the alert message is taken from the per-question `requiredWatchMessage` when set, otherwise from the built-in translation table indexed by `survey.locale`). Page 2 plays the entire video without any segment enforcement (timestamps omitted) and is not required. The URL goes into 'videoUrl'; layout is controlled by 'videoFit' / 'videoHeight' / 'videoWidth'.",
+    "description": "A minimal survey demonstrating the `video` custom question type introduced in plugin v1.4.8. Page 1 plays a sub-segment with both timestamps set and `isRequired: true` (the participant must watch to `endTimestamp` before advancing — the alert message is taken from the per-question `requiredWatchMessage` when set, otherwise from the built-in translation table indexed by `survey.locale`). Page 2 plays the entire video without segment enforcement and demonstrates `autoStart: true` — because page 2 is reached via the Next button (a user gesture), the browser allows autoplay-with-sound. The URL goes into 'videoUrl'; layout is controlled by 'videoFit' / 'videoHeight' / 'videoWidth'.",
     "logoPosition": "right",
     "pages": [
         {
@@ -33,7 +33,7 @@
                 {
                     "type": "html",
                     "name": "full_html",
-                    "html": "<p>This time the entire file plays — there is no segment enforcement, since neither <code>startTimestamp</code> nor <code>endTimestamp</code> is set.</p>"
+                    "html": "<p>This time the entire file plays — there is no segment enforcement, since neither <code>startTimestamp</code> nor <code>endTimestamp</code> is set. <code>autoStart</code> is <code>true</code>, so the video begins playing as soon as you reach this page (the Next-button click counts as the user gesture browsers require for autoplay-with-sound).</p>"
                 },
                 {
                     "type": "video",
@@ -41,7 +41,8 @@
                     "title": "Watch the entire clip",
                     "videoUrl": "/assets/intro.mp4",
                     "videoFit": "contain",
-                    "videoHeight": "360px"
+                    "videoHeight": "360px",
+                    "autoStart": true
                 }
             ]
         },

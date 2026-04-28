@@ -86,6 +86,18 @@ property when set; otherwise it falls back to a built-in translation
 table indexed by `survey.locale` (currently bundled: `en`, `de`, `fr`,
 `it`).
 
+For "one-video-per-page" surveys, toggle the **`autoStart`** property
+on the video question and the widget will automatically begin playback
+when the participant navigates to that page (via the survey's Next
+button, for example). Browser autoplay policies still apply — on a
+freshly-opened first page with no prior user gesture the browser may
+silently block the play attempt, in which case the participant sees a
+paused player and clicks play manually. `autoStart` is suppressed in
+read-only mode and in the Creator's Designer tab (use the **Test** tab
+to verify autoplay during design). See
+[VIDEO_SEGMENT.md → Auto-start playback](VIDEO_SEGMENT.md#auto-start-playback-autostart)
+for the full discussion.
+
 > The question's value is an auto-generated playback metadata object
 > (continuous snapshot of `watched`, `currentTime`, `lastEvent`, etc.;
 > see [VIDEO_SEGMENT.md → Question value](VIDEO_SEGMENT.md#question-value)
