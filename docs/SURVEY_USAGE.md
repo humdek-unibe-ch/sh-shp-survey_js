@@ -98,17 +98,21 @@ when the participant navigates to that page (via the survey's Next
 button, for example). `autoStart` is suppressed in the Creator's
 Designer tab (use the **Test** tab to verify autoplay during design).
 
-`isReadOnly` and `isRequired` on a video question are two
+`readOnly` and `isRequired` on a video question are two
 independent levers — set whichever ones describe the UX you want:
 
-- **`isReadOnly: true`** hides the native controls and auto-starts
-  playback, giving the participant a passive watch-only player
-  with no scrubbing, no skipping and no pause. Designer-set
-  `autoStart` is overridden to `true` here, since there's no
-  control bar to start the video from. Survey-level
-  `mode: "display"` (review of past answers) makes every question
-  read-only, so every video on a review page renders this way.
-- **`isRequired: true`** blocks the survey's Next / Complete
+- **`"readOnly": true`** (per-question, in the JSON) hides the
+  native controls and auto-starts playback, giving the participant
+  a passive watch-only player with no scrubbing, no skipping and
+  no pause. Designer-set `autoStart` is overridden to `true` here,
+  since there's no control bar to start the video from. This is
+  opt-in **per question** — survey-level `mode: "display"` (review
+  of past answers) does NOT count, so review pages keep controls
+  visible and respect `autoStart` at face value. (The widget
+  specifically reads the per-question `readOnly` flag, not
+  SurveyJS' inherited `isReadOnly` getter that becomes true in
+  display mode.)
+- **`"isRequired": true`** blocks the survey's Next / Complete
   button until the video reaches the configured `endTimestamp`
   (or the file's natural end if no `endTimestamp` is set). The
   gate applies even when the question is also read-only — saved

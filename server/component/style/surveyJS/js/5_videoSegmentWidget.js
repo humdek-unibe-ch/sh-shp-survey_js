@@ -123,32 +123,57 @@
     var COMPONENT_TITLE     = "Video";           // human-facing display label
 
     /**
-     * "Supervised viewing" — `isReadOnly === true`.
+     * "Supervised viewing" — the question itself was explicitly
+     * marked `"readOnly": true` in the survey JSON.
      *
-     * The widget treats `isReadOnly` and `isRequired` as TWO
+     * The widget treats `readOnly` and `isRequired` as TWO
      * independent levers, each with a single, predictable effect:
      *
-     *   - `isReadOnly`  -> hide native controls + force auto-start
+     *   - `readOnly`   -> hide native controls + force auto-start
      *                       (the participant can see the video but
      *                       cannot scrub / pause / skip — a
      *                       "watch only" UX).
-     *   - `isRequired`  -> watch-gate: block Next / Complete until
+     *   - `isRequired` -> watch-gate: block Next / Complete until
      *                       the video reaches the end of the
      *                       configured segment (or the file's
      *                       natural end).
-     *   - Both           -> both effects: no controls AND must-watch-
+     *   - Both          -> both effects: no controls AND must-watch-
      *                       to-advance.
      *
-     * Survey-level `mode: "display"` (review of past answers) makes
-     * EVERY question read-only, so by this rule every video on a
-     * display-mode page renders in watch-only UX. That's the
-     * designer-friendly outcome: review pages render videos as
-     * passive playback regardless of which flags the saved JSON
-     * carries, and there's no inconsistency between videos that
-     * happen to be marked required and those that aren't.
+     * EXPLICIT vs COMPUTED read-only — why we read `question.readOnly`
+     * --------------------------------------------------------------
+     * SurveyJS exposes two different read-only accessors on every
+     * question:
+     *
+     *   - `question.readOnly`   — the explicit per-question flag,
+     *                             reflecting whatever the JSON
+     *                             property `"readOnly": true|false`
+     *                             stored. Falsy unless the designer
+     *                             opted in for THIS specific
+     *                             question.
+     *   - `question.isReadOnly` — a COMPUTED getter that ORs the
+     *                             explicit flag with parent-panel
+     *                             read-only AND survey-mode
+     *                             inheritance. When the survey is
+     *                             rendered with `mode: "display"`
+     *                             (review of past answers), this
+     *                             becomes `true` for every question
+     *                             on the survey, even ones the
+     *                             designer never marked read-only.
+     *
+     * We key the watch-only UX off `readOnly` (explicit), NOT
+     * `isReadOnly` (computed). Why: a designer who sets
+     * `mode: "display"` for review wants exactly that — review.
+     * They want the participant to see all their past answers,
+     * including being able to replay any video at their own pace
+     * with the native controls. Hiding the controls and auto-
+     * starting playback on review pages would surprise them
+     * silently; nothing in `mode: "display"` says "force-watch
+     * everything". The "force-watch" UX must be opt-in
+     * per-question, via an explicit `"readOnly": true` in the JSON.
      */
     function isSupervisedViewing(question) {
-        return !!(question && question.isReadOnly);
+        return !!(question && question.readOnly);
     }
 
     // -------------------------------------------------------------------
@@ -215,22 +240,25 @@
                  * autoplay generally works.
                  *
                  * Auto-start also kicks in IMPLICITLY in **supervised
-                 * viewing** mode — that is, when the question is
-                 * `isReadOnly === true` (whether per-question or
-                 * inherited from a survey-level `mode: "display"`).
-                 * Read-only hides the native player controls, so
-                 * without auto-start the participant would have no
-                 * way to start playback at all. Combined with
-                 * `isRequired` (the independent watch-gate) this
-                 * delivers the classic "force the participant to
-                 * watch the whole video / configured segment before
-                 * they can advance" UX — the video starts on its
-                 * own, plays through to the configured end (or the
-                 * file's natural end if no `endTimestamp` is set),
-                 * and the survey's Next button stays blocked until
-                 * completion. On its own (read-only without
-                 * required) it just delivers a passive watch-only
-                 * UX where navigation is still free.
+                 * viewing** mode — that is, when the question's JSON
+                 * has `"readOnly": true`. (Survey-level
+                 * `mode: "display"` makes every question's effective
+                 * `isReadOnly` true via inheritance, but does NOT
+                 * trigger supervised viewing — that's a per-question
+                 * opt-in, see `isSupervisedViewing`.) Read-only hides
+                 * the native player controls, so without auto-start
+                 * the participant would have no way to start
+                 * playback at all. Combined with `isRequired` (the
+                 * independent watch-gate) this delivers the classic
+                 * "force the participant to watch the whole video /
+                 * configured segment before they can advance" UX —
+                 * the video starts on its own, plays through to the
+                 * configured end (or the file's natural end if no
+                 * `endTimestamp` is set), and the survey's Next
+                 * button stays blocked until completion. On its own
+                 * (read-only without required) it just delivers a
+                 * passive watch-only UX where navigation is still
+                 * free.
                  *
                  * Auto-play is suppressed in the Creator's Designer
                  * tab (`survey.isDesignMode === true`) so every
@@ -249,7 +277,7 @@
                     default: false,
                     category: "general",
                     displayName: "Auto-start playback when the question is shown",
-                    description: "Begin playback automatically when the participant arrives on this question. Forced ON whenever the question is read-only (controls are hidden then, so it's the only way to play) — including survey-level mode: \"display\" review pages. Browsers may block autoplay-with-sound on the very first page of a freshly-opened survey; place such videos on page 2+ (reached via a Next click) to be safe."
+                    description: "Begin playback automatically when the participant arrives on this question. Also forced ON when the question itself is marked readOnly: true (controls are hidden then, so it's the only way to play). Survey-level mode: \"display\" review pages do NOT force auto-start — that's a per-question opt-in. Browsers may block autoplay-with-sound on the very first page of a freshly-opened survey; place such videos on page 2+ (reached via a Next click) to be safe."
                 },
                 /*
                  * "Video fit" / height / width — wired to the <video>
@@ -1053,21 +1081,23 @@
             //
             //   1. The survey designer opted in via `autoStart: true`.
             //   2. The question is in **supervised viewing** mode —
-            //      i.e. `isReadOnly === true`. Read-only hides the
-            //      native controls (see below), so without auto-start
-            //      the participant would have NO way to begin
-            //      playback. Combined with `isRequired` (the
-            //      independent watch-gate) this delivers the classic
-            //      "must watch the whole video / segment before
-            //      advancing" UX; on its own (read-only without
-            //      required) it delivers a passive watch-only UX
-            //      where the participant can still navigate freely.
+            //      i.e. the JSON has `"readOnly": true` for THIS
+            //      specific question. Read-only hides the native
+            //      controls (see below), so without auto-start the
+            //      participant would have NO way to begin playback.
+            //      Combined with `isRequired` (the independent
+            //      watch-gate) this delivers the classic "must watch
+            //      the whole video / segment before advancing" UX;
+            //      on its own (read-only without required) it
+            //      delivers a passive watch-only UX where the
+            //      participant can still navigate freely.
             //
-            // Survey-level `mode: "display"` makes every question
-            // read-only, so every video on a review page auto-starts
-            // and renders without controls — by design, since the
-            // rule is consistent: read-only ALWAYS hides controls
-            // and auto-starts.
+            // Survey-level `mode: "display"` (review of past answers)
+            // is NOT considered supervised viewing — see
+            // `isSupervisedViewing` for the rationale. Review pages
+            // keep the native controls visible and respect
+            // `autoStart` at face value, so the participant can
+            // replay any video at their own pace.
             //
             // Suppressed in the Creator's Designer tab
             // (`survey.isDesignMode === true`) so every property edit
@@ -1349,20 +1379,24 @@
             // renders, and idempotently no-ops on subsequent calls.
             attachRequiredWatchValidator(question);
 
-            // Native controls are hidden whenever `isReadOnly === true`
-            // (whether set per-question or inherited from survey-level
-            // `mode: "display"`). The watch-gate is a separate concern,
-            // controlled by `isRequired`, and applies independently —
-            // see `isSupervisedViewing` and `attachRequiredWatchValidator`
-            // for the full rationale.
+            // Native controls are hidden ONLY when the JSON
+            // explicitly sets `"readOnly": true` on this specific
+            // question. Survey-level `mode: "display"` (review of
+            // past answers) does NOT hide controls — see
+            // `isSupervisedViewing` for the explicit-vs-computed
+            // rationale. The watch-gate is a separate concern,
+            // controlled by `isRequired`, and applies independently
+            // — see `attachRequiredWatchValidator`.
             //
             // `readOnlyChangedCallback` is the SurveyJS hook for live
-            // changes to `isReadOnly` (e.g. when the survey switches
-            // modes via a logic expression). No `isRequired` listener
-            // here, since `isRequired` no longer affects controls
-            // visibility — its only effect is on the watch-gate, which
-            // is re-evaluated by the survey-level hooks on every
-            // navigation attempt.
+            // changes to the EFFECTIVE read-only state. We still
+            // wire it because a logic expression flipping
+            // `question.readOnly` true/false at runtime should
+            // re-hide / re-show the controls; the callback fires for
+            // both the explicit and inherited paths, and our check
+            // (`!question.readOnly`) self-filters out the inherited
+            // case so review-mode toggles never flicker the
+            // controls.
             function applySupervisedViewingState() {
                 video.controls = !isSupervisedViewing(question);
             }

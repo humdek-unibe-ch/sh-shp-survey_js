@@ -16,17 +16,19 @@
 
 - **Video question — clean separation between read-only and
   required.** The two flags are now fully independent levers:
-    - **`isReadOnly: true`** hides the native controls and
-      auto-starts playback so the participant can see the video
-      without interacting (a "watch only" UX). Applies to every
-      question in a survey-level `mode: "display"` review page too,
-      since display mode makes everything read-only.
+    - **`readOnly: true`** (per-question, in the JSON) hides the
+      native controls and auto-starts playback so the participant
+      can see the video without interacting (a "watch only" UX).
+      This is opt-in per question — survey-level `mode: "display"`
+      review pages keep the controls visible and respect
+      `autoStart` at face value, so participants reviewing past
+      answers can replay any video at their own pace.
     - **`isRequired: true`** blocks Next / Complete until the video
       has been watched all the way through (or to the end of the
-      configured segment). This now applies even when the question
-      is read-only, so you can build a "must watch before
-      continuing" gate that doesn't let the participant interact
-      with the player.
+      configured segment). The gate applies even when the question
+      is also read-only, so saved values carrying `watched: true`
+      sail through review pages while a brand-new question on a
+      fresh page is held until playback completes.
     - **Both** combine: no controls AND must-watch-to-advance.
 
 ### Bug fixes
