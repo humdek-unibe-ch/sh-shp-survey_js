@@ -145,6 +145,47 @@ reload, and unregistered in `willUnmount` to avoid stale-closure leaks
 when the question's DOM node is replaced (Creator tab switches,
 property-pane re-renders).
 
+### Single-dimension auto-fit (v1.4.10+)
+
+`object-fit: contain` (the default) preserves the bitmap's aspect
+ratio inside whatever box it is given. That works perfectly when the
+box happens to match the bitmap, and produces letterbox / pillarbox
+bars otherwise. Two situations the designer cares about:
+
+1. **Designer sets BOTH `videoHeight` AND `videoWidth`.** They've
+   committed to a specific box size; the widget honours it
+   literally, even if it produces bars. This is the only way to get
+   a deliberately-shaped frame (e.g. forcing a 16:9 viewport for a
+   portrait clip).
+
+2. **Designer sets only one of `videoHeight` / `videoWidth`** (the
+   common "300 px tall, fit-to-row" case for portrait phone clips).
+   They almost certainly do NOT want a stage that's full row-width
+   × 300 px with two huge black pillars on either side. The widget
+   resolves the missing dimension automatically from the bitmap's
+   intrinsic aspect ratio.
+
+The implementation uses CSS `aspect-ratio` on the stage wrapper and
+falls back to `width: auto` / `height: auto` (overriding the CSS
+default `width: 100%` and `min-height: 240px`) so the browser
+computes the missing dimension from the explicit one. The behaviour
+matrix:
+
+| `videoHeight` | `videoWidth` | Stage size                               |
+| ------------- | ------------ | ---------------------------------------- |
+| unset         | unset        | width 100 %, min-height 240 px (default) |
+| `300px`       | unset        | height 300 px, width = 300 × bitmapW / bitmapH |
+| unset         | `400px`      | width 400 px, height = 400 × bitmapH / bitmapW |
+| `300px`       | `400px`      | exactly 400 × 300, may show bars         |
+
+Because the bitmap's intrinsic dimensions are only available after
+the browser has loaded the video metadata, the auto-fit applies in
+two stages: an immediate pass during `applyLayout` (no-op until
+metadata arrives) and a second pass from the `loadedmetadata`
+handler the moment `video.videoWidth` / `video.videoHeight` become
+non-zero. The transition is invisible to the participant — they see
+the correctly-shaped frame from the first paint.
+
 ## Installation
 
 The question is bundled with the SurveyJS plugin. Once you are running
@@ -267,122 +308,142 @@ scrubber. The user is free to pause/resume and seek **inside** the
 allowed window; seeks outside it are silently clamped. When no segment
 is defined the UI behaves like a plain video player.
 
-### Read-only behaviour: review mode vs supervised viewing
+### Read-only and required: two independent levers
 
-The widget treats **pure read-only** and **supervised viewing**
-differently. The distinction matters because survey-level
-`mode: "display"` (review-past-answers) makes every question
-read-only, and you almost never want every video on every review
-screen to silently auto-play with the controls hidden.
+`isReadOnly` and `isRequired` are fully independent. Each flag
+produces a single, predictable effect; combining them just combines
+the effects. There is no special-case "supervised viewing" mode
+keyed off both flags together — set whichever ones describe the UX
+you want.
 
-#### Pure read-only — review of past answers
+| `isReadOnly` | `isRequired` | UX                                                                             |
+| ------------ | ------------ | ------------------------------------------------------------------------------ |
+| `false`      | `false`      | Standard player. Controls visible. Navigation free.                            |
+| `false`      | `true`       | Standard player. Controls visible. Next blocked until the video is watched.    |
+| `true`       | `false`      | **Watch-only.** Controls hidden. Auto-start forced. Navigation free.           |
+| `true`       | `true`       | **Watch-only + must-finish.** Controls hidden. Auto-start forced. Next blocked. |
 
-Triggered by either:
+The same matrix applies whether the per-question `isReadOnly` flag
+is set explicitly OR inherited from a survey-level `mode: "display"`
+review page.
 
-- a survey-level `mode: "display"` (the standard "review my submitted
-  answers" rendering), or
-- a single question with `isReadOnly: true` AND **no** `isRequired`
-  flag.
+#### `isReadOnly` — hide controls, auto-start
 
-What the participant sees:
+When the question is read-only, the widget:
 
-- **Native controls stay visible.** Play, pause, scrubber, fullscreen,
-  volume — all available. The participant decides whether and how to
-  replay each video.
-- **No auto-start.** The video sits on its first frame until the
-  participant presses play. The `autoStart` property is honoured at
-  face value (default `false`, opt-in `true`).
-- **No watch-gate on navigation.** The required-watch hooks bow out
-  entirely when `survey.mode === "display"`, so the participant can
-  go forward, backward, complete and revisit pages freely without
-  being blocked by saved-or-absent `watched` flags.
-- **Playback data is still recorded** if the participant chooses to
-  replay — the widget never silences its event listeners.
-
-#### Supervised viewing — forced watch before advancing
-
-Triggered by setting BOTH `isReadOnly: true` AND `isRequired: true`
-on a single question while the survey itself is in normal mode (not
-`mode: "display"`).
-
-What the participant sees:
-
-- **Native controls are hidden.** No play/pause, no scrubber, no
-  fullscreen, no volume slider. The participant cannot skip ahead,
-  rewind, or interact with the player at all.
-- **Auto-start is forced ON, regardless of the `autoStart` property.**
-  Without auto-start the participant would have no way to begin
-  playback (the controls are hidden), so the widget always tries to
-  start playback automatically when the question becomes visible.
-  Designer-opted `autoStart` is overridden by this rule.
-- **The required-watch validator blocks Next.** The survey only
-  advances once the video has reached the end of the configured
-  segment (or the file's natural end if no `endTimestamp` is set).
-  The participant has no way to skip — they can only wait for
-  playback to complete and then click Next. Backward navigation is
-  still allowed mid-watch (returning to a previous page doesn't
-  break anything).
-- **Playback data is recorded just like in normal mode.** The widget
-  updates the question's value (`watched`, `currentTime`,
+- **Hides the native controls.** No play/pause, no scrubber, no
+  fullscreen, no volume slider. The participant cannot scrub,
+  rewind, pause or otherwise interact with the player.
+- **Forces auto-start ON, regardless of the `autoStart` property.**
+  With the controls hidden, auto-start is the only way to begin
+  playback. The widget always tries to start playback the moment
+  the question becomes visible.
+- **Still records playback data.** `watched`, `currentTime`,
   `watchedSeconds`, `percentWatched`, `startedAt`, `lastUpdatedAt`,
-  `lastEvent`, `completedAt`, etc.) as the supervised viewing
-  progresses, so the submitted answer carries a complete record of
-  the participant's watch session. The read-only flag affects only
-  the player's UI, not the data-recording path.
+  `lastEvent`, `completedAt`, etc. all update normally — read-only
+  affects the UI, not the data-recording path.
+
+A survey-level `mode: "display"` (review of past answers) makes
+every question read-only, so every video on a review page renders
+in this watch-only UX. That's the consistent outcome the rule
+guarantees: the same flag produces the same effect everywhere it's
+set.
+
+#### `isRequired` — block Next until watched
+
+When the question is required, the widget:
+
+- **Blocks Next / Complete** until `value.watched === true` — i.e.
+  the video has reached the end of the configured segment, or the
+  file's natural end if no `endTimestamp` is set.
+- **Inline error message** appears next to the question explaining
+  that the video must be watched before continuing. The text is
+  configurable (`requiredWatchMessage`, localizable through the
+  Translation tab) and clears the moment playback completes.
+- **Allows backward navigation freely.** Only Next / Complete is
+  gated; the participant can always go back to previous pages
+  mid-watch.
+
+The gate applies even when the question is read-only (the
+participant must wait for the auto-started video to finish before
+they can advance). It applies in display-mode review pages too —
+saved values from a properly-completed submission already have
+`watched: true`, so the gate passes immediately.
 
 > **Why the validator is layered.** SurveyJS' built-in
-> `Question.hasErrors()` returns early for read-only questions, which
-> means the per-question `onValidateQuestion` hook is silently skipped.
-> Pre-v1.4.9 the widget relied solely on that hook, so a supervised
-> viewing question would fail to block Next at all (participants
-> could click straight through without watching). v1.4.9 adds two
-> extra survey-level hooks (`onCurrentPageChanging` and
-> `onCompleting`) that iterate the current page's video questions
-> directly, regardless of their read-only state. Both hooks
-> early-return when `survey.mode === "display"` so review mode
-> stays unblocked. The original per-question hook stays in place
-> for the regular (non-read-only) Required case so the inline error
-> appears immediately on Next.
+> `Question.hasErrors()` returns early for read-only questions,
+> which means the per-question `onValidateQuestion` hook is silently
+> skipped. The widget therefore attaches THREE survey-level hooks:
+> `onValidateQuestion` (per-question, for the regular non-read-only
+> case so the inline error appears immediately on Next),
+> `onCurrentPageChanging` (page-level, fires regardless of read-only
+> state, blocks the transition if any required video on the page
+> hasn't been watched), and `onCompleting` (same logic for the
+> survey's complete-button on the final page).
 
 > **First-page caveat (browser autoplay policy).** Browsers block
 > autoplay-with-sound when there has been no recent user gesture on
-> the page, so a supervised-viewing video on the very first page of
-> a freshly-opened survey may sit on its first frame with no controls
-> and no way to start. Avoid this by placing supervised-viewing
-> videos on page 2+; reaching them via a Next click counts as a
-> gesture and autoplay works normally. The widget never auto-mutes
-> the video to work around this — silent playback would defeat the
-> purpose of any question whose content depends on audio.
+> the page, so a read-only video on the very first page of a
+> freshly-opened survey may sit on its first frame with no controls
+> and no way to start. Avoid this by placing such videos on page
+> 2+; reaching them via a Next click counts as a gesture and
+> autoplay works normally. The widget never auto-mutes the video to
+> work around this — silent playback would defeat the purpose of any
+> question whose content depends on audio.
 
-The snippet below shows the canonical "supervised viewing" recipe:
+#### Canonical recipes
+
+**Watch-only (read-only, free to navigate):**
 
 ```jsonc
 {
-    "type":          "video",
-    "name":          "consent-clip",
-    "title":         "Please watch the introduction.",
-    "videoUrl":      "/assets/intro.mp4",
-    "isRequired":    true,
-    "isReadOnly":    true
-    // autoStart is intentionally omitted — it's forced ON by the
-    // (isReadOnly && isRequired) combination anyway.
+    "type":       "video",
+    "name":       "intro-clip",
+    "videoUrl":   "/assets/intro.mp4",
+    "isReadOnly": true
+    // autoStart is intentionally omitted — it's forced ON by isReadOnly anyway.
 }
 ```
 
-For comparison — the corresponding **review-mode** rendering of the
-same survey (everything read-only, controls visible, no auto-start,
-no watch-gate) is achieved purely at the survey level:
+**Must-watch-to-advance (controls visible, but can't skip Next):**
+
+```jsonc
+{
+    "type":       "video",
+    "name":       "training-clip",
+    "videoUrl":   "/assets/training.mp4",
+    "isRequired": true
+}
+```
+
+**Watch-only + must-watch-to-advance (the classic forced-watch screen):**
+
+```jsonc
+{
+    "type":       "video",
+    "name":       "consent-clip",
+    "videoUrl":   "/assets/consent.mp4",
+    "isReadOnly": true,
+    "isRequired": true
+    // autoStart is intentionally omitted — it's forced ON by isReadOnly anyway.
+}
+```
+
+**Whole survey in review mode (everything read-only):**
 
 ```jsonc
 {
     "title":  "My Survey",
-    "mode":   "display",        // <-- the whole survey is in review mode
+    "mode":   "display",
     "pages":  [ /* …pages with video questions… */ ]
 }
 ```
 
-No per-question changes are needed for review mode; the widget reads
-`survey.mode` and adjusts automatically.
+In review mode, every video renders in the watch-only UX
+(controls hidden, auto-start). No per-question changes are
+needed — the widget reads `survey.mode` and adjusts automatically.
+Saved `watched` flags from the original submission keep any
+`isRequired` gates open for the participant.
 
 ## Question value
 
@@ -496,7 +557,7 @@ file's natural end if no `endTimestamp` is set):
 | Hook | Purpose |
 | ---- | ------- |
 | `survey.onValidateQuestion`  | Per-question. Catches the regular (non-read-only) Required case. SurveyJS skips this hook for read-only questions, so it cannot stand alone — see the next two. |
-| `survey.onCurrentPageChanging` | Page-level. Fires whenever the participant tries to advance via Next, regardless of any question's read-only state. Iterates all video questions on the current page and blocks the transition if any required one hasn't been watched. THIS is what enforces the "Read-only + Required = supervised viewing" UX — without it, SurveyJS' built-in read-only-skip lets the participant click Next freely. |
+| `survey.onCurrentPageChanging` | Page-level. Fires whenever the participant tries to advance via Next, regardless of any question's read-only state. Iterates all video questions on the current page and blocks the transition if any required one hasn't been watched. THIS is what makes the watch-gate work for read-only required questions — without it, SurveyJS' built-in read-only-skip would let the participant click Next freely on a read-only question even when it's marked required. |
 | `survey.onCompleting`        | Same logic as `onCurrentPageChanging`, but for the final page's Complete button. Blocks survey submission when a required video on the last page hasn't been watched. |
 
 Backward navigation is allowed regardless of watch state — only
@@ -536,23 +597,23 @@ and the player has snapped to `startTimestamp` (or `0`, if unset).
 Useful for "one-video-per-page" surveys where the participant lands on
 the page and the video should just start playing.
 
-Auto-start ALSO triggers implicitly when the question is in
-**supervised viewing** mode — i.e. `isReadOnly: true` AND
-`isRequired: true` together — regardless of the `autoStart` property
-value. Supervised viewing hides the native player controls, so
+Auto-start ALSO triggers implicitly whenever the question is
+read-only (`isReadOnly === true`), regardless of the `autoStart`
+property value. Read-only hides the native player controls, so
 without auto-start the participant would have no way to begin
-playback. Combined with the required-watch validator this delivers
-the "force the participant to watch the whole video before they can
-advance" UX. See the
-[Read-only behaviour: review mode vs supervised viewing](#read-only-behaviour-review-mode-vs-supervised-viewing)
+playback. Combined with `isRequired` (the independent watch-gate)
+this delivers the classic "force the participant to watch the
+whole video before they can advance" UX; on its own (read-only
+without required) it delivers a passive watch-only UX. See the
+[Read-only and required: two independent levers](#read-only-and-required-two-independent-levers)
 section above for the full description.
 
-**Important:** *pure* read-only mode (a survey-level `mode: "display"`
-review screen, or a single question with just `isReadOnly: true`)
-does NOT force auto-start. The native controls stay visible and
-`autoStart` is honoured at face value. Auto-starting every video on
-every review screen would silently surprise designers who only
-wanted a review rendering.
+**Note on review mode:** survey-level `mode: "display"` makes every
+question read-only, so every video on a review page auto-starts and
+renders without controls. That's the consistent outcome of the rule
+"read-only always hides controls and auto-starts" — the same flag
+produces the same effect everywhere it's set. `autoStart` is
+honoured at face value only when the question is NOT read-only.
 
 The autoplay attempt is suppressed in one situation:
 
@@ -703,7 +764,9 @@ A complete example survey is in
 | Question card renders an empty `<div>` (no video, no error banner)  | Custom-widget `isFit()` is not matching. SurveyJS lowercases all class names; comparing `getType() === "Video"` (camelCase) silently never matches. The widget compares against `"video"`. Hard-refresh to drop cached JS. |
 | Toolbox icon is empty                                               | Old cached JS or missing icon registration. The plugin falls back to `icon-image` automatically.                                                                                  |
 | "startTimestamp must be strictly less than endTimestamp" appears in the Creator property panel for valid configurations (e.g. `start=15`, `end=45`) | A pre-release v1.4.8 widget hooked `creator.onPropertyValidationCustomError` for the cross-field rule. That event only re-runs for the property currently being edited, so an error attached to the OTHER property could never be cleared by subsequent valid edits and stayed latched. The shipped v1.4.8 widget moves cross-field validation to a question-level red banner (above the live preview / runtime player) which self-clears on every re-render. Hard-refresh to drop cached JS. |
-| Cross-field error stays in the Creator preview banner after fix      | The widget self-clears errors tagged `__fromVideoQuestion` on every `afterRender`, but a re-render is only triggered on a property change. Click anywhere in the property panel (or change/restore any property) to force a re-render. |
+| Cross-field error stays in the Creator preview banner after fix      | Pre-v1.4.10: the widget self-cleared errors tagged `__fromVideoQuestion` only on `afterRender`, but a re-render was only triggered on a layout-property change. v1.4.10 wires `videoUrl` / `startTimestamp` / `endTimestamp` to a full re-sync, so the banner now clears live as soon as the offending property is fixed. If you still see a stuck banner, hard-refresh the Creator. |
+| "Video URL is required" banner stays after entering a URL            | Pre-v1.4.10 `afterRender` returned early on a config error and never wired any listeners, so adding the URL afterwards never re-evaluated the banner. Fixed in v1.4.10 — the URL listener now triggers a full re-sync and the banner clears the moment a valid URL is typed. Hard-refresh if the banner persists. |
+| Pillarbox / letterbox black bars on a single-dimension video         | Pre-v1.4.10 `videoFit: "contain"` honoured the box dimensions literally even when only one was set. v1.4.10 auto-fits the missing dimension from the bitmap's aspect ratio. Set both `videoHeight` AND `videoWidth` to opt back into the literal-box behaviour. |
 | Required-watch alert appears in English on a German page             | `survey.locale` is empty (the SurveyJS default). Confirm `4_surveyJS.js` is reading the locale from the `selfHelp-locale-<locale>` class on `.selfHelp-survey-js-holder`. Either fill in the German entry in the Creator's Translation tab (`requiredWatchMessage` is `isLocalizable: true` and shows up there next to the question title), or rely on the built-in `de` backstop in `DEFAULT_REQUIRED_WATCH_MESSAGES`. |
 | `requiredWatchMessage` row missing from the Translation tab          | Old cached JS — the property is registered with `isLocalizable: true` since v1.4.8. Hard-refresh the Creator (Ctrl+Shift+R) and reopen the survey. |
 | Native `<video>` controls bar invisible / very narrow (e.g. portrait clip with `videoHeight: 300px`) | Old cached JS / CSS from a pre-release v1.4.8 build that applied `videoHeight` directly to the `<video>` element. Hard-refresh JS + CSS bundles (Ctrl+Shift+R) to pick up the shipped widget, which anchors sizing on the `.sjs-video__stage` wrapper so controls always span the full configured width. |

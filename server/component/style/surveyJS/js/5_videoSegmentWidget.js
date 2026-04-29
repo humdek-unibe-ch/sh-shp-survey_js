@@ -3,7 +3,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
 /**
- * Video custom SurveyJS question widget (v1.4.9).
+ * Video custom SurveyJS question widget (v1.4.10).
  *
  * Built against SurveyJS v1.9.124 (do NOT upgrade).
  *
@@ -123,27 +123,32 @@
     var COMPONENT_TITLE     = "Video";           // human-facing display label
 
     /**
-     * "Supervised viewing" means the question is BOTH read-only AND
-     * required. Used by the widget to decide:
+     * "Supervised viewing" — `isReadOnly === true`.
      *
-     *   - whether to hide the native player controls (so the
-     *     participant cannot scrub / pause / skip);
-     *   - whether to force auto-start (since with controls hidden,
-     *     auto-start is the only way to begin playback);
-     *   - whether the page-level required-watch hooks should block
-     *     navigation.
+     * The widget treats `isReadOnly` and `isRequired` as TWO
+     * independent levers, each with a single, predictable effect:
      *
-     * Crucially, **pure read-only is NOT supervised viewing**. A
-     * survey rendered with `survey.mode === "display"` makes every
-     * question read-only — that's SurveyJS' standard "review past
-     * answers" mode. Treating that as supervised viewing would
-     * silently auto-play every video and hide the controls on review
-     * screens, which is never what the designer wanted. The
-     * participant in review mode keeps the native controls and
-     * decides for themselves whether to replay each video.
+     *   - `isReadOnly`  -> hide native controls + force auto-start
+     *                       (the participant can see the video but
+     *                       cannot scrub / pause / skip — a
+     *                       "watch only" UX).
+     *   - `isRequired`  -> watch-gate: block Next / Complete until
+     *                       the video reaches the end of the
+     *                       configured segment (or the file's
+     *                       natural end).
+     *   - Both           -> both effects: no controls AND must-watch-
+     *                       to-advance.
+     *
+     * Survey-level `mode: "display"` (review of past answers) makes
+     * EVERY question read-only, so by this rule every video on a
+     * display-mode page renders in watch-only UX. That's the
+     * designer-friendly outcome: review pages render videos as
+     * passive playback regardless of which flags the saved JSON
+     * carries, and there's no inconsistency between videos that
+     * happen to be marked required and those that aren't.
      */
     function isSupervisedViewing(question) {
-        return !!(question && question.isReadOnly && question.isRequired);
+        return !!(question && question.isReadOnly);
     }
 
     // -------------------------------------------------------------------
@@ -210,46 +215,41 @@
                  * autoplay generally works.
                  *
                  * Auto-start also kicks in IMPLICITLY in **supervised
-                 * viewing** mode — that is, when the question has BOTH
-                 * `isReadOnly: true` AND `isRequired: true`. Supervised
-                 * viewing hides the native player controls, so without
-                 * auto-start the participant would have no way to start
-                 * playback at all. Combined with the required-watch
-                 * validator this delivers the "force the participant
-                 * to watch the whole video / configured segment before
-                 * they can advance" UX — the video starts on its own,
-                 * plays through to the configured end (or the file's
-                 * natural end if no `endTimestamp` is set), and the
-                 * survey's Next button stays blocked until completion.
+                 * viewing** mode — that is, when the question is
+                 * `isReadOnly === true` (whether per-question or
+                 * inherited from a survey-level `mode: "display"`).
+                 * Read-only hides the native player controls, so
+                 * without auto-start the participant would have no
+                 * way to start playback at all. Combined with
+                 * `isRequired` (the independent watch-gate) this
+                 * delivers the classic "force the participant to
+                 * watch the whole video / configured segment before
+                 * they can advance" UX — the video starts on its
+                 * own, plays through to the configured end (or the
+                 * file's natural end if no `endTimestamp` is set),
+                 * and the survey's Next button stays blocked until
+                 * completion. On its own (read-only without
+                 * required) it just delivers a passive watch-only
+                 * UX where navigation is still free.
                  *
-                 * IMPORTANT — pure read-only mode is NOT supervised
-                 * viewing. A survey rendered with
-                 * `survey.mode === "display"` (or a single question
-                 * with just `isReadOnly: true`) is the standard
-                 * "review past answers" mode; the native controls
-                 * stay visible and `autoStart` is honoured at face
-                 * value (default `false`, opt-in `true`). Auto-start
-                 * is NOT forced on in pure read-only mode — that
-                 * would silently restart every video on every review
-                 * screen, which the designer never asked for.
+                 * Auto-play is suppressed in the Creator's Designer
+                 * tab (`survey.isDesignMode === true`) so every
+                 * property edit doesn't re-trigger playback in the
+                 * preview pane.
                  *
-                 * Auto-play is suppressed in the Creator's Designer tab
-                 * (`survey.isDesignMode === true`) so every property
-                 * edit doesn't re-trigger playback in the preview pane.
-                 *
-                 * No implicit muting is applied; the video plays with
-                 * its natural sound. If you need autoplay-with-sound on
-                 * a directly-opened first page, host the video on a
-                 * page that's reached via a Next click. This caveat
-                 * applies to both designer-opted `autoStart` and
-                 * supervised-viewing-implicit auto-play.
+                 * No implicit muting is applied; the video plays
+                 * with its natural sound. If you need autoplay-with-
+                 * sound on a directly-opened first page, host the
+                 * video on a page that's reached via a Next click.
+                 * This caveat applies to both designer-opted
+                 * `autoStart` and read-only-implicit auto-play.
                  */
                 {
                     name: "autoStart:boolean",
                     default: false,
                     category: "general",
                     displayName: "Auto-start playback when the question is shown",
-                    description: "Begin playback automatically when the participant arrives on this question. Forced ON when the question is in supervised-viewing mode (isReadOnly + isRequired together — controls are hidden then, so it's the only way to play). Pure read-only review mode keeps controls visible and does NOT auto-start. Browsers may block autoplay-with-sound on the very first page of a freshly-opened survey; place such videos on page 2+ (reached via a Next click) to be safe."
+                    description: "Begin playback automatically when the participant arrives on this question. Forced ON whenever the question is read-only (controls are hidden then, so it's the only way to play) — including survey-level mode: \"display\" review pages. Browsers may block autoplay-with-sound on the very first page of a freshly-opened survey; place such videos on page 2+ (reached via a Next click) to be safe."
                 },
                 /*
                  * "Video fit" / height / width — wired to the <video>
@@ -704,14 +704,19 @@
 
         // Whether the page-level hooks should treat this navigation
         // attempt as a real survey-taking action that can be blocked.
-        // We bypass the hooks entirely when the survey is in display
-        // (review) mode, because in that mode the participant is just
-        // browsing previously submitted answers and should never be
-        // trapped on a page based on a saved (or absent) `watched`
-        // flag.
+        // We DO enforce the gate in read-only / display mode: a
+        // participant who has actually watched the video has
+        // `value.watched === true` saved, so the gate passes
+        // immediately on review. The gate only blocks if the saved
+        // value is missing the watched flag — typically because the
+        // question is brand-new on this page and hasn't been played
+        // yet — which is exactly when the designer wants the gate to
+        // block. Designer-side preview from the Creator's Designer
+        // tab is excluded (`isDesignMode`) so the designer can flip
+        // properties without the gate fighting them.
         function shouldEnforceWatchGate(sender) {
             if (!sender) return false;
-            if (sender.mode === "display") return false;
+            if (sender.isDesignMode === true) return false;
             return true;
         }
 
@@ -801,6 +806,100 @@
             stage.style.width = String(question.videoWidth);
         } else {
             stage.style.removeProperty("width");
+        }
+
+        // Single-dimension auto-fit. See `applyAutoFit` for the full
+        // rationale and the cleanup branch.
+        applyAutoFit(video, stage, question);
+    }
+
+    /**
+     * "Auto-fit" the stage to the bitmap's intrinsic aspect ratio when
+     * the designer has set EXACTLY ONE of `videoHeight` / `videoWidth`.
+     *
+     * Why this exists
+     * ---------------
+     * The widget always uses `object-fit: contain` (default) for the
+     * `<video>` element, so when the stage's box-aspect doesn't match
+     * the bitmap's aspect the participant gets letterbox bars. That's
+     * fine if the designer set BOTH dimensions explicitly — they
+     * wanted the bars. But a designer who only sets `videoHeight:
+     * "300px"` for a portrait phone clip almost certainly does NOT
+     * want a stage that's full row-width × 300 px with two huge black
+     * pillars on either side. They want "300 px tall, width auto".
+     *
+     * Behaviour matrix
+     * ----------------
+     *   neither set   -> defaults (width 100 %, min-height 240 px),
+     *                    `object-fit: contain` does its thing.
+     *   ONLY height   -> aspect-ratio honoured: width auto-computed
+     *                    to bitmapW × (height / bitmapH).
+     *   ONLY width    -> aspect-ratio honoured: height auto-computed
+     *                    to bitmapH × (width / bitmapW).
+     *   BOTH set      -> respect both literally; designer asked for
+     *                    that exact box even if it produces bars.
+     *
+     * Implementation
+     * --------------
+     * Uses CSS `aspect-ratio` on the stage. The browser resolves the
+     * implicit dimension from the explicit one + aspect-ratio. We
+     * also need to:
+     *
+     *   - override the CSS default `width: 100%` with `width: auto`
+     *     when only height is set (otherwise width stays 100 % and
+     *     aspect-ratio is ignored), and symmetrically `height: auto`
+     *     when only width is set;
+     *   - drop the CSS default `min-height: 240px` so a bitmap that
+     *     resolves to a smaller stage isn't padded out and breaks the
+     *     aspect ratio.
+     *
+     * Idempotent: when called with both/neither dimensions set we
+     * cleanly remove the inline `aspect-ratio`, `min-height` and
+     * stale `auto` overrides so the CSS defaults take over.
+     *
+     * Called from:
+     *   - applyLayout, on every layout property change (height,
+     *     width, fit). Bitmap dimensions may not be ready yet; that's
+     *     fine, we early-return and the loadedmetadata handler will
+     *     re-run us when they are.
+     *   - attachPlaybackEnforcement → onLoadedMetadata, the moment
+     *     `video.videoWidth` / `video.videoHeight` become non-zero.
+     */
+    function applyAutoFit(video, stage, question) {
+        if (!stage) return;
+        var hasH = !!question.videoHeight;
+        var hasW = !!question.videoWidth;
+
+        // Reset path: both or neither set. Clear any inline overrides
+        // we may have applied previously so the CSS defaults take
+        // over (width: 100%, min-height: 240px, no aspect-ratio).
+        if (hasH === hasW) {
+            stage.style.removeProperty("aspect-ratio");
+            stage.style.removeProperty("min-height");
+            return;
+        }
+
+        var bitmapW = video && video.videoWidth;
+        var bitmapH = video && video.videoHeight;
+        if (!bitmapW || !bitmapH) {
+            // Metadata not loaded yet. The onLoadedmetadata handler
+            // will call us again with the intrinsic dimensions
+            // available.
+            return;
+        }
+
+        stage.style.aspectRatio = bitmapW + " / " + bitmapH;
+        // Drop min-height so a small auto-computed height doesn't
+        // get padded out, breaking the requested aspect.
+        stage.style.minHeight = "0";
+
+        if (hasH && !hasW) {
+            // Override `width: 100%` from the CSS default so
+            // aspect-ratio actually computes the width.
+            stage.style.width = "auto";
+        } else if (hasW && !hasH) {
+            // Symmetric for width-only.
+            stage.style.height = "auto";
         }
     }
 
@@ -906,6 +1005,21 @@
         }
 
         var onLoadedMetadata = function () {
+            // Auto-fit the stage to the bitmap's aspect ratio as soon
+            // as we know the intrinsic dimensions. The first
+            // applyLayout call (during afterRender) ran before the
+            // bitmap was loaded, so any single-dimension request
+            // (videoHeight OR videoWidth alone) is still letterboxed.
+            // Now that `video.videoWidth` / `video.videoHeight` are
+            // populated, applyAutoFit can resolve the missing
+            // dimension via CSS aspect-ratio. Looking up the stage
+            // through the DOM avoids threading another argument
+            // through the playback enforcement contract.
+            var stage = video.parentElement;
+            if (stage && stage.classList && stage.classList.contains("sjs-video__stage")) {
+                applyAutoFit(video, stage, question);
+            }
+
             // Promote an unset endTimestamp to the real video duration now
             // that we know it. This keeps clamping logic happy and lets
             // the saved value record a meaningful `endTimestamp`.
@@ -939,39 +1053,36 @@
             //
             //   1. The survey designer opted in via `autoStart: true`.
             //   2. The question is in **supervised viewing** mode —
-            //      `isReadOnly: true` AND `isRequired: true` together.
-            //      Supervised viewing hides the native controls (see
-            //      below), so without auto-start the participant
-            //      would have NO way to begin playback; combined with
-            //      the required-watch validator, this delivers the
+            //      i.e. `isReadOnly === true`. Read-only hides the
+            //      native controls (see below), so without auto-start
+            //      the participant would have NO way to begin
+            //      playback. Combined with `isRequired` (the
+            //      independent watch-gate) this delivers the classic
             //      "must watch the whole video / segment before
-            //      advancing" UX.
+            //      advancing" UX; on its own (read-only without
+            //      required) it delivers a passive watch-only UX
+            //      where the participant can still navigate freely.
             //
-            // IMPORTANT — pure read-only is NOT supervised viewing.
-            // A survey rendered with `survey.mode === "display"` (or a
-            // single question with `isReadOnly: true` and no
-            // `isRequired`) is the standard "review your past answers"
-            // mode. There the participant should keep the native
-            // controls and decide for themselves whether to replay
-            // each video — auto-starting every video and hiding the
-            // controls in that mode would silently surprise the
-            // designer who only wanted a review screen. So we key the
-            // hide-controls + force-autoplay UX off the conjunction
-            // `isReadOnly && isRequired`, NOT off `isReadOnly` alone.
+            // Survey-level `mode: "display"` makes every question
+            // read-only, so every video on a review page auto-starts
+            // and renders without controls — by design, since the
+            // rule is consistent: read-only ALWAYS hides controls
+            // and auto-starts.
             //
             // Suppressed in the Creator's Designer tab
             // (`survey.isDesignMode === true`) so every property edit
             // doesn't re-fire playback in the preview pane (annoying,
             // and overlapping audio if multiple video questions exist).
             //
-            // Browsers may reject the play() promise when there has been
-            // no recent user gesture (autoplay-with-sound is blocked on
-            // the very first page of a freshly-opened tab). We silently
-            // swallow the rejection. In supervised-viewing mode this
-            // means the participant sees a paused first frame with no
-            // controls; place such videos on page 2+ (reached via a
-            // Next click, which counts as a gesture) to avoid this.
-            // After any user gesture autoplay generally works.
+            // Browsers may reject the play() promise when there has
+            // been no recent user gesture (autoplay-with-sound is
+            // blocked on the very first page of a freshly-opened
+            // tab). We silently swallow the rejection. In read-only
+            // mode this means the participant sees a paused first
+            // frame with no controls; place such videos on page 2+
+            // (reached via a Next click, which counts as a gesture)
+            // to avoid this. After any user gesture autoplay
+            // generally works.
             var survey = question && question.survey;
             var inDesignMode = !!(survey && survey.isDesignMode);
             var shouldAutoplay = !inDesignMode && (question.autoStart || isSupervisedViewing(question));
@@ -1140,56 +1251,95 @@
             var video   = el.querySelector(".sjs-video__player");
             var errorEl = el.querySelector(".sjs-video__error");
 
-            // Always apply layout first, even on error path, so the error
-            // banner has the configured width/height.
-            applyLayout(video, stage, question);
+            // syncWidget — full render path.
+            //
+            // Encapsulates ALL rendering decisions that depend on
+            // properties whose value can flip the widget between
+            // "valid playback" and "config error" states:
+            //
+            //     videoUrl, startTimestamp, endTimestamp
+            //
+            // It is called once on initial render AND from each of
+            // those properties' change listeners (registered below).
+            // Without re-running this whole block on a change, a
+            // designer who initially types in `endTimestamp` before
+            // `videoUrl` would see the "Video URL is required" banner
+            // attached on first render and STAY attached even after
+            // they fill in the URL — because the original
+            // `afterRender` returned early on configError and never
+            // wired any listeners that could later clear it.
+            //
+            // This is also the only safe place to re-attach playback
+            // enforcement: changing `startTimestamp` / `endTimestamp`
+            // changes the segment bounds the existing handlers were
+            // closed over, so we tear them down and re-create.
+            //
+            // Layout (`videoFit` / `videoHeight` / `videoWidth`) and
+            // controls visibility (`isRequired` / `isReadOnly`) do
+            // NOT need a full re-sync — they have their own targeted
+            // listeners further down.
+            function syncWidget() {
+                applyLayout(video, stage, question);
 
-            // Clear any config errors we attached on previous renders.
-            // Without this, `question.addError(new SurveyError(...))`
-            // accumulates errors on every re-render — so a question
-            // that briefly went through an invalid state would keep
-            // showing stale errors in the Creator preview even after
-            // the survey designer fixed the configuration. We tag our
-            // own errors with `__fromVideoQuestion` so we don't
-            // accidentally drop unrelated errors that other validators
-            // (e.g. SurveyJS' required-question validator) attached.
-            if (question && Array.isArray(question.errors)) {
-                for (var i = question.errors.length - 1; i >= 0; i--) {
-                    if (question.errors[i] && question.errors[i].__fromVideoQuestion) {
-                        question.errors.splice(i, 1);
+                // Clear any config errors we attached on previous
+                // renders. Without this, `question.addError(new
+                // SurveyError(...))` accumulates errors on every
+                // re-render — so a question that briefly went through
+                // an invalid state would keep showing stale errors in
+                // the Creator preview even after the survey designer
+                // fixed the configuration. We tag our own errors with
+                // `__fromVideoQuestion` so we don't accidentally drop
+                // unrelated errors that other validators (e.g.
+                // SurveyJS' required-question validator) attached.
+                if (question && Array.isArray(question.errors)) {
+                    for (var i = question.errors.length - 1; i >= 0; i--) {
+                        if (question.errors[i] && question.errors[i].__fromVideoQuestion) {
+                            question.errors.splice(i, 1);
+                        }
                     }
                 }
-            }
 
-            // Reset the in-template banner too, in case the previous
-            // render left it visible from a stale config.
-            errorEl.textContent = "";
-            errorEl.classList.remove("is-visible");
-            video.style.display = "";
+                // Reset the in-template banner too, in case the
+                // previous render left it visible from a stale config.
+                errorEl.textContent = "";
+                errorEl.classList.remove("is-visible");
+                video.style.display = "";
 
-            var configError = getConfigError(question);
-            if (configError) {
-                errorEl.textContent = "Video question configuration error: " + configError;
-                errorEl.classList.add("is-visible");
-                video.style.display = "none";
-                if (typeof question.addError === "function" && typeof Survey.SurveyError === "function") {
-                    try {
-                        var err = new Survey.SurveyError(configError, question);
-                        // Tag the error so the next render can drop it
-                        // without touching errors added by other code.
-                        err.__fromVideoQuestion = true;
-                        question.addError(err);
-                    } catch (e) { /* older builds may signal differently */ }
+                // Detach prior playback enforcement (if any) before
+                // re-evaluating: a property change may have invalidated
+                // the bounds it was closed over, OR moved the question
+                // back into the error state.
+                if (typeof video.__videoQuestionDetach === "function") {
+                    video.__videoQuestionDetach();
+                    video.__videoQuestionDetach = null;
                 }
-                return;
+
+                var configError = getConfigError(question);
+                if (configError) {
+                    errorEl.textContent = "Video question configuration error: " + configError;
+                    errorEl.classList.add("is-visible");
+                    video.style.display = "none";
+                    if (typeof question.addError === "function" && typeof Survey.SurveyError === "function") {
+                        try {
+                            var err = new Survey.SurveyError(configError, question);
+                            // Tag the error so the next render can drop
+                            // it without touching errors added by other
+                            // code.
+                            err.__fromVideoQuestion = true;
+                            question.addError(err);
+                        } catch (e) { /* older builds may signal differently */ }
+                    }
+                    return;
+                }
+
+                // Valid config: sync the player <source> and re-attach
+                // enforcement with the (possibly new) bounds.
+                var newUrl = resolveVideoUrl(question.videoUrl);
+                if (video.src !== newUrl) video.src = newUrl;
+                video.__videoQuestionDetach = attachPlaybackEnforcement(video, question);
             }
 
-            video.src = resolveVideoUrl(question.videoUrl);
-
-            // attachPlaybackEnforcement now reads start/end from the
-            // question itself so it can resolve the optional endTimestamp
-            // lazily once the metadata loads.
-            video.__videoQuestionDetach = attachPlaybackEnforcement(video, question);
+            syncWidget();
 
             // When the question is marked required, block survey
             // navigation/completion until the video has been watched
@@ -1199,36 +1349,31 @@
             // renders, and idempotently no-ops on subsequent calls.
             attachRequiredWatchValidator(question);
 
-            // Native controls are hidden ONLY in supervised-viewing
-            // mode (`isReadOnly && isRequired`). Pure read-only — for
-            // example a `survey.mode === "display"` review screen —
-            // keeps controls visible so the participant can scrub /
-            // replay the video at their own pace. See
-            // `isSupervisedViewing` for the full rationale.
+            // Native controls are hidden whenever `isReadOnly === true`
+            // (whether set per-question or inherited from survey-level
+            // `mode: "display"`). The watch-gate is a separate concern,
+            // controlled by `isRequired`, and applies independently —
+            // see `isSupervisedViewing` and `attachRequiredWatchValidator`
+            // for the full rationale.
             //
-            // We re-evaluate on TWO different SurveyJS hooks because
-            // either flag can flip at runtime:
-            //   - `readOnlyChangedCallback` fires when `isReadOnly`
-            //     toggles (typical when the survey switches modes or
-            //     a logic expression flips it).
-            //   - `registerFunctionOnPropertyValueChanged("isRequired",
-            //     ...)` fires when a `requiredIf` expression flips
-            //     `isRequired` at runtime.
+            // `readOnlyChangedCallback` is the SurveyJS hook for live
+            // changes to `isReadOnly` (e.g. when the survey switches
+            // modes via a logic expression). No `isRequired` listener
+            // here, since `isRequired` no longer affects controls
+            // visibility — its only effect is on the watch-gate, which
+            // is re-evaluated by the survey-level hooks on every
+            // navigation attempt.
             function applySupervisedViewingState() {
                 video.controls = !isSupervisedViewing(question);
             }
             applySupervisedViewingState();
             question.readOnlyChangedCallback = applySupervisedViewingState;
-            if (typeof question.registerFunctionOnPropertyValueChanged === "function") {
-                question.registerFunctionOnPropertyValueChanged(
-                    "isRequired",
-                    applySupervisedViewingState,
-                    "videoQuestionSupervisedViewing"
-                );
-            }
 
-            // Make the layout properties live: editing them in the Creator
-            // updates the preview without requiring a page refresh.
+            // Make the layout properties live: editing them in the
+            // Creator updates the preview without requiring a page
+            // refresh. These don't trigger a full syncWidget — only
+            // applyLayout — because changing the box dimensions or
+            // fit doesn't affect validity or playback bounds.
             ["videoFit", "videoHeight", "videoWidth"].forEach(function (propName) {
                 if (typeof question.registerFunctionOnPropertyValueChanged === "function") {
                     question.registerFunctionOnPropertyValueChanged(propName, function () {
@@ -1236,14 +1381,25 @@
                     }, "videoQuestionLayout-" + propName);
                 }
             });
-            // videoUrl edits in the Creator should update the player's
-            // <source> live, without requiring a page reload.
-            if (typeof question.registerFunctionOnPropertyValueChanged === "function") {
-                question.registerFunctionOnPropertyValueChanged("videoUrl", function () {
-                    var newUrl = resolveVideoUrl(question.videoUrl);
-                    if (newUrl !== video.src) video.src = newUrl;
-                }, "videoQuestionUrl");
-            }
+
+            // videoUrl / startTimestamp / endTimestamp edits in the
+            // Creator MUST trigger a full re-sync: each of them can
+            // toggle the widget between "valid playback" and "config
+            // error" (e.g. typing a URL clears "Video URL is
+            // required"; dragging endTimestamp below startTimestamp
+            // re-introduces the cross-field banner; clearing them
+            // both takes us back to "play whole file"). syncWidget
+            // re-runs the entire validity / src / playback-enforcement
+            // pipeline.
+            ["videoUrl", "startTimestamp", "endTimestamp"].forEach(function (propName) {
+                if (typeof question.registerFunctionOnPropertyValueChanged === "function") {
+                    question.registerFunctionOnPropertyValueChanged(
+                        propName,
+                        syncWidget,
+                        "videoQuestionSync-" + propName
+                    );
+                }
+            });
         },
 
         willUnmount: function (question, el) {
@@ -1263,11 +1419,12 @@
             // the question is destroyed.
             if (question && typeof question.unRegisterFunctionOnPropertyValueChanged === "function") {
                 var listeners = [
-                    { prop: "videoFit",    key: "videoQuestionLayout-videoFit" },
-                    { prop: "videoHeight", key: "videoQuestionLayout-videoHeight" },
-                    { prop: "videoWidth",  key: "videoQuestionLayout-videoWidth" },
-                    { prop: "videoUrl",    key: "videoQuestionUrl" },
-                    { prop: "isRequired",  key: "videoQuestionSupervisedViewing" }
+                    { prop: "videoFit",       key: "videoQuestionLayout-videoFit" },
+                    { prop: "videoHeight",    key: "videoQuestionLayout-videoHeight" },
+                    { prop: "videoWidth",     key: "videoQuestionLayout-videoWidth" },
+                    { prop: "videoUrl",       key: "videoQuestionSync-videoUrl" },
+                    { prop: "startTimestamp", key: "videoQuestionSync-startTimestamp" },
+                    { prop: "endTimestamp",   key: "videoQuestionSync-endTimestamp" }
                 ];
                 listeners.forEach(function (entry) {
                     try {

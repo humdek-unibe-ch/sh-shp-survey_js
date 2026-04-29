@@ -98,28 +98,25 @@ when the participant navigates to that page (via the survey's Next
 button, for example). `autoStart` is suppressed in the Creator's
 Designer tab (use the **Test** tab to verify autoplay during design).
 
-To force a participant to watch a video to completion before they can
-advance — a "supervised viewing" / "watch the consent clip" pattern —
-combine **`isReadOnly: true`** with **`isRequired: true`** on the
-question. The combination is what triggers the supervised behaviour:
+`isReadOnly` and `isRequired` on a video question are two
+independent levers — set whichever ones describe the UX you want:
 
-- The native player controls are hidden (no scrubbing, no skipping,
-  no pause).
-- Auto-start is forced ON (since there are no controls, the widget
-  has to start the video itself — designer-set `autoStart` is
-  overridden in this case).
-- The required-watch validator blocks the survey's Next button until
-  the video reaches the configured `endTimestamp` (or the file's
-  natural end if no `endTimestamp` is set).
-
-**Pure read-only is NOT supervised viewing.** A survey rendered with
-top-level `mode: "display"` (the standard "review past answers"
-mode) makes every question read-only, but the widget keeps the
-native controls visible, does NOT auto-start, and the navigation
-hooks bow out so the participant can move freely between pages. The
-"supervised" behaviour only kicks in when `isReadOnly` and
-`isRequired` are BOTH set on the same question while the survey is
-in normal (not display) mode.
+- **`isReadOnly: true`** hides the native controls and auto-starts
+  playback, giving the participant a passive watch-only player
+  with no scrubbing, no skipping and no pause. Designer-set
+  `autoStart` is overridden to `true` here, since there's no
+  control bar to start the video from. Survey-level
+  `mode: "display"` (review of past answers) makes every question
+  read-only, so every video on a review page renders this way.
+- **`isRequired: true`** blocks the survey's Next / Complete
+  button until the video reaches the configured `endTimestamp`
+  (or the file's natural end if no `endTimestamp` is set). The
+  gate applies even when the question is also read-only — saved
+  values from a properly-completed submission already have
+  `watched: true`, so the gate passes immediately on review.
+- **Both flags together** combine the effects: no controls AND
+  must-watch-to-advance. This is the classic forced-watch /
+  consent-clip recipe.
 
 Browser autoplay policies still apply: most browsers block autoplay-
 with-sound when there has been no recent user gesture in the same
@@ -130,7 +127,7 @@ which counts as a gesture) to be safe. The widget never auto-mutes
 the video — silent playback would defeat the purpose of any question
 whose content depends on audio. See
 [VIDEO_SEGMENT.md → Auto-start playback](VIDEO_SEGMENT.md#auto-start-playback-autostart)
-and [VIDEO_SEGMENT.md → Read-only mode](VIDEO_SEGMENT.md#read-only-mode-review--forced-watch)
+and [VIDEO_SEGMENT.md → Read-only and required: two independent levers](VIDEO_SEGMENT.md#read-only-and-required-two-independent-levers)
 for the full discussion.
 
 > The question's value is an auto-generated playback metadata object

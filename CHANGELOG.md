@@ -1,5 +1,48 @@
 # SurveyJS Plugin Changelog
 
+## v1.4.10
+
+### Improvements
+
+- **Video question — auto-fit layout.** When you set only one of
+  `videoHeight` or `videoWidth` (the common case for portrait phone
+  clips that need a fixed height), the other dimension is now
+  computed automatically from the video's natural aspect ratio, so
+  you no longer get black pillarbox / letterbox bars unless you
+  asked for them. Set both dimensions to keep the existing
+  "stretch / letterbox" behaviour (designer is in charge); set
+  neither to keep the responsive defaults; set just one to get a
+  perfectly fitting box.
+
+- **Video question — clean separation between read-only and
+  required.** The two flags are now fully independent levers:
+    - **`isReadOnly: true`** hides the native controls and
+      auto-starts playback so the participant can see the video
+      without interacting (a "watch only" UX). Applies to every
+      question in a survey-level `mode: "display"` review page too,
+      since display mode makes everything read-only.
+    - **`isRequired: true`** blocks Next / Complete until the video
+      has been watched all the way through (or to the end of the
+      configured segment). This now applies even when the question
+      is read-only, so you can build a "must watch before
+      continuing" gate that doesn't let the participant interact
+      with the player.
+    - **Both** combine: no controls AND must-watch-to-advance.
+
+### Bug fixes
+
+- **Video question — "Video URL is required" alert no longer sticks
+  after you fill in the URL.** Adding a brand-new video question to
+  a survey shows a configuration banner reminding you to set
+  `videoUrl`. Previously the banner stayed visible after you typed
+  in the URL, until you re-opened the question; now it clears as
+  soon as a valid URL is entered. The same fix also makes the
+  cross-field timestamp banner (`startTimestamp >= endTimestamp`)
+  clear live as you adjust either field.
+
+See [`docs/VIDEO_SEGMENT.md`](docs/VIDEO_SEGMENT.md) for the full
+sizing + read-only behaviour reference.
+
 ## v1.4.9
 
 ### Bug fixes
@@ -42,9 +85,9 @@
   data-recording path. No designer action required — the data
   captures itself.
 
-See [`docs/VIDEO_SEGMENT.md → Read-only behaviour: review mode vs supervised viewing`](docs/VIDEO_SEGMENT.md#read-only-behaviour-review-mode-vs-supervised-viewing)
-for the full description and copy-paste-ready survey JSON for both
-modes.
+See [`docs/VIDEO_SEGMENT.md → Read-only and required: two independent levers`](docs/VIDEO_SEGMENT.md#read-only-and-required-two-independent-levers)
+for the full description and copy-paste-ready survey JSON for each
+combination.
 
 ## v1.4.8
 
