@@ -113,16 +113,35 @@ sole source of truth and all of those problems disappear.
 ### Layout properties — really applied
 
 `videoFit`, `videoHeight` and `videoWidth` aren't just metadata; the
-widget applies them directly to the `<video>` element via inline styles:
+widget applies them directly to the DOM via inline styles. As of
+**v1.4.9** the targets differ between sizing and bitmap presentation:
 
-| Property      | Effect                                  |
-| ------------- | --------------------------------------- |
-| `videoFit`    | `style.objectFit` (default `contain`)   |
-| `videoHeight` | `style.height` (any CSS length string)  |
-| `videoWidth`  | `style.width`  (any CSS length string)  |
+| Property      | Inline style target                   | DOM node           |
+| ------------- | ------------------------------------- | ------------------ |
+| `videoFit`    | `style.objectFit` (default `contain`) | `<video>`          |
+| `videoHeight` | `style.height` (any CSS length)       | `<div class="sjs-video__stage">` |
+| `videoWidth`  | `style.width`  (any CSS length)       | `<div class="sjs-video__stage">` |
 
-They are also wired up via `registerFunctionOnPropertyValueChanged` so
-editing them in the Creator updates the preview live without a reload.
+Why split? Native HTML5 controls render at the bottom of the `<video>`
+element box, but most browsers align the controls strip to the
+bitmap's painted region rather than the full element width. Applying
+`videoHeight` directly to the `<video>` element (the v1.4.7-pre-1.4.9
+behaviour) caused portrait clips in landscape containers to show a
+tiny ~169 px-wide controls strip at the centre — easy to miss visually
+and on some Chrome builds clipped entirely. Anchoring the sizing on
+the stage wrapper and stretching the `<video>` to fill it
+(`position: absolute; top/right/bottom/left: 0; width/height: 100%`)
+makes the controls span the full configured width every time, no
+matter the bitmap aspect ratio. As a side benefit, `object-fit`
+becomes the only layout concern on the `<video>` element, so the four
+modes (`none` / `contain` / `cover` / `fill`) behave exactly as the
+CSS spec describes.
+
+The properties are wired up via `registerFunctionOnPropertyValueChanged`
+so editing them in the Creator updates the preview live without a
+reload, and unregistered in `willUnmount` to avoid stale-closure leaks
+when the question's DOM node is replaced (Creator tab switches,
+property-pane re-renders).
 
 ## Installation
 
@@ -543,6 +562,8 @@ A complete example survey is in
 | Cross-field error stays in the Creator preview banner after fix      | The widget self-clears errors tagged `__fromVideoQuestion` on every `afterRender`, but a re-render is only triggered on a property change. Click anywhere in the property panel (or change/restore any property) to force a re-render. |
 | Required-watch alert appears in English on a German page             | `survey.locale` is empty (the SurveyJS default). Confirm `4_surveyJS.js` is reading the locale from the `selfHelp-locale-<locale>` class on `.selfHelp-survey-js-holder`. Either fill in the German entry in the Creator's Translation tab (`requiredWatchMessage` is `isLocalizable: true` and shows up there next to the question title), or rely on the built-in `de` backstop in `DEFAULT_REQUIRED_WATCH_MESSAGES`. |
 | `requiredWatchMessage` row missing from the Translation tab          | Old cached JS — the property is registered with `isLocalizable: true` since v1.4.8. Hard-refresh the Creator (Ctrl+Shift+R) and reopen the survey. |
+| Native `<video>` controls bar invisible / very narrow (e.g. portrait clip with `videoHeight: 300px`) | Pre-v1.4.9 the widget applied `videoHeight` directly to the `<video>` element, which made the controls strip align to the bitmap's painted region rather than the full element width — portrait clips got a tiny ~169 px controls strip. v1.4.9 anchors sizing on the `.sjs-video__stage` wrapper and stretches the `<video>` to fill it, so controls always span the full configured width. Hard-refresh JS + CSS bundles (Ctrl+Shift+R) to drop the old cached versions. |
+| `videoFit` toggle (`none`/`contain`/`cover`/`fill`) seems to do nothing or behaves unpredictably | Same root cause as above — pre-v1.4.9 sizing was on the `<video>` element, so `object-fit` had to negotiate with the inline `height` AND the bitmap's intrinsic aspect ratio simultaneously. Hard-refresh after upgrading to v1.4.9. |
 | "Video URL is required"                                              | Configuration error — fix the property value in the Creator.                                                                                                                      |
 
 ## Files of interest

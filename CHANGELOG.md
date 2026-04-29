@@ -1,5 +1,24 @@
 # SurveyJS Plugin Changelog
 
+## v1.4.9
+
+### Bug Fixes
+
+- **Video question — native controls always visible regardless of bitmap aspect ratio**
+  - Reported on a portrait phone-shot clip placed in a survey with `videoHeight: "300px"`: the native HTML5 controls bar was either invisible or clipped to a thin ~169 px strip in the centre of the question card.
+  - Root cause: sizing (`videoHeight` / `videoWidth`) was applied directly to the `<video>` element. Native browsers render the controls bar at the bottom of the `<video>` element box, but most builds align the controls strip to the bitmap's painted region rather than the full element width. With a portrait bitmap fitted via `object-fit: contain` into a landscape (e.g. 800 × 300) box, the controls strip narrows to the bitmap's painted width (~169 px), is easy to miss visually, and on some Chrome builds gets clipped entirely.
+  - Architectural fix: separate **sizing** from **bitmap presentation**. The `htmlTemplate` now wraps the `<video>` in a `<div class="sjs-video__stage">`. `videoHeight` / `videoWidth` are applied to the stage; the `<video>` element is always sized to 100 % of the stage via CSS (`position: absolute; top/right/bottom/left: 0; width/height: 100%`). Native controls now span the full configured width at the bottom of the box every time. `object-fit` (set inline from `videoFit`) becomes the only layout concern on the `<video>` element, with no interaction between the element's intrinsic-vs-inline dimensions and the chosen fit.
+  - Read-only mode is unchanged: `video.controls = false` toggled by `readOnlyChangedCallback` keeps the bitmap visible while removing playback controls.
+
+- **Video question — `videoFit` changes apply predictably to portrait clips**
+  - Same root cause as above. With sizing applied directly to the `<video>` element, switching between `contain` / `cover` / `fill` / `none` produced surprising results because `object-fit` had to negotiate with both the inline `height` AND the bitmap's intrinsic aspect ratio simultaneously. With sizing now anchored on the stage and the `<video>` element always 100 % of its parent, the four `object-fit` modes behave exactly as the CSS spec describes.
+
+### Internal
+
+- New CSS class: `.sjs-video__stage` (sizing wrapper). `.sjs-video__player` is now `position: absolute` and pinned to all four edges of its stage parent. Existing classes (`.sjs-video`, `.sjs-video__player`, `.sjs-video__error`) are preserved.
+- `applyLayout(video, stage, question)` signature now takes both DOM nodes; sizing properties (`videoHeight` / `videoWidth`) target the stage, fit (`videoFit`) targets the video. Property-change wiring (`registerFunctionOnPropertyValueChanged`) and cleanup (`unRegisterFunctionOnPropertyValueChanged` in `willUnmount`) updated accordingly.
+- File / class names unchanged on disk for git-history continuity.
+
 ## v1.4.8
 
 ### New Features

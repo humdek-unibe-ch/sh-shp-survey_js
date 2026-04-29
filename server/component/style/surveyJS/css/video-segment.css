@@ -3,7 +3,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
 /*
- * Styles for the `video` custom SurveyJS question (v1.4.8).
+ * Styles for the `video` custom SurveyJS question (v1.4.9).
  *
  * Picked up automatically by
  *   gulp/gulpfile.js  ->  server/component/style/{star}{star}/css/*.css
@@ -12,11 +12,28 @@
  * while the CSS class prefix is `.sjs-video` so a future grep matches
  * the question's selectors cleanly.
  *
- * The widget JS sets `objectFit`, `height` and `width` directly on the
- * <video> element via inline styles when the survey designer fills in
- * the "Video fit" / "Video height" / "Video width" properties. Those
- * inline styles override the rules below; we only provide sensible
- * defaults so the player has a visible footprint before metadata loads.
+ * Layout architecture (v1.4.9+)
+ * -----------------------------
+ *   .sjs-video             -> outer flex column: stage above, error below.
+ *   .sjs-video__stage      -> sized by user-facing properties
+ *                             (videoHeight / videoWidth) via inline
+ *                             style. Carries the dark backdrop and
+ *                             rounded corners. Establishes the
+ *                             positioning context for the <video>.
+ *   .sjs-video__player     -> the <video> element. ALWAYS fills 100% of
+ *                             the stage. `object-fit` (set inline by
+ *                             the widget from `videoFit`) controls how
+ *                             the bitmap fills this fixed box.
+ *
+ * The reason sizing lives on the stage and NOT on the <video> element
+ * itself: native HTML5 controls render at the bottom of the <video>
+ * element's painted area, and most browsers align the controls strip
+ * to the bitmap's painted region rather than the full element width.
+ * A portrait clip in a landscape container with `object-fit: contain`
+ * therefore gets a tiny ~169px-wide controls strip that's easy to
+ * miss visually (and on some Chrome builds clipped entirely). Sizing
+ * the stage and stretching the <video> to fill it makes the controls
+ * span the full configured width every time.
  */
 
 .sjs-video {
@@ -26,18 +43,39 @@
     width: 100%;
 }
 
-.sjs-video__player {
-    width: 100%;          /* default; videoWidth overrides via inline style */
+.sjs-video__stage {
+    /* User-facing dimensions are applied here by `applyLayout` via
+     * inline style; the defaults below give a sensible footprint
+     * before metadata loads and when no custom dimensions are set. */
+    position: relative;
+    width: 100%;
     max-width: 100%;
-    height: auto;         /* default; videoHeight overrides via inline style */
-    min-height: 240px;    /* avoid 0px collapse before metadata loads */
+    min-height: 240px;
     background-color: #000;
     border-radius: 4px;
-    outline: none;
-    display: block;
-    /* Default object-fit: "contain" — overridden via inline style by the
-     * widget when the survey designer picks a different value. */
+    /* Clip rounded corners cleanly; native controls render INSIDE
+     * the <video> element's box, so they're never clipped by this. */
+    overflow: hidden;
+}
+
+.sjs-video__player {
+    /* Fill the stage exactly. `position: absolute` + edges-pinned
+     * is more reliable across browsers than `width:100%; height:100%`
+     * on a percentage-height element whose parent uses `min-height`
+     * rather than an explicit height. */
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: #000;
+    /* CSS default; the widget overrides via inline style based on the
+     * `videoFit` property in the question config. */
     object-fit: contain;
+    display: block;
+    outline: none;
 }
 
 .sjs-video__error {

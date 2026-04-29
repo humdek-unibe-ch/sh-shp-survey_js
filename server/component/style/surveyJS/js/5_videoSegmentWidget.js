@@ -3,7 +3,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
 /**
- * Video custom SurveyJS question widget (v1.4.8).
+ * Video custom SurveyJS question widget (v1.4.9).
  *
  * Built against SurveyJS v1.9.124 (do NOT upgrade).
  *
@@ -146,7 +146,8 @@
                     name: "videoUrl:string",
                     isRequired: true,
                     category: "general",
-                    displayName: "Video URL"
+                    displayName: "Video URL",
+                    description: "Absolute URL (https://…), data URI, or SelfHelp-relative path starting with `/` (e.g. `/assets/clip.mp4`)."
                 },
                 {
                     // No `default` value -> property is omitted from the
@@ -155,7 +156,8 @@
                     name: "startTimestamp:number",
                     minValue: 0,
                     category: "general",
-                    displayName: "Start timestamp (seconds, optional)"
+                    displayName: "Start timestamp (seconds, optional)",
+                    description: "Where playback begins. Leave blank to start at 0."
                 },
                 {
                     // No `default` value -> property is omitted from the
@@ -165,7 +167,8 @@
                     name: "endTimestamp:number",
                     minValue: 0,
                     category: "general",
-                    displayName: "End timestamp (seconds, optional)"
+                    displayName: "End timestamp (seconds, optional)",
+                    description: "Where playback stops. Leave blank to play to the natural end of the file."
                 },
                 /*
                  * Auto-start playback as soon as the question becomes
@@ -197,7 +200,8 @@
                     name: "autoStart:boolean",
                     default: false,
                     category: "general",
-                    displayName: "Auto-start playback when the question is shown"
+                    displayName: "Auto-start playback when the question is shown",
+                    description: "Begin playback automatically when the participant arrives on this question. Browsers may block autoplay-with-sound on the first page of a freshly-opened survey (no prior user gesture); on subsequent pages reached via the Next button autoplay generally works."
                 },
                 /*
                  * "Video fit" / height / width — wired to the <video>
@@ -210,19 +214,22 @@
                     default: "contain",
                     choices: ["none", "contain", "cover", "fill"],
                     category: "layout",
-                    displayName: "Video fit"
+                    displayName: "Video fit",
+                    description: "How the bitmap fills the player box. `contain` keeps the aspect ratio (default; black bars if the video and box don't match). `cover` fills the box and crops what doesn't fit. `fill` stretches without keeping aspect. `none` shows at native size."
                 },
                 {
                     name: "videoHeight:string",
                     default: "",
                     category: "layout",
-                    displayName: "Video height (CSS-accepted values)"
+                    displayName: "Video height (CSS-accepted values)",
+                    description: "Height of the player box (e.g. `300px`, `50vh`, `30rem`). Leave blank for the default 240 px minimum."
                 },
                 {
                     name: "videoWidth:string",
                     default: "",
                     category: "layout",
-                    displayName: "Video width (CSS-accepted values)"
+                    displayName: "Video width (CSS-accepted values)",
+                    description: "Width of the player box (e.g. `100%`, `640px`, `40rem`). Leave blank for full row width."
                 },
                 /*
                  * Translatable alert shown to the participant when the
@@ -259,7 +266,8 @@
                     name: "requiredWatchMessage:text",
                     isLocalizable: true,
                     category: "general",
-                    displayName: "Required-watch alert (optional, falls back to localized default)"
+                    displayName: "Required-watch alert (optional, falls back to localized default)",
+                    description: "Shown to the participant when the question is required and they try to advance before watching to the end. Open the Translation tab to fill in per-locale wording. Leave blank to inherit the built-in en/de/fr/it default."
                 }
             ],
             null,
@@ -566,23 +574,52 @@
      * Apply the videoFit / videoHeight / videoWidth properties to the DOM.
      * Called both from afterRender and from property-change callbacks so
      * editing the layout in the Creator updates the preview live.
+     *
+     * Layout architecture (v1.4.9+)
+     * -----------------------------
+     * `videoHeight` / `videoWidth` are applied to the **stage wrapper**
+     * (`<div class="sjs-video__stage">`), NOT directly to the `<video>`
+     * element. The video element itself is always sized to 100 % of the
+     * stage via CSS. This separation matters in two situations:
+     *
+     *   1. **Native control-bar visibility**. Browsers render the native
+     *      controls bar at the bottom of the `<video>` element box, but
+     *      most builds align it with the bitmap's painted region rather
+     *      than the full element width. With sizing applied directly to
+     *      the `<video>` element AND a portrait bitmap in a landscape
+     *      container (e.g. a phone-shot clip in a 800×300 box rendered
+     *      with `object-fit: contain`), the controls strip is only as
+     *      wide as the bitmap (~169 px) — easy to miss visually, and on
+     *      some Chrome builds clipped entirely. With sizing on the
+     *      stage and the `<video>` element filling 100 % of it, the
+     *      controls always span the full configured width at the bottom
+     *      of the box.
+     *
+     *   2. **`object-fit` predictability**. With sizing on the stage,
+     *      `object-fit` becomes the only layout concern on the
+     *      `<video>` element — `contain` / `cover` / `fill` / `none`
+     *      behave exactly as the CSS spec describes, with no
+     *      interaction between the element's intrinsic-vs-inline
+     *      dimensions and the chosen fit.
      */
-    function applyLayout(video, question) {
+    function applyLayout(video, stage, question) {
         var fit = (question.videoFit || "contain").toString();
         // Whitelist allowed values to keep CSS sane.
         var allowed = { none: 1, contain: 1, cover: 1, fill: 1 };
         video.style.objectFit = allowed[fit] ? fit : "contain";
 
-        // Empty string -> remove inline override so the CSS default kicks in.
+        // Stage dimensions (empty string -> remove inline override so
+        // the CSS default kicks in: width 100 %, min-height 240 px).
+        if (!stage) return;
         if (question.videoHeight) {
-            video.style.height = String(question.videoHeight);
+            stage.style.height = String(question.videoHeight);
         } else {
-            video.style.removeProperty("height");
+            stage.style.removeProperty("height");
         }
         if (question.videoWidth) {
-            video.style.width = String(question.videoWidth);
+            stage.style.width = String(question.videoWidth);
         } else {
-            video.style.removeProperty("width");
+            stage.style.removeProperty("width");
         }
     }
 
@@ -886,17 +923,26 @@
 
         htmlTemplate:
             '<div class="sjs-video">' +
-                '<video class="sjs-video__player" preload="metadata" controls playsinline></video>' +
+                // Stage wrapper carries the user-facing sizing
+                // (videoHeight / videoWidth). The <video> always fills
+                // 100 % of this wrapper via CSS, so native controls
+                // span the configured width at the bottom of the box
+                // regardless of bitmap aspect ratio. See applyLayout()
+                // for the full rationale.
+                '<div class="sjs-video__stage">' +
+                    '<video class="sjs-video__player" preload="metadata" controls playsinline></video>' +
+                '</div>' +
                 '<div class="sjs-video__error" role="alert"></div>' +
             '</div>',
 
         afterRender: function (question, el) {
+            var stage   = el.querySelector(".sjs-video__stage");
             var video   = el.querySelector(".sjs-video__player");
             var errorEl = el.querySelector(".sjs-video__error");
 
             // Always apply layout first, even on error path, so the error
             // banner has the configured width/height.
-            applyLayout(video, question);
+            applyLayout(video, stage, question);
 
             // Clear any config errors we attached on previous renders.
             // Without this, `question.addError(new SurveyError(...))`
@@ -966,7 +1012,7 @@
             ["videoFit", "videoHeight", "videoWidth"].forEach(function (propName) {
                 if (typeof question.registerFunctionOnPropertyValueChanged === "function") {
                     question.registerFunctionOnPropertyValueChanged(propName, function () {
-                        applyLayout(video, question);
+                        applyLayout(video, stage, question);
                     }, "videoQuestionLayout-" + propName);
                 }
             });
