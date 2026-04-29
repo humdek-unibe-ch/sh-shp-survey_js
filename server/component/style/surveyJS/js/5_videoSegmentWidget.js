@@ -3,7 +3,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
 /**
- * Video custom SurveyJS question widget (v1.4.8).
+ * Video custom SurveyJS question widget (v1.4.9).
  *
  * Built against SurveyJS v1.9.124 (do NOT upgrade).
  *
@@ -549,39 +549,156 @@
      * `loadedmetadata` snapshot, so by the time the user sees the
      * player there is already a value object in place. That makes the
      * stock `isRequired` check vacuously true and the user could
-     * `next`/`complete` without ever pressing play. We instead bolt a
-     * stricter `watched === true` check onto `onValidateQuestion`,
-     * which fires AFTER `isRequired` and can `addError()` to block
-     * submission.
+     * `next`/`complete` without ever pressing play. We instead enforce
+     * a stricter `watched === true` check at the survey level.
+     *
+     * Three layered hooks
+     * -------------------
+     *   1. `onValidateQuestion` — fires per-question during validation.
+     *      Catches the regular (NOT read-only) case. SurveyJS skips
+     *      this hook for read-only questions, so it's not enough on
+     *      its own.
+     *   2. `onCurrentPageChanging` — fires whenever the participant
+     *      tries to advance via the survey's Next button (or any
+     *      programmatic page change). Iterates ALL video questions on
+     *      the current page, including read-only ones, and blocks the
+     *      transition if any required one hasn't been watched. THIS is
+     *      what enforces the "read-only + required = supervised
+     *      viewing" UX — without it, SurveyJS' built-in read-only-skip
+     *      lets the participant click Next freely.
+     *   3. `onCompleting` — same logic as #2, but for the final
+     *      page's complete-button. Blocks survey submission when a
+     *      required video on the last page hasn't been watched.
+     *
+     * Backward navigation is allowed regardless of watch state — we
+     * only block forward / complete actions. Pre-existing video-
+     * question errors (tagged `__fromVideoQuestion`) are stripped at
+     * the start of every check so the inline alert clears the moment
+     * the participant finishes watching and tries again.
      *
      * The error message is resolved through `getRequiredWatchMessage`
-     * so it honours both per-question custom strings and the active
-     * survey locale.
+     * so it honours both per-question custom strings (with the
+     * Translation tab's per-locale entries) and the active survey
+     * locale's built-in fallback.
      *
      * Idempotent: tagged on the survey instance so we attach once even
      * if multiple video questions share a survey.
      */
     function attachRequiredWatchValidator(question) {
         var survey = question && question.survey;
-        if (!survey || !survey.onValidateQuestion ||
-            typeof survey.onValidateQuestion.add !== "function") return;
+        if (!survey) return;
         if (survey.__videoQuestionRequiredHookAttached) return;
         survey.__videoQuestionRequiredHookAttached = true;
-        survey.onValidateQuestion.add(function (_, options) {
-            var q = options && options.question;
-            if (!q || typeof q.getType !== "function") return;
-            if (q.getType() !== "video") return;
-            if (!q.isRequired) return;
-            var v = q.value;
-            // `watched` only becomes true once the player reached
-            // `end - 0.05` seconds (segment end if configured, file
-            // duration otherwise). Anything else — undefined value,
-            // never-played, paused mid-segment, abandoned at 90 % —
-            // counts as "not yet completed".
-            if (!v || v.watched !== true) {
-                options.error = getRequiredWatchMessage(q);
+
+        function isRequiredVideoQuestion(q) {
+            return q && typeof q.getType === "function"
+                && q.getType() === COMPONENT_NAME
+                && q.isRequired === true;
+        }
+
+        function getPageVideoQuestions(page) {
+            if (!page) return [];
+            // SurveyJS exposes `getQuestions(visibleOnly)` on PageModel
+            // in modern builds; fall back to `.questions` on older
+            // ones. Either way we only consider visible questions —
+            // hidden video questions on the page shouldn't block
+            // navigation.
+            var qs = (typeof page.getQuestions === "function")
+                ? page.getQuestions(true)
+                : (Array.isArray(page.questions) ? page.questions : []);
+            return qs.filter(isRequiredVideoQuestion);
+        }
+
+        function clearVideoErrors(q) {
+            if (!q || !Array.isArray(q.errors)) return;
+            for (var i = q.errors.length - 1; i >= 0; i--) {
+                if (q.errors[i] && q.errors[i].__fromVideoQuestion) {
+                    q.errors.splice(i, 1);
+                }
             }
-        });
+        }
+
+        function attachVideoError(q) {
+            try {
+                if (typeof q.addError === "function" &&
+                    typeof Survey.SurveyError === "function") {
+                    var err = new Survey.SurveyError(getRequiredWatchMessage(q), q);
+                    err.__fromVideoQuestion = true;
+                    q.addError(err);
+                }
+            } catch (e) { /* older builds may signal differently */ }
+        }
+
+        // Returns the array of unwatched required video questions on
+        // the current page; refreshes their inline error banner as a
+        // side-effect (clears stale ones, attaches new ones for
+        // currently-failing questions).
+        function checkPage(page) {
+            var unwatched = [];
+            var videoQs = getPageVideoQuestions(page);
+            for (var i = 0; i < videoQs.length; i++) {
+                var q = videoQs[i];
+                clearVideoErrors(q);
+                var v = q.value;
+                if (!v || v.watched !== true) {
+                    attachVideoError(q);
+                    unwatched.push(q);
+                }
+            }
+            return unwatched;
+        }
+
+        // Hook 1: onValidateQuestion (per-question, fires for non-
+        // read-only questions). Kept for the standard required-watch
+        // case so the inline error appears immediately on Next.
+        if (survey.onValidateQuestion &&
+            typeof survey.onValidateQuestion.add === "function") {
+            survey.onValidateQuestion.add(function (_, options) {
+                var q = options && options.question;
+                if (!isRequiredVideoQuestion(q)) return;
+                var v = q.value;
+                // `watched` only becomes true once the player reached
+                // `end - 0.05` seconds (segment end if configured, file
+                // duration otherwise). Anything else — undefined value,
+                // never-played, paused mid-segment, abandoned at 90 %
+                // — counts as "not yet completed".
+                if (!v || v.watched !== true) {
+                    options.error = getRequiredWatchMessage(q);
+                }
+            });
+        }
+
+        // Hook 2: onCurrentPageChanging (page-level, fires regardless
+        // of read-only). Catches the read-only + required case that
+        // Hook 1 cannot, since SurveyJS' Question.hasErrors() returns
+        // false early for read-only questions.
+        if (survey.onCurrentPageChanging &&
+            typeof survey.onCurrentPageChanging.add === "function") {
+            survey.onCurrentPageChanging.add(function (sender, options) {
+                // Only block forward navigation. Letting participants
+                // go back even mid-watch is harmless — they haven't
+                // submitted anything they shouldn't have.
+                if (options && options.isNextPage === false) return;
+                var unwatched = checkPage(sender.currentPage);
+                if (unwatched.length === 0) return;
+                // Different SurveyJS versions use different option
+                // names to block the transition; set both for safety.
+                options.allowChanging = false;
+                options.allow = false;
+            });
+        }
+
+        // Hook 3: onCompleting (final-page submit). Same logic as
+        // Hook 2 but for the survey's complete action.
+        if (survey.onCompleting &&
+            typeof survey.onCompleting.add === "function") {
+            survey.onCompleting.add(function (sender, options) {
+                var unwatched = checkPage(sender.currentPage);
+                if (unwatched.length === 0) return;
+                options.allowComplete = false;
+                options.allow = false;
+            });
+        }
     }
 
     /**

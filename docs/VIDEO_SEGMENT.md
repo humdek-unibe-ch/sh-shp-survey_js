@@ -58,8 +58,10 @@ library. The implementation only uses public v1.9.x APIs:
 - `creator.onShowingProperty` (used to hide `defaultValue` /
   `correctAnswer` from the property panel — the question's value is
   auto-generated playback metadata)
-- `survey.onValidateQuestion` (used to require a complete watch when
-  the question has `isRequired: true`)
+- `survey.onValidateQuestion` + `survey.onCurrentPageChanging` +
+  `survey.onCompleting` (three layered hooks that together require a
+  complete watch when the question has `isRequired: true`, including
+  for read-only questions whose validation SurveyJS otherwise skips)
 
 ## Architecture
 
@@ -284,7 +286,27 @@ behaves like a "supervised viewing" player:
   video has reached the end of the configured segment (or the file's
   natural end if no `endTimestamp` is set). The participant has no
   way to skip — they can only wait for playback to complete and then
-  click Next.
+  click Next. Backward navigation is still allowed mid-watch
+  (returning to a previous page doesn't break anything).
+- **Playback data is still recorded.** The widget continues to update
+  the question's value (`watched`, `currentTime`, `watchedSeconds`,
+  `percentWatched`, `startedAt`, `lastUpdatedAt`, `lastEvent`,
+  `completedAt`, etc.) as the supervised viewing progresses, so the
+  submitted answer carries a complete record of the participant's
+  watch session. Read-only does NOT silence the data-recording path
+  — only the player's UI is read-only.
+
+> **Why the validator is layered.** SurveyJS' built-in
+> `Question.hasErrors()` returns early for read-only questions, which
+> means the per-question `onValidateQuestion` hook is silently skipped.
+> Pre-v1.4.9 the widget relied solely on that hook, so a Read-only +
+> Required video would fail to block Next at all (participants could
+> click straight through without watching). v1.4.9 adds two extra
+> survey-level hooks (`onCurrentPageChanging` and `onCompleting`) that
+> iterate the current page's video questions directly, regardless of
+> their read-only state. The original per-question hook stays in
+> place for the regular (non-read-only) Required case so the inline
+> error appears immediately on Next.
 
 > **First-page caveat (browser autoplay policy).** Browsers block
 > autoplay-with-sound when there has been no recent user gesture on
@@ -413,20 +435,33 @@ falls back to `start = 0` / `end = video.duration`.
 
 ### Required questions: enforce a complete watch
 
-When the question is marked `isRequired: true`, the widget additionally
-attaches a `survey.onValidateQuestion` hook that blocks survey
+When the question is marked `isRequired: true`, the widget attaches
+**three layered survey-level hooks** that together block forward
 navigation / completion until `value.watched === true` — i.e. until
 the participant has reached the configured `endTimestamp` (or the
-file's natural end if no `endTimestamp` is set).
+file's natural end if no `endTimestamp` is set):
+
+| Hook | Purpose |
+| ---- | ------- |
+| `survey.onValidateQuestion`  | Per-question. Catches the regular (non-read-only) Required case. SurveyJS skips this hook for read-only questions, so it cannot stand alone — see the next two. |
+| `survey.onCurrentPageChanging` | Page-level. Fires whenever the participant tries to advance via Next, regardless of any question's read-only state. Iterates all video questions on the current page and blocks the transition if any required one hasn't been watched. THIS is what enforces the "Read-only + Required = supervised viewing" UX — without it, SurveyJS' built-in read-only-skip lets the participant click Next freely. |
+| `survey.onCompleting`        | Same logic as `onCurrentPageChanging`, but for the final page's Complete button. Blocks survey submission when a required video on the last page hasn't been watched. |
+
+Backward navigation is allowed regardless of watch state — only
+forward / complete actions are blocked. Pre-existing video-question
+errors (tagged `__fromVideoQuestion`) are stripped at the start of
+every check so the inline alert clears the moment the participant
+finishes watching and tries again.
 
 The error message is resolved through `getRequiredWatchMessage(q)`
 (see [Translatable required-watch alert](#translatable-required-watch-alert)
 below), so the alert respects both per-question custom strings and
 the survey's active locale.
 
-The hook is attached lazily on first `afterRender` and tagged on the
-survey instance (`survey.__videoQuestionRequiredHookAttached`), so it
-attaches once even if a survey contains multiple video questions.
+The hooks are attached lazily on the first `afterRender` of any video
+question in the survey, and tagged on the survey instance
+(`survey.__videoQuestionRequiredHookAttached`) so they attach exactly
+once even if the survey contains multiple video questions.
 
 This is necessary because SurveyJS' built-in `isRequired` check only
 asks "is the value non-empty?". Our widget continuously persists
