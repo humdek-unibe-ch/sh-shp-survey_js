@@ -267,10 +267,45 @@ scrubber. The user is free to pause/resume and seek **inside** the
 allowed window; seeks outside it are silently clamped. When no segment
 is defined the UI behaves like a plain video player.
 
-### Read-only mode (review / forced-watch)
+### Read-only behaviour: review mode vs supervised viewing
 
-In **read-only** mode (`question.isReadOnly === true`), the widget
-behaves like a "supervised viewing" player:
+The widget treats **pure read-only** and **supervised viewing**
+differently. The distinction matters because survey-level
+`mode: "display"` (review-past-answers) makes every question
+read-only, and you almost never want every video on every review
+screen to silently auto-play with the controls hidden.
+
+#### Pure read-only — review of past answers
+
+Triggered by either:
+
+- a survey-level `mode: "display"` (the standard "review my submitted
+  answers" rendering), or
+- a single question with `isReadOnly: true` AND **no** `isRequired`
+  flag.
+
+What the participant sees:
+
+- **Native controls stay visible.** Play, pause, scrubber, fullscreen,
+  volume — all available. The participant decides whether and how to
+  replay each video.
+- **No auto-start.** The video sits on its first frame until the
+  participant presses play. The `autoStart` property is honoured at
+  face value (default `false`, opt-in `true`).
+- **No watch-gate on navigation.** The required-watch hooks bow out
+  entirely when `survey.mode === "display"`, so the participant can
+  go forward, backward, complete and revisit pages freely without
+  being blocked by saved-or-absent `watched` flags.
+- **Playback data is still recorded** if the participant chooses to
+  replay — the widget never silences its event listeners.
+
+#### Supervised viewing — forced watch before advancing
+
+Triggered by setting BOTH `isReadOnly: true` AND `isRequired: true`
+on a single question while the survey itself is in normal mode (not
+`mode: "display"`).
+
+What the participant sees:
 
 - **Native controls are hidden.** No play/pause, no scrubber, no
   fullscreen, no volume slider. The participant cannot skip ahead,
@@ -279,44 +314,45 @@ behaves like a "supervised viewing" player:
   Without auto-start the participant would have no way to begin
   playback (the controls are hidden), so the widget always tries to
   start playback automatically when the question becomes visible.
-  The `autoStart` property is ignored in read-only mode — the read-
-  only behaviour overrides it.
-- **Combined with `isRequired`, this enforces "must watch to advance".**
-  The required-watch validator only lets the survey progress once the
-  video has reached the end of the configured segment (or the file's
-  natural end if no `endTimestamp` is set). The participant has no
-  way to skip — they can only wait for playback to complete and then
-  click Next. Backward navigation is still allowed mid-watch
-  (returning to a previous page doesn't break anything).
-- **Playback data is still recorded.** The widget continues to update
-  the question's value (`watched`, `currentTime`, `watchedSeconds`,
-  `percentWatched`, `startedAt`, `lastUpdatedAt`, `lastEvent`,
-  `completedAt`, etc.) as the supervised viewing progresses, so the
-  submitted answer carries a complete record of the participant's
-  watch session. Read-only does NOT silence the data-recording path
-  — only the player's UI is read-only.
+  Designer-opted `autoStart` is overridden by this rule.
+- **The required-watch validator blocks Next.** The survey only
+  advances once the video has reached the end of the configured
+  segment (or the file's natural end if no `endTimestamp` is set).
+  The participant has no way to skip — they can only wait for
+  playback to complete and then click Next. Backward navigation is
+  still allowed mid-watch (returning to a previous page doesn't
+  break anything).
+- **Playback data is recorded just like in normal mode.** The widget
+  updates the question's value (`watched`, `currentTime`,
+  `watchedSeconds`, `percentWatched`, `startedAt`, `lastUpdatedAt`,
+  `lastEvent`, `completedAt`, etc.) as the supervised viewing
+  progresses, so the submitted answer carries a complete record of
+  the participant's watch session. The read-only flag affects only
+  the player's UI, not the data-recording path.
 
 > **Why the validator is layered.** SurveyJS' built-in
 > `Question.hasErrors()` returns early for read-only questions, which
 > means the per-question `onValidateQuestion` hook is silently skipped.
-> Pre-v1.4.9 the widget relied solely on that hook, so a Read-only +
-> Required video would fail to block Next at all (participants could
-> click straight through without watching). v1.4.9 adds two extra
-> survey-level hooks (`onCurrentPageChanging` and `onCompleting`) that
-> iterate the current page's video questions directly, regardless of
-> their read-only state. The original per-question hook stays in
-> place for the regular (non-read-only) Required case so the inline
-> error appears immediately on Next.
+> Pre-v1.4.9 the widget relied solely on that hook, so a supervised
+> viewing question would fail to block Next at all (participants
+> could click straight through without watching). v1.4.9 adds two
+> extra survey-level hooks (`onCurrentPageChanging` and
+> `onCompleting`) that iterate the current page's video questions
+> directly, regardless of their read-only state. Both hooks
+> early-return when `survey.mode === "display"` so review mode
+> stays unblocked. The original per-question hook stays in place
+> for the regular (non-read-only) Required case so the inline error
+> appears immediately on Next.
 
 > **First-page caveat (browser autoplay policy).** Browsers block
 > autoplay-with-sound when there has been no recent user gesture on
-> the page, so a read-only video on the very first page of a freshly-
-> opened survey may sit on its first frame with no controls and no
-> way to start. Avoid this by placing read-only-required videos on
-> page 2+; reaching them via a Next click counts as a gesture and
-> autoplay works normally. The widget never auto-mutes the video to
-> work around this — silent playback would defeat the purpose of any
-> question whose content depends on audio.
+> the page, so a supervised-viewing video on the very first page of
+> a freshly-opened survey may sit on its first frame with no controls
+> and no way to start. Avoid this by placing supervised-viewing
+> videos on page 2+; reaching them via a Next click counts as a
+> gesture and autoplay works normally. The widget never auto-mutes
+> the video to work around this — silent playback would defeat the
+> purpose of any question whose content depends on audio.
 
 The snippet below shows the canonical "supervised viewing" recipe:
 
@@ -328,9 +364,25 @@ The snippet below shows the canonical "supervised viewing" recipe:
     "videoUrl":      "/assets/intro.mp4",
     "isRequired":    true,
     "isReadOnly":    true
-    // autoStart is intentionally omitted — it's forced ON by isReadOnly anyway.
+    // autoStart is intentionally omitted — it's forced ON by the
+    // (isReadOnly && isRequired) combination anyway.
 }
 ```
+
+For comparison — the corresponding **review-mode** rendering of the
+same survey (everything read-only, controls visible, no auto-start,
+no watch-gate) is achieved purely at the survey level:
+
+```jsonc
+{
+    "title":  "My Survey",
+    "mode":   "display",        // <-- the whole survey is in review mode
+    "pages":  [ /* …pages with video questions… */ ]
+}
+```
+
+No per-question changes are needed for review mode; the widget reads
+`survey.mode` and adjusts automatically.
 
 ## Question value
 
@@ -484,15 +536,23 @@ and the player has snapped to `startTimestamp` (or `0`, if unset).
 Useful for "one-video-per-page" surveys where the participant lands on
 the page and the video should just start playing.
 
-Auto-start ALSO triggers implicitly when the question is in read-only
-mode (`question.isReadOnly === true`), regardless of the `autoStart`
-property value. Read-only hides the native player controls, so without
-auto-start the participant would have no way to begin playback.
-Combined with `isRequired` and the required-watch validator, this
-delivers a "supervised viewing" UX: the video starts on its own, plays
-through to the end, and the survey's Next button stays blocked until
-playback completes. See the [Read-only mode](#read-only-mode-review--forced-watch)
+Auto-start ALSO triggers implicitly when the question is in
+**supervised viewing** mode — i.e. `isReadOnly: true` AND
+`isRequired: true` together — regardless of the `autoStart` property
+value. Supervised viewing hides the native player controls, so
+without auto-start the participant would have no way to begin
+playback. Combined with the required-watch validator this delivers
+the "force the participant to watch the whole video before they can
+advance" UX. See the
+[Read-only behaviour: review mode vs supervised viewing](#read-only-behaviour-review-mode-vs-supervised-viewing)
 section above for the full description.
+
+**Important:** *pure* read-only mode (a survey-level `mode: "display"`
+review screen, or a single question with just `isReadOnly: true`)
+does NOT force auto-start. The native controls stay visible and
+`autoStart` is honoured at face value. Auto-starting every video on
+every review screen would silently surprise designers who only
+wanted a review rendering.
 
 The autoplay attempt is suppressed in one situation:
 

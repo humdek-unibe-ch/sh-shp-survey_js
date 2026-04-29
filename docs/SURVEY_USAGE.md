@@ -100,16 +100,26 @@ Designer tab (use the **Test** tab to verify autoplay during design).
 
 To force a participant to watch a video to completion before they can
 advance — a "supervised viewing" / "watch the consent clip" pattern —
-combine **`isReadOnly: true`** with **`isRequired: true`**:
+combine **`isReadOnly: true`** with **`isRequired: true`** on the
+question. The combination is what triggers the supervised behaviour:
 
-- Read-only hides the native player controls (no scrubbing, no
-  skipping, no pause).
-- Read-only also forces auto-start (since there are no controls,
-  the widget has to start the video itself — the explicit
-  `autoStart` flag is ignored in read-only mode).
+- The native player controls are hidden (no scrubbing, no skipping,
+  no pause).
+- Auto-start is forced ON (since there are no controls, the widget
+  has to start the video itself — designer-set `autoStart` is
+  overridden in this case).
 - The required-watch validator blocks the survey's Next button until
   the video reaches the configured `endTimestamp` (or the file's
   natural end if no `endTimestamp` is set).
+
+**Pure read-only is NOT supervised viewing.** A survey rendered with
+top-level `mode: "display"` (the standard "review past answers"
+mode) makes every question read-only, but the widget keeps the
+native controls visible, does NOT auto-start, and the navigation
+hooks bow out so the participant can move freely between pages. The
+"supervised" behaviour only kicks in when `isReadOnly` and
+`isRequired` are BOTH set on the same question while the survey is
+in normal (not display) mode.
 
 Browser autoplay policies still apply: most browsers block autoplay-
 with-sound when there has been no recent user gesture in the same

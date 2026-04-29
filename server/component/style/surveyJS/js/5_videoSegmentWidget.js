@@ -122,6 +122,30 @@
     var COMPONENT_NAME      = "video";          // canonical lowercased type
     var COMPONENT_TITLE     = "Video";           // human-facing display label
 
+    /**
+     * "Supervised viewing" means the question is BOTH read-only AND
+     * required. Used by the widget to decide:
+     *
+     *   - whether to hide the native player controls (so the
+     *     participant cannot scrub / pause / skip);
+     *   - whether to force auto-start (since with controls hidden,
+     *     auto-start is the only way to begin playback);
+     *   - whether the page-level required-watch hooks should block
+     *     navigation.
+     *
+     * Crucially, **pure read-only is NOT supervised viewing**. A
+     * survey rendered with `survey.mode === "display"` makes every
+     * question read-only — that's SurveyJS' standard "review past
+     * answers" mode. Treating that as supervised viewing would
+     * silently auto-play every video and hide the controls on review
+     * screens, which is never what the designer wanted. The
+     * participant in review mode keeps the native controls and
+     * decides for themselves whether to replay each video.
+     */
+    function isSupervisedViewing(question) {
+        return !!(question && question.isReadOnly && question.isRequired);
+    }
+
     // -------------------------------------------------------------------
     // 1) Class registration
     //
@@ -185,19 +209,29 @@
                  * the survey's Next button to advance to a video page)
                  * autoplay generally works.
                  *
-                 * Auto-start also kicks in IMPLICITLY when the question
-                 * is in read-only mode (`question.isReadOnly === true`).
-                 * Read-only hides the native player controls, so without
+                 * Auto-start also kicks in IMPLICITLY in **supervised
+                 * viewing** mode — that is, when the question has BOTH
+                 * `isReadOnly: true` AND `isRequired: true`. Supervised
+                 * viewing hides the native player controls, so without
                  * auto-start the participant would have no way to start
-                 * playback at all. Combined with `isRequired` this
-                 * delivers the "force the participant to watch the whole
-                 * video / configured segment before they can advance"
-                 * UX — the video starts on its own, plays through to
-                 * the configured end (or the file's natural end if no
-                 * `endTimestamp` is set), and the survey's Next button
-                 * stays blocked until completion. The `autoStart`
-                 * property is ignored in read-only mode (auto-start is
-                 * always on there).
+                 * playback at all. Combined with the required-watch
+                 * validator this delivers the "force the participant
+                 * to watch the whole video / configured segment before
+                 * they can advance" UX — the video starts on its own,
+                 * plays through to the configured end (or the file's
+                 * natural end if no `endTimestamp` is set), and the
+                 * survey's Next button stays blocked until completion.
+                 *
+                 * IMPORTANT — pure read-only mode is NOT supervised
+                 * viewing. A survey rendered with
+                 * `survey.mode === "display"` (or a single question
+                 * with just `isReadOnly: true`) is the standard
+                 * "review past answers" mode; the native controls
+                 * stay visible and `autoStart` is honoured at face
+                 * value (default `false`, opt-in `true`). Auto-start
+                 * is NOT forced on in pure read-only mode — that
+                 * would silently restart every video on every review
+                 * screen, which the designer never asked for.
                  *
                  * Auto-play is suppressed in the Creator's Designer tab
                  * (`survey.isDesignMode === true`) so every property
@@ -208,14 +242,14 @@
                  * a directly-opened first page, host the video on a
                  * page that's reached via a Next click. This caveat
                  * applies to both designer-opted `autoStart` and
-                 * read-only-implicit auto-play.
+                 * supervised-viewing-implicit auto-play.
                  */
                 {
                     name: "autoStart:boolean",
                     default: false,
                     category: "general",
                     displayName: "Auto-start playback when the question is shown",
-                    description: "Begin playback automatically when the participant arrives on this question. Read-only questions ALWAYS auto-start (controls are hidden, so it's the only way to play). Browsers may block autoplay-with-sound on the very first page of a freshly-opened survey; place such videos on page 2+ (reached via a Next click) to be safe."
+                    description: "Begin playback automatically when the participant arrives on this question. Forced ON when the question is in supervised-viewing mode (isReadOnly + isRequired together — controls are hidden then, so it's the only way to play). Pure read-only review mode keeps controls visible and does NOT auto-start. Browsers may block autoplay-with-sound on the very first page of a freshly-opened survey; place such videos on page 2+ (reached via a Next click) to be safe."
                 },
                 /*
                  * "Video fit" / height / width — wired to the <video>
@@ -668,13 +702,28 @@
             });
         }
 
+        // Whether the page-level hooks should treat this navigation
+        // attempt as a real survey-taking action that can be blocked.
+        // We bypass the hooks entirely when the survey is in display
+        // (review) mode, because in that mode the participant is just
+        // browsing previously submitted answers and should never be
+        // trapped on a page based on a saved (or absent) `watched`
+        // flag.
+        function shouldEnforceWatchGate(sender) {
+            if (!sender) return false;
+            if (sender.mode === "display") return false;
+            return true;
+        }
+
         // Hook 2: onCurrentPageChanging (page-level, fires regardless
-        // of read-only). Catches the read-only + required case that
-        // Hook 1 cannot, since SurveyJS' Question.hasErrors() returns
-        // false early for read-only questions.
+        // of read-only). Catches the supervised-viewing case
+        // (`isReadOnly && isRequired`) that Hook 1 cannot, since
+        // SurveyJS' Question.hasErrors() returns false early for
+        // read-only questions.
         if (survey.onCurrentPageChanging &&
             typeof survey.onCurrentPageChanging.add === "function") {
             survey.onCurrentPageChanging.add(function (sender, options) {
+                if (!shouldEnforceWatchGate(sender)) return;
                 // Only block forward navigation. Letting participants
                 // go back even mid-watch is harmless — they haven't
                 // submitted anything they shouldn't have.
@@ -693,6 +742,7 @@
         if (survey.onCompleting &&
             typeof survey.onCompleting.add === "function") {
             survey.onCompleting.add(function (sender, options) {
+                if (!shouldEnforceWatchGate(sender)) return;
                 var unwatched = checkPage(sender.currentPage);
                 if (unwatched.length === 0) return;
                 options.allowComplete = false;
@@ -888,15 +938,26 @@
             // Auto-start playback in two situations:
             //
             //   1. The survey designer opted in via `autoStart: true`.
-            //   2. The question is in read-only mode. Read-only hides
-            //      the native controls (`video.controls = false`), so
-            //      without auto-start the participant would have NO way
-            //      to begin playback. Combined with `isRequired` and
+            //   2. The question is in **supervised viewing** mode —
+            //      `isReadOnly: true` AND `isRequired: true` together.
+            //      Supervised viewing hides the native controls (see
+            //      below), so without auto-start the participant
+            //      would have NO way to begin playback; combined with
             //      the required-watch validator, this delivers the
             //      "must watch the whole video / segment before
-            //      advancing" UX: the video starts on its own, plays
-            //      through to the configured end, and the survey's
-            //      Next button stays blocked until completion.
+            //      advancing" UX.
+            //
+            // IMPORTANT — pure read-only is NOT supervised viewing.
+            // A survey rendered with `survey.mode === "display"` (or a
+            // single question with `isReadOnly: true` and no
+            // `isRequired`) is the standard "review your past answers"
+            // mode. There the participant should keep the native
+            // controls and decide for themselves whether to replay
+            // each video — auto-starting every video and hiding the
+            // controls in that mode would silently surprise the
+            // designer who only wanted a review screen. So we key the
+            // hide-controls + force-autoplay UX off the conjunction
+            // `isReadOnly && isRequired`, NOT off `isReadOnly` alone.
             //
             // Suppressed in the Creator's Designer tab
             // (`survey.isDesignMode === true`) so every property edit
@@ -906,14 +967,14 @@
             // Browsers may reject the play() promise when there has been
             // no recent user gesture (autoplay-with-sound is blocked on
             // the very first page of a freshly-opened tab). We silently
-            // swallow the rejection. In read-only mode this means the
-            // participant sees a paused first frame with no controls;
-            // place read-only videos on page 2+ (reached via a Next
-            // click, which counts as a gesture) to avoid this. After
-            // any user gesture autoplay generally works.
+            // swallow the rejection. In supervised-viewing mode this
+            // means the participant sees a paused first frame with no
+            // controls; place such videos on page 2+ (reached via a
+            // Next click, which counts as a gesture) to avoid this.
+            // After any user gesture autoplay generally works.
             var survey = question && question.survey;
             var inDesignMode = !!(survey && survey.isDesignMode);
-            var shouldAutoplay = !inDesignMode && (question.autoStart || question.isReadOnly);
+            var shouldAutoplay = !inDesignMode && (question.autoStart || isSupervisedViewing(question));
             if (shouldAutoplay) {
                 try {
                     var p = video.play();
@@ -1138,13 +1199,33 @@
             // renders, and idempotently no-ops on subsequent calls.
             attachRequiredWatchValidator(question);
 
-            // Read-only state: hide native controls and prevent interaction.
-            if (question.isReadOnly) {
-                video.controls = false;
+            // Native controls are hidden ONLY in supervised-viewing
+            // mode (`isReadOnly && isRequired`). Pure read-only — for
+            // example a `survey.mode === "display"` review screen —
+            // keeps controls visible so the participant can scrub /
+            // replay the video at their own pace. See
+            // `isSupervisedViewing` for the full rationale.
+            //
+            // We re-evaluate on TWO different SurveyJS hooks because
+            // either flag can flip at runtime:
+            //   - `readOnlyChangedCallback` fires when `isReadOnly`
+            //     toggles (typical when the survey switches modes or
+            //     a logic expression flips it).
+            //   - `registerFunctionOnPropertyValueChanged("isRequired",
+            //     ...)` fires when a `requiredIf` expression flips
+            //     `isRequired` at runtime.
+            function applySupervisedViewingState() {
+                video.controls = !isSupervisedViewing(question);
             }
-            question.readOnlyChangedCallback = function () {
-                video.controls = !question.isReadOnly;
-            };
+            applySupervisedViewingState();
+            question.readOnlyChangedCallback = applySupervisedViewingState;
+            if (typeof question.registerFunctionOnPropertyValueChanged === "function") {
+                question.registerFunctionOnPropertyValueChanged(
+                    "isRequired",
+                    applySupervisedViewingState,
+                    "videoQuestionSupervisedViewing"
+                );
+            }
 
             // Make the layout properties live: editing them in the Creator
             // updates the preview without requiring a page refresh.
@@ -1181,14 +1262,22 @@
             // Detach property-change callbacks so we don't leak them when
             // the question is destroyed.
             if (question && typeof question.unRegisterFunctionOnPropertyValueChanged === "function") {
-                ["videoFit", "videoHeight", "videoWidth", "videoUrl"].forEach(function (propName) {
+                var listeners = [
+                    { prop: "videoFit",    key: "videoQuestionLayout-videoFit" },
+                    { prop: "videoHeight", key: "videoQuestionLayout-videoHeight" },
+                    { prop: "videoWidth",  key: "videoQuestionLayout-videoWidth" },
+                    { prop: "videoUrl",    key: "videoQuestionUrl" },
+                    { prop: "isRequired",  key: "videoQuestionSupervisedViewing" }
+                ];
+                listeners.forEach(function (entry) {
                     try {
-                        question.unRegisterFunctionOnPropertyValueChanged(
-                            propName,
-                            propName === "videoUrl" ? "videoQuestionUrl" : "videoQuestionLayout-" + propName
-                        );
+                        question.unRegisterFunctionOnPropertyValueChanged(entry.prop, entry.key);
                     } catch (e) {}
                 });
+            }
+            // Drop the readOnlyChangedCallback we installed.
+            if (question) {
+                try { question.readOnlyChangedCallback = null; } catch (e) {}
             }
         }
     };

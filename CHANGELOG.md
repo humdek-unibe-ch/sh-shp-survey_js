@@ -4,33 +4,47 @@
 
 ### Bug fixes
 
+- **Video question — review mode (`mode: "display"`) no longer
+  silently auto-plays and hides controls.** v1.4.8 keyed the
+  hide-controls + force-auto-start behaviour off the question's
+  `isReadOnly` flag alone, which surprised designers using
+  `survey.mode = "display"` to render past answers — that mode makes
+  every question read-only, so every video on every review screen
+  was starting on its own with no controls. The supervised-viewing
+  UX is now keyed off **`isReadOnly` AND `isRequired` together**.
+  Pure read-only (review mode, or a single read-only-but-not-
+  required question) keeps the native controls visible, does NOT
+  auto-start, and the required-watch hooks bow out entirely when
+  `survey.mode === "display"` so review pages stay free to navigate.
+
 - **Video question — Read-only + Required no longer skippable.**
-  Previously, marking a video question as both `isReadOnly: true` and
-  `isRequired: true` (the "supervised viewing" recipe added in v1.4.8)
-  did NOT actually block the survey's Next / Complete buttons —
-  participants could click straight through without watching. The
-  required-watch validator was being silently skipped because
-  SurveyJS' built-in `Question.hasErrors()` returns early for
-  read-only questions, bypassing our per-question hook. Fixed by
-  adding two extra survey-level hooks (`onCurrentPageChanging` and
-  `onCompleting`) that check video questions explicitly, regardless
-  of their read-only state, and block forward / complete actions
-  until the video has been watched to the end of the configured
-  segment (or to the file's natural end if no `endTimestamp` is set).
-  Backward navigation is still allowed mid-watch.
+  Previously, marking a video question as both `isReadOnly: true`
+  and `isRequired: true` did NOT actually block the survey's Next /
+  Complete buttons — participants could click straight through
+  without watching. The required-watch validator was being silently
+  skipped because SurveyJS' built-in `Question.hasErrors()` returns
+  early for read-only questions, bypassing our per-question hook.
+  Fixed by adding two extra survey-level hooks
+  (`onCurrentPageChanging` and `onCompleting`) that check video
+  questions explicitly, regardless of their read-only state, and
+  block forward / complete actions until the video has been watched
+  to the end of the configured segment (or to the file's natural
+  end if no `endTimestamp` is set). Backward navigation is still
+  allowed mid-watch.
 
-- **Video question — Read-only mode still records playback data.**
-  Confirmed and documented: even when the player's controls are
-  hidden (read-only mode), the widget continues to record the full
-  playback metadata in the question's value (`watched`, `currentTime`,
-  `watchedSeconds`, `percentWatched`, `startedAt`, `lastUpdatedAt`,
-  `lastEvent`, `completedAt`, etc.). So the canonical "supervised
-  viewing" recipe (read-only + required + auto-start) gives you a
-  complete viewing record AND a hard-blocked Next button. No
-  designer action required — the data captures itself.
+- **Video question — playback data still recorded in supervised
+  viewing.** Confirmed and documented: when the player's controls
+  are hidden (supervised viewing), the widget continues to record
+  the full playback metadata in the question's value (`watched`,
+  `currentTime`, `watchedSeconds`, `percentWatched`, `startedAt`,
+  `lastUpdatedAt`, `lastEvent`, `completedAt`, etc.). The
+  read-only flag affects only the player's UI, not the
+  data-recording path. No designer action required — the data
+  captures itself.
 
-See [`docs/VIDEO_SEGMENT.md → Read-only mode (review / forced-watch)`](docs/VIDEO_SEGMENT.md#read-only-mode-review--forced-watch)
-for the full description and copy-paste-ready survey JSON.
+See [`docs/VIDEO_SEGMENT.md → Read-only behaviour: review mode vs supervised viewing`](docs/VIDEO_SEGMENT.md#read-only-behaviour-review-mode-vs-supervised-viewing)
+for the full description and copy-paste-ready survey JSON for both
+modes.
 
 ## v1.4.8
 
