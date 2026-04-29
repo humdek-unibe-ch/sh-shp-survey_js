@@ -95,13 +95,32 @@ and finally to the English default. See
 For "one-video-per-page" surveys, toggle the **`autoStart`** property
 on the video question and the widget will automatically begin playback
 when the participant navigates to that page (via the survey's Next
-button, for example). Browser autoplay policies still apply — on a
-freshly-opened first page with no prior user gesture the browser may
-silently block the play attempt, in which case the participant sees a
-paused player and clicks play manually. `autoStart` is suppressed in
-read-only mode and in the Creator's Designer tab (use the **Test** tab
-to verify autoplay during design). See
+button, for example). `autoStart` is suppressed in the Creator's
+Designer tab (use the **Test** tab to verify autoplay during design).
+
+To force a participant to watch a video to completion before they can
+advance — a "supervised viewing" / "watch the consent clip" pattern —
+combine **`isReadOnly: true`** with **`isRequired: true`**:
+
+- Read-only hides the native player controls (no scrubbing, no
+  skipping, no pause).
+- Read-only also forces auto-start (since there are no controls,
+  the widget has to start the video itself — the explicit
+  `autoStart` flag is ignored in read-only mode).
+- The required-watch validator blocks the survey's Next button until
+  the video reaches the configured `endTimestamp` (or the file's
+  natural end if no `endTimestamp` is set).
+
+Browser autoplay policies still apply: most browsers block autoplay-
+with-sound when there has been no recent user gesture in the same
+tab, so a read-only video on the very **first** page of a freshly-
+opened survey may sit on its first frame with no controls and no way
+to start. Place such videos on page 2+ (reached via a Next click,
+which counts as a gesture) to be safe. The widget never auto-mutes
+the video — silent playback would defeat the purpose of any question
+whose content depends on audio. See
 [VIDEO_SEGMENT.md → Auto-start playback](VIDEO_SEGMENT.md#auto-start-playback-autostart)
+and [VIDEO_SEGMENT.md → Read-only mode](VIDEO_SEGMENT.md#read-only-mode-review--forced-watch)
 for the full discussion.
 
 > The question's value is an auto-generated playback metadata object

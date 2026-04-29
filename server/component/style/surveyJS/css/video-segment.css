@@ -3,7 +3,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
 /*
- * Styles for the `video` custom SurveyJS question (v1.4.9).
+ * Styles for the `video` custom SurveyJS question (v1.4.8).
  *
  * Picked up automatically by
  *   gulp/gulpfile.js  ->  server/component/style/{star}{star}/css/*.css
@@ -12,7 +12,7 @@
  * while the CSS class prefix is `.sjs-video` so a future grep matches
  * the question's selectors cleanly.
  *
- * Layout architecture (v1.4.9+)
+ * Layout architecture
  * -----------------------------
  *   .sjs-video             -> outer flex column: stage above, error below.
  *   .sjs-video__stage      -> sized by user-facing properties

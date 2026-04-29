@@ -3,7 +3,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
 /**
- * Video custom SurveyJS question widget (v1.4.9).
+ * Video custom SurveyJS question widget (v1.4.8).
  *
  * Built against SurveyJS v1.9.124 (do NOT upgrade).
  *
@@ -185,23 +185,37 @@
                  * the survey's Next button to advance to a video page)
                  * autoplay generally works.
                  *
-                 * The widget never auto-plays in:
-                 *   - read-only mode (`question.isReadOnly`)
-                 *   - the Creator's Designer tab (`survey.isDesignMode`)
-                 *     — otherwise every property edit would re-trigger
-                 *     playback in the preview pane.
+                 * Auto-start also kicks in IMPLICITLY when the question
+                 * is in read-only mode (`question.isReadOnly === true`).
+                 * Read-only hides the native player controls, so without
+                 * auto-start the participant would have no way to start
+                 * playback at all. Combined with `isRequired` this
+                 * delivers the "force the participant to watch the whole
+                 * video / configured segment before they can advance"
+                 * UX — the video starts on its own, plays through to
+                 * the configured end (or the file's natural end if no
+                 * `endTimestamp` is set), and the survey's Next button
+                 * stays blocked until completion. The `autoStart`
+                 * property is ignored in read-only mode (auto-start is
+                 * always on there).
+                 *
+                 * Auto-play is suppressed in the Creator's Designer tab
+                 * (`survey.isDesignMode === true`) so every property
+                 * edit doesn't re-trigger playback in the preview pane.
                  *
                  * No implicit muting is applied; the video plays with
                  * its natural sound. If you need autoplay-with-sound on
                  * a directly-opened first page, host the video on a
-                 * page that's reached via a Next click.
+                 * page that's reached via a Next click. This caveat
+                 * applies to both designer-opted `autoStart` and
+                 * read-only-implicit auto-play.
                  */
                 {
                     name: "autoStart:boolean",
                     default: false,
                     category: "general",
                     displayName: "Auto-start playback when the question is shown",
-                    description: "Begin playback automatically when the participant arrives on this question. Browsers may block autoplay-with-sound on the first page of a freshly-opened survey (no prior user gesture); on subsequent pages reached via the Next button autoplay generally works."
+                    description: "Begin playback automatically when the participant arrives on this question. Read-only questions ALWAYS auto-start (controls are hidden, so it's the only way to play). Browsers may block autoplay-with-sound on the very first page of a freshly-opened survey; place such videos on page 2+ (reached via a Next click) to be safe."
                 },
                 /*
                  * "Video fit" / height / width — wired to the <video>
@@ -575,7 +589,7 @@
      * Called both from afterRender and from property-change callbacks so
      * editing the layout in the Creator updates the preview live.
      *
-     * Layout architecture (v1.4.9+)
+     * Layout architecture
      * -----------------------------
      * `videoHeight` / `videoWidth` are applied to the **stage wrapper**
      * (`<div class="sjs-video__stage">`), NOT directly to the `<video>`
@@ -754,28 +768,36 @@
             video.currentTime = start;
             enforcing = false;
 
-            // Auto-start playback if the survey designer opted in via
-            // `autoStart`. Suppressed in two situations:
+            // Auto-start playback in two situations:
             //
-            //   1. read-only mode — the participant is just reviewing
-            //      a previously submitted answer; we shouldn't restart
-            //      a video they've already watched.
-            //   2. Creator Designer tab (`survey.isDesignMode === true`)
-            //      — otherwise the preview pane would re-fire autoplay
-            //      every time the designer edits any property, which is
-            //      annoying and can cause overlapping audio if the
-            //      designer has multiple video questions in the survey.
+            //   1. The survey designer opted in via `autoStart: true`.
+            //   2. The question is in read-only mode. Read-only hides
+            //      the native controls (`video.controls = false`), so
+            //      without auto-start the participant would have NO way
+            //      to begin playback. Combined with `isRequired` and
+            //      the required-watch validator, this delivers the
+            //      "must watch the whole video / segment before
+            //      advancing" UX: the video starts on its own, plays
+            //      through to the configured end, and the survey's
+            //      Next button stays blocked until completion.
+            //
+            // Suppressed in the Creator's Designer tab
+            // (`survey.isDesignMode === true`) so every property edit
+            // doesn't re-fire playback in the preview pane (annoying,
+            // and overlapping audio if multiple video questions exist).
             //
             // Browsers may reject the play() promise when there has been
-            // no recent user gesture (most autoplay-with-sound is
-            // blocked on the very first page of a freshly-opened tab).
-            // We silently swallow the rejection — the participant simply
-            // sees a paused video and clicks play themselves. After any
-            // user gesture (e.g. the Next button used to navigate here)
-            // autoplay generally works.
+            // no recent user gesture (autoplay-with-sound is blocked on
+            // the very first page of a freshly-opened tab). We silently
+            // swallow the rejection. In read-only mode this means the
+            // participant sees a paused first frame with no controls;
+            // place read-only videos on page 2+ (reached via a Next
+            // click, which counts as a gesture) to avoid this. After
+            // any user gesture autoplay generally works.
             var survey = question && question.survey;
             var inDesignMode = !!(survey && survey.isDesignMode);
-            if (question.autoStart && !question.isReadOnly && !inDesignMode) {
+            var shouldAutoplay = !inDesignMode && (question.autoStart || question.isReadOnly);
+            if (shouldAutoplay) {
                 try {
                     var p = video.play();
                     if (p && typeof p.then === "function") {

@@ -113,8 +113,8 @@ sole source of truth and all of those problems disappear.
 ### Layout properties — really applied
 
 `videoFit`, `videoHeight` and `videoWidth` aren't just metadata; the
-widget applies them directly to the DOM via inline styles. As of
-**v1.4.9** the targets differ between sizing and bitmap presentation:
+widget applies them directly to the DOM via inline styles. The targets
+differ between sizing and bitmap presentation:
 
 | Property      | Inline style target                   | DOM node           |
 | ------------- | ------------------------------------- | ------------------ |
@@ -125,17 +125,17 @@ widget applies them directly to the DOM via inline styles. As of
 Why split? Native HTML5 controls render at the bottom of the `<video>`
 element box, but most browsers align the controls strip to the
 bitmap's painted region rather than the full element width. Applying
-`videoHeight` directly to the `<video>` element (the v1.4.7-pre-1.4.9
-behaviour) caused portrait clips in landscape containers to show a
-tiny ~169 px-wide controls strip at the centre — easy to miss visually
-and on some Chrome builds clipped entirely. Anchoring the sizing on
-the stage wrapper and stretching the `<video>` to fill it
-(`position: absolute; top/right/bottom/left: 0; width/height: 100%`)
-makes the controls span the full configured width every time, no
-matter the bitmap aspect ratio. As a side benefit, `object-fit`
-becomes the only layout concern on the `<video>` element, so the four
-modes (`none` / `contain` / `cover` / `fill`) behave exactly as the
-CSS spec describes.
+`videoHeight` directly to the `<video>` element would make portrait
+clips in landscape containers show a tiny ~169 px-wide controls strip
+at the centre — easy to miss visually and on some Chrome builds
+clipped entirely. Anchoring the sizing on the stage wrapper and
+stretching the `<video>` to fill it (`position: absolute;
+top/right/bottom/left: 0; width/height: 100%`) makes the controls span
+the full configured width every time, no matter the bitmap aspect
+ratio. As a side benefit, `object-fit` becomes the only layout
+concern on the `<video>` element, so the four modes (`none` /
+`contain` / `cover` / `fill`) behave exactly as the CSS spec
+describes.
 
 The properties are wired up via `registerFunctionOnPropertyValueChanged`
 so editing them in the Creator updates the preview live without a
@@ -265,8 +265,50 @@ scrubber. The user is free to pause/resume and seek **inside** the
 allowed window; seeks outside it are silently clamped. When no segment
 is defined the UI behaves like a plain video player.
 
-In **read-only** mode, native controls are hidden and the video cannot
-be interacted with.
+### Read-only mode (review / forced-watch)
+
+In **read-only** mode (`question.isReadOnly === true`), the widget
+behaves like a "supervised viewing" player:
+
+- **Native controls are hidden.** No play/pause, no scrubber, no
+  fullscreen, no volume slider. The participant cannot skip ahead,
+  rewind, or interact with the player at all.
+- **Auto-start is forced ON, regardless of the `autoStart` property.**
+  Without auto-start the participant would have no way to begin
+  playback (the controls are hidden), so the widget always tries to
+  start playback automatically when the question becomes visible.
+  The `autoStart` property is ignored in read-only mode — the read-
+  only behaviour overrides it.
+- **Combined with `isRequired`, this enforces "must watch to advance".**
+  The required-watch validator only lets the survey progress once the
+  video has reached the end of the configured segment (or the file's
+  natural end if no `endTimestamp` is set). The participant has no
+  way to skip — they can only wait for playback to complete and then
+  click Next.
+
+> **First-page caveat (browser autoplay policy).** Browsers block
+> autoplay-with-sound when there has been no recent user gesture on
+> the page, so a read-only video on the very first page of a freshly-
+> opened survey may sit on its first frame with no controls and no
+> way to start. Avoid this by placing read-only-required videos on
+> page 2+; reaching them via a Next click counts as a gesture and
+> autoplay works normally. The widget never auto-mutes the video to
+> work around this — silent playback would defeat the purpose of any
+> question whose content depends on audio.
+
+The snippet below shows the canonical "supervised viewing" recipe:
+
+```jsonc
+{
+    "type":          "video",
+    "name":          "consent-clip",
+    "title":         "Please watch the introduction.",
+    "videoUrl":      "/assets/intro.mp4",
+    "isRequired":    true,
+    "isReadOnly":    true
+    // autoStart is intentionally omitted — it's forced ON by isReadOnly anyway.
+}
+```
 
 ## Question value
 
@@ -407,16 +449,23 @@ and the player has snapped to `startTimestamp` (or `0`, if unset).
 Useful for "one-video-per-page" surveys where the participant lands on
 the page and the video should just start playing.
 
-The autoplay attempt is suppressed in two situations:
+Auto-start ALSO triggers implicitly when the question is in read-only
+mode (`question.isReadOnly === true`), regardless of the `autoStart`
+property value. Read-only hides the native player controls, so without
+auto-start the participant would have no way to begin playback.
+Combined with `isRequired` and the required-watch validator, this
+delivers a "supervised viewing" UX: the video starts on its own, plays
+through to the end, and the survey's Next button stays blocked until
+playback completes. See the [Read-only mode](#read-only-mode-review--forced-watch)
+section above for the full description.
 
-1. **Read-only mode** (`question.isReadOnly === true`). When a survey
-   is reloaded for review of a previously submitted answer, the video
-   should not restart — the participant has already watched it.
-2. **Creator Designer tab** (`survey.isDesignMode === true`). Otherwise
-   every property edit would re-fire playback in the preview pane and
-   overlap audio across multiple video questions in the same survey.
-   Switch to the Creator's **Test** tab if you want to confirm the
-   autoplay behaviour in a designer session.
+The autoplay attempt is suppressed in one situation:
+
+- **Creator Designer tab** (`survey.isDesignMode === true`). Otherwise
+  every property edit would re-fire playback in the preview pane and
+  overlap audio across multiple video questions in the same survey.
+  Switch to the Creator's **Test** tab if you want to confirm the
+  autoplay behaviour in a designer session.
 
 The widget never mutes the video implicitly. **Browser autoplay
 policies still apply**: most modern browsers block autoplay-with-sound
@@ -562,8 +611,8 @@ A complete example survey is in
 | Cross-field error stays in the Creator preview banner after fix      | The widget self-clears errors tagged `__fromVideoQuestion` on every `afterRender`, but a re-render is only triggered on a property change. Click anywhere in the property panel (or change/restore any property) to force a re-render. |
 | Required-watch alert appears in English on a German page             | `survey.locale` is empty (the SurveyJS default). Confirm `4_surveyJS.js` is reading the locale from the `selfHelp-locale-<locale>` class on `.selfHelp-survey-js-holder`. Either fill in the German entry in the Creator's Translation tab (`requiredWatchMessage` is `isLocalizable: true` and shows up there next to the question title), or rely on the built-in `de` backstop in `DEFAULT_REQUIRED_WATCH_MESSAGES`. |
 | `requiredWatchMessage` row missing from the Translation tab          | Old cached JS — the property is registered with `isLocalizable: true` since v1.4.8. Hard-refresh the Creator (Ctrl+Shift+R) and reopen the survey. |
-| Native `<video>` controls bar invisible / very narrow (e.g. portrait clip with `videoHeight: 300px`) | Pre-v1.4.9 the widget applied `videoHeight` directly to the `<video>` element, which made the controls strip align to the bitmap's painted region rather than the full element width — portrait clips got a tiny ~169 px controls strip. v1.4.9 anchors sizing on the `.sjs-video__stage` wrapper and stretches the `<video>` to fill it, so controls always span the full configured width. Hard-refresh JS + CSS bundles (Ctrl+Shift+R) to drop the old cached versions. |
-| `videoFit` toggle (`none`/`contain`/`cover`/`fill`) seems to do nothing or behaves unpredictably | Same root cause as above — pre-v1.4.9 sizing was on the `<video>` element, so `object-fit` had to negotiate with the inline `height` AND the bitmap's intrinsic aspect ratio simultaneously. Hard-refresh after upgrading to v1.4.9. |
+| Native `<video>` controls bar invisible / very narrow (e.g. portrait clip with `videoHeight: 300px`) | Old cached JS / CSS from a pre-release v1.4.8 build that applied `videoHeight` directly to the `<video>` element. Hard-refresh JS + CSS bundles (Ctrl+Shift+R) to pick up the shipped widget, which anchors sizing on the `.sjs-video__stage` wrapper so controls always span the full configured width. |
+| `videoFit` toggle (`none`/`contain`/`cover`/`fill`) seems to do nothing or behaves unpredictably | Same root cause as above — old cached JS / CSS where sizing lived on the `<video>` element forced `object-fit` to negotiate with the inline `height` AND the bitmap's intrinsic aspect ratio simultaneously. Hard-refresh after rebuilding the bundle. |
 | "Video URL is required"                                              | Configuration error — fix the property value in the Creator.                                                                                                                      |
 
 ## Files of interest
