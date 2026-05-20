@@ -79,14 +79,34 @@ Survey.Serializer.addClass(
 
 ## Property surface
 
-| Property            | Type   | Default | Description |
-| ------------------- | ------ | ------- | ----------- |
-| `sampledPointCount` | number | `100`   | Number of evenly-spaced points kept when downsampling the route for storage and preview. Must be ≥ 2. |
+| Property                 | Type             | Default | Description |
+| ------------------------ | ---------------- | ------- | ----------- |
+| `sampledPointCount`      | number           | `100`   | Number of evenly-spaced points kept when downsampling the route for storage and preview. Must be ≥ 2. |
+| `chooseFileButtonText`   | localized string | *(empty — built-in en/de/fr/it fallback)* | Visible label + tooltip on the "Choose GPX file" upload button. Filled in per-locale via the Creator's Translation tab. Since v1.4.12. |
+| `clearButtonText`        | localized string | *(empty — built-in en/de/fr/it fallback)* | Visible label + tooltip on the "Clear" button. Filled in per-locale via the Creator's Translation tab. Since v1.4.12. |
 
 The standard inherited properties (`name`, `valueName`, `title`,
 `description`, `isRequired`, `visible`, `visibleIf`, ...) all apply.
 `defaultValue` and `correctAnswer` are hidden in the Creator property
 panel because the answer is auto-generated.
+
+### Built-in button label fallbacks
+
+When `chooseFileButtonText` / `clearButtonText` are left blank the
+widget falls back to this table keyed by `survey.locale`. An empty
+locale, or one not listed below, resolves to the `default` row.
+
+| Locale     | Choose-file label         | Clear label |
+| ---------- | ------------------------- | ----------- |
+| `default`  | Choose GPX file           | Clear       |
+| `en`       | Choose GPX file           | Clear       |
+| `de`       | GPX-Datei wählen          | Löschen     |
+| `fr`       | Choisir un fichier GPX    | Effacer     |
+| `it`       | Scegli file GPX           | Cancella    |
+
+The labels live-update when `survey.locale` changes at runtime
+(multilingual surveys with a language switcher); no re-render
+required.
 
 ## Effective answer name
 
@@ -237,6 +257,14 @@ The map renders:
 - An End marker with an "End" tooltip.
 - `fitBounds` framing the polyline with 20 px padding.
 
+Since v1.4.12 the map takes the **full question width** and the
+stats panel renders **below** it, rather than side-by-side. This
+gives the route polyline more horizontal space on a typical
+question card and makes the question read as a clean vertical
+scroll on narrow screens. The stats table's `Time` row formats
+the GPX metadata timestamp as `DD-MM-YYYY` for legibility —
+the persisted `value.time` still stores the full ISO string.
+
 The preview is rebuilt from the persisted `sampledPoints` whenever the
 question's value changes, including on autosave restore / page-change
 restore, so refreshes don't require re-reading the local file.
@@ -287,6 +315,28 @@ Drop-in default for adding a GPX question from the Creator toolbox:
   "name": "gpx_route",
   "title": "Upload GPX route",
   "sampledPointCount": 100
+}
+```
+
+With per-locale button labels via the Translation tab the JSON gains
+two object-valued localized strings:
+
+```json
+{
+  "type": "gpx",
+  "name": "gpx_route",
+  "title": { "default": "Upload GPX route", "de": "GPX-Route hochladen" },
+  "sampledPointCount": 100,
+  "chooseFileButtonText": {
+    "default": "Choose GPX file",
+    "de": "GPX-Datei wählen",
+    "fr": "Choisir un fichier GPX"
+  },
+  "clearButtonText": {
+    "default": "Clear",
+    "de": "Löschen",
+    "fr": "Effacer"
+  }
 }
 ```
 

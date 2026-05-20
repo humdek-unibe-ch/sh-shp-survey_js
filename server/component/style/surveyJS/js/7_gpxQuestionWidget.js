@@ -74,6 +74,39 @@
                     category: "general",
                     displayName: "Sampled point count",
                     description: "Number of evenly-distributed points to keep when downsampling the route for storage and preview. Minimum 2 (start and end)."
+                },
+                /*
+                 * Localizable label / tooltip for the "Choose GPX file"
+                 * button. `isLocalizable: true` makes SurveyJS:
+                 *   1. Auto-create a `LocalizableString` on the question
+                 *      (named `locChooseFileButtonText`) and wire the
+                 *      `chooseFileButtonText` getter/setter to delegate
+                 *      to it for `survey.locale`.
+                 *   2. Auto-include the property in the Creator's
+                 *      Translation tab so designers can fill in per-
+                 *      locale strings next to the question's `title`.
+                 *
+                 * Resolution order at runtime (see `getButtonLabel`):
+                 *   1. SurveyJS-resolved locale value (the explicit
+                 *      string the designer filled in for the active
+                 *      locale, or the property's default locale entry).
+                 *   2. Built-in `DEFAULT_BUTTON_LABELS[<locale>].choose`
+                 *      backstop (en/de/fr/it bundled).
+                 *   3. English default.
+                 */
+                {
+                    name: "chooseFileButtonText",
+                    isLocalizable: true,
+                    category: "general",
+                    displayName: "\"Choose file\" button label (optional, falls back to localized default)",
+                    description: "Tooltip + visible label on the upload button. Open the Translation tab to fill in per-locale wording. Leave blank to inherit the built-in en/de/fr/it default."
+                },
+                {
+                    name: "clearButtonText",
+                    isLocalizable: true,
+                    category: "general",
+                    displayName: "\"Clear\" button label (optional, falls back to localized default)",
+                    description: "Tooltip + visible label on the clear button. Open the Translation tab to fill in per-locale wording. Leave blank to inherit the built-in en/de/fr/it default."
                 }
             ],
             null,
@@ -150,6 +183,77 @@
         }
     } catch (e) { /* fall back */ }
     window.__gpxQuestionIconName = iconName;
+
+    // -------------------------------------------------------------------
+    // 3b) Inline button icons (rendered inside the question's controls).
+    //
+    // We deliberately ship small, self-contained inline SVGs rather than
+    // routing through the Creator's SvgRegistry (used for the toolbox
+    // icon) because the runtime page does not always load
+    // survey-creator-knockout — the SvgRegistry is only present in the
+    // Creator. Inlining keeps the icons available in both contexts
+    // without an extra asset request, and lets us style them via
+    // `currentColor` so they inherit the surrounding text colour
+    // (primary for "choose", danger for "clear").
+    //
+    // 24x24 viewBox so they render at a comfortable button glyph size
+    // when the surrounding font-size resolves to ~16 px.
+    // -------------------------------------------------------------------
+    var GPX_UPLOAD_ICON_SVG =
+        '<svg class="sjs-gpx__icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">' +
+            '<path fill="currentColor" d="M12 3a1 1 0 0 1 .707.293l5 5a1 1 0 0 1-1.414 1.414L13 6.414V15a1 1 0 1 1-2 0V6.414L7.707 9.707a1 1 0 0 1-1.414-1.414l5-5A1 1 0 0 1 12 3zM5 17a1 1 0 0 1 1 1v1c0 .551.449 1 1 1h10c.551 0 1-.449 1-1v-1a1 1 0 1 1 2 0v1a3 3 0 0 1-3 3H7a3 3 0 0 1-3-3v-1a1 1 0 0 1 1-1z"/>' +
+        '</svg>';
+
+    var GPX_CLEAR_ICON_SVG =
+        '<svg class="sjs-gpx__icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">' +
+            '<path fill="currentColor" d="M9 3a1 1 0 0 0-1 1v1H5a1 1 0 1 0 0 2h.094l.852 12.142A2 2 0 0 0 7.94 21h8.118a2 2 0 0 0 1.994-1.858L18.906 7H19a1 1 0 1 0 0-2h-3V4a1 1 0 0 0-1-1H9zm1 2h4v0h-4V5zM7.099 7h9.802l-.842 12H7.941L7.099 7zM10 9a1 1 0 0 0-1 1v7a1 1 0 1 0 2 0v-7a1 1 0 0 0-1-1zm4 0a1 1 0 0 0-1 1v7a1 1 0 1 0 2 0v-7a1 1 0 0 0-1-1z"/>' +
+        '</svg>';
+
+    // -------------------------------------------------------------------
+    // 3c) Built-in i18n for the choose / clear button labels.
+    //
+    // Acts as a backstop when the survey designer has not provided a
+    // per-locale string via the Creator's Translation tab — in that
+    // case `question.chooseFileButtonText` / `question.clearButtonText`
+    // resolve to empty and `getButtonLabel` falls through to this table
+    // keyed by `survey.locale` (which the CMS pushes via
+    // `4_surveyJS.js`).
+    //
+    // Keys are SurveyJS locale codes (`en`, `de`, `fr`, …). The
+    // `default` entry is used when `survey.locale` is empty (SurveyJS'
+    // default state) or when no entry exists for the active locale.
+    // To add a locale, just append a new key — no other code changes
+    // required.
+    // -------------------------------------------------------------------
+    var DEFAULT_BUTTON_LABELS = {
+        "default": { choose: "Choose GPX file", clear: "Clear" },
+        "en":      { choose: "Choose GPX file", clear: "Clear" },
+        "de":      { choose: "GPX-Datei wählen", clear: "Löschen" },
+        "fr":      { choose: "Choisir un fichier GPX", clear: "Effacer" },
+        "it":      { choose: "Scegli file GPX", clear: "Cancella" }
+    };
+
+    /**
+     * Resolve the visible label / tooltip for one of the GPX question's
+     * action buttons. `kind` is `"choose"` or `"clear"`.
+     *
+     * Resolution order in priority:
+     *   1. SurveyJS-resolved per-locale string (`question[propName]`
+     *      delegates through the `isLocalizable: true` machinery).
+     *   2. Built-in `DEFAULT_BUTTON_LABELS[survey.locale][kind]`.
+     *   3. English default.
+     */
+    function getButtonLabel(question, kind) {
+        var propName = (kind === "clear") ? "clearButtonText" : "chooseFileButtonText";
+        var custom = question && question[propName];
+        if (typeof custom === "string" && custom.trim()) {
+            return custom;
+        }
+        var locale = (question && question.survey && question.survey.locale) || "";
+        var byLocale = (locale && DEFAULT_BUTTON_LABELS[locale]) ? DEFAULT_BUTTON_LABELS[locale] : null;
+        if (byLocale && byLocale[kind]) return byLocale[kind];
+        return DEFAULT_BUTTON_LABELS["default"][kind];
+    }
 
     // -------------------------------------------------------------------
     // 4) GPX parsing helpers
@@ -523,12 +627,51 @@
         return whole + "h " + mins + "min";
     }
 
+    /**
+     * Render a GPX metadata <time> value as `DD-MM-YYYY` for the stats
+     * panel ONLY. The persisted answer (question.value.time) keeps the
+     * full original ISO-8601 string so analysts retain time-of-day,
+     * timezone and second-level precision — only the on-screen render is
+     * collapsed to a date.
+     *
+     * Strategy:
+     *   1. Try the browser's `Date` constructor first; it accepts ISO-8601
+     *      (`2024-09-29T13:00:00Z`), ISO date (`2024-09-29`), RFC2822 and
+     *      a handful of locale strings.
+     *   2. Fall back to a string-prefix match for `YYYY-MM-DD…` so even a
+     *      malformed-but-recognisable ISO prefix renders as a date.
+     *   3. As a last resort, return the raw string untouched (better to
+     *      show something the user can compare against the file than to
+     *      hide the value entirely).
+     *
+     * Returns `null` for null / empty input so the caller's "—" fallback
+     * kicks in.
+     */
+    function formatGpxDate(value) {
+        if (value === null || value === undefined) return null;
+        var str = String(value).trim();
+        if (!str) return null;
+        var date = new Date(str);
+        if (!isNaN(date.getTime())) {
+            var dd   = String(date.getDate()).padStart(2, "0");
+            var mm   = String(date.getMonth() + 1).padStart(2, "0");
+            var yyyy = String(date.getFullYear());
+            return dd + "-" + mm + "-" + yyyy;
+        }
+        var match = str.match(/^(\d{4})-(\d{2})-(\d{2})/);
+        if (match) {
+            return match[3] + "-" + match[2] + "-" + match[1];
+        }
+        return str;
+    }
+
     function renderStats(statsEl, payload) {
         if (!statsEl) return;
         if (!payload) { statsEl.innerHTML = ""; return; }
+        var formattedTime = formatGpxDate(payload.time);
         var rows = [
             { label: "Name",           value: payload.name || "—" },
-            { label: "Time",           value: payload.time || "—" },
+            { label: "Time",           value: formattedTime || "—" },
             { label: "Distance",       value: payload.totalDistanceKm + " km" },
             { label: "Elevation +",    value: payload.elevationGainM + " m" },
             { label: "Elevation −",    value: payload.elevationLossM + " m" },
@@ -635,11 +778,17 @@
             '<div class="sjs-gpx">' +
                 '<div class="sjs-gpx__controls">' +
                     '<label class="sjs-gpx__file-label">' +
-                        '<span class="sjs-gpx__file-button">Choose GPX file</span>' +
+                        '<span class="sjs-gpx__file-button" role="button" tabindex="0">' +
+                            GPX_UPLOAD_ICON_SVG +
+                            '<span class="sjs-gpx__btn-text"></span>' +
+                        '</span>' +
                         '<input type="file" accept=".gpx,application/gpx+xml" class="sjs-gpx__input" />' +
                     '</label>' +
                     '<span class="sjs-gpx__current"></span>' +
-                    '<button type="button" class="sjs-gpx__clear" hidden>Clear</button>' +
+                    '<button type="button" class="sjs-gpx__clear" hidden>' +
+                        GPX_CLEAR_ICON_SVG +
+                        '<span class="sjs-gpx__btn-text"></span>' +
+                    '</button>' +
                 '</div>' +
                 '<div class="sjs-gpx__error" role="alert" hidden></div>' +
                 '<div class="sjs-gpx__status" role="status" hidden></div>' +
@@ -650,13 +799,66 @@
             '</div>',
 
         afterRender: function (question, el) {
-            var input    = el.querySelector(".sjs-gpx__input");
-            var current  = el.querySelector(".sjs-gpx__current");
-            var clearBtn = el.querySelector(".sjs-gpx__clear");
-            var errorEl  = el.querySelector(".sjs-gpx__error");
-            var statusEl = el.querySelector(".sjs-gpx__status");
-            var mapEl    = el.querySelector(".sjs-gpx__map");
-            var statsEl  = el.querySelector(".sjs-gpx__stats");
+            var input        = el.querySelector(".sjs-gpx__input");
+            var current      = el.querySelector(".sjs-gpx__current");
+            var clearBtn     = el.querySelector(".sjs-gpx__clear");
+            var fileBtn      = el.querySelector(".sjs-gpx__file-button");
+            var fileBtnText  = fileBtn  ? fileBtn.querySelector(".sjs-gpx__btn-text")  : null;
+            var clearBtnText = clearBtn ? clearBtn.querySelector(".sjs-gpx__btn-text") : null;
+            var errorEl      = el.querySelector(".sjs-gpx__error");
+            var statusEl     = el.querySelector(".sjs-gpx__status");
+            var mapEl        = el.querySelector(".sjs-gpx__map");
+            var statsEl      = el.querySelector(".sjs-gpx__stats");
+
+            // Apply localized labels + tooltips to the action buttons.
+            // Called on initial render AND whenever the survey locale
+            // changes or the designer edits the localizable props.
+            function applyButtonLabels() {
+                var chooseLabel = getButtonLabel(question, "choose");
+                var clearLabel  = getButtonLabel(question, "clear");
+                if (fileBtnText)  fileBtnText.textContent  = chooseLabel;
+                if (clearBtnText) clearBtnText.textContent = clearLabel;
+                if (fileBtn)  fileBtn.setAttribute("title",  chooseLabel);
+                if (clearBtn) clearBtn.setAttribute("title", clearLabel);
+                if (fileBtn)  fileBtn.setAttribute("aria-label",  chooseLabel);
+                if (clearBtn) clearBtn.setAttribute("aria-label", clearLabel);
+            }
+            applyButtonLabels();
+
+            // Re-apply the labels whenever the survey locale changes at
+            // runtime (multilingual surveys with a language switcher) or
+            // whenever the designer edits the localizable props in the
+            // Creator's property / Translation panels.
+            var localeHandler = null;
+            var survey = question.survey;
+            if (survey && survey.onLocaleChanged && typeof survey.onLocaleChanged.add === "function") {
+                localeHandler = function () { applyButtonLabels(); };
+                survey.onLocaleChanged.add(localeHandler);
+            }
+            if (typeof question.registerFunctionOnPropertyValueChanged === "function") {
+                question.registerFunctionOnPropertyValueChanged(
+                    "chooseFileButtonText", applyButtonLabels, "gpxQuestionChooseLabel"
+                );
+                question.registerFunctionOnPropertyValueChanged(
+                    "clearButtonText", applyButtonLabels, "gpxQuestionClearLabel"
+                );
+            }
+            // Keep the handler around so willUnmount can detach it.
+            el.__gpxLocaleHandler = localeHandler;
+
+            // Treat Enter / Space on the visible "choose" pseudo-button
+            // as a click on the underlying file input. Without this the
+            // label-wrapped <span> is keyboard-reachable (we made it
+            // tabbable) but produces no action because the native click
+            // synthesis only fires for <button> / <a>.
+            if (fileBtn) {
+                fileBtn.addEventListener("keydown", function (ev) {
+                    if (ev.key === "Enter" || ev.key === " " || ev.key === "Spacebar") {
+                        ev.preventDefault();
+                        if (input && typeof input.click === "function") input.click();
+                    }
+                });
+            }
 
             function showError(msg) {
                 errorEl.textContent = msg || "";
@@ -827,7 +1029,21 @@
             destroyMap(mapEl);
             if (question && typeof question.unRegisterFunctionOnPropertyValueChanged === "function") {
                 try { question.unRegisterFunctionOnPropertyValueChanged("sampledPointCount", "gpxQuestionSampledPointCount"); } catch (e) {}
+                try { question.unRegisterFunctionOnPropertyValueChanged("chooseFileButtonText", "gpxQuestionChooseLabel"); } catch (e) {}
+                try { question.unRegisterFunctionOnPropertyValueChanged("clearButtonText", "gpxQuestionClearLabel"); } catch (e) {}
             }
+            // Detach the survey-level locale-change listener we
+            // installed in afterRender so we don't leak callbacks across
+            // page changes / question rebuilds.
+            try {
+                var survey = question && question.survey;
+                var handler = el.__gpxLocaleHandler;
+                if (handler && survey && survey.onLocaleChanged &&
+                    typeof survey.onLocaleChanged.remove === "function") {
+                    survey.onLocaleChanged.remove(handler);
+                }
+                el.__gpxLocaleHandler = null;
+            } catch (e) { /* ignore */ }
             if (question) {
                 try { question.valueChangedCallback = null; } catch (e) {}
             }

@@ -1,5 +1,137 @@
 # SurveyJS Plugin Changelog
 
+## v1.5.0
+
+### New: `gpxMap` style
+
+A new standalone SelfHelp style called **`gpxMap`** that renders a
+Leaflet/OpenStreetMap route preview from a list of GPX sample
+points — outside the SurveyJS runtime. Drop the style into any
+page or section to show a saved GPX route the same way the
+`gpx` SurveyJS question's preview does, with full control over
+where the points come from.
+
+#### Default fields
+
+Every `gpxMap` section exposes the standard SelfHelp internal
+configuration fields:
+
+- `debug` — render the section's debug pane when checked.
+- `data_config` (JSON) — optional. Pull data from any source the
+  data-config builder supports and expose the loaded keys to
+  every field on the section via `{{var}}` interpolation. Letting
+  designers populate `sample_points` dynamically from a dataTable
+  row, a previous GPX upload answer or any other source the
+  builder knows how to query.
+- `condition` (JSON) — JSON-logic condition that gates rendering.
+- `css` / `css_mobile` — extra CSS classes for the wrapper.
+
+#### `sample_points` field
+
+The route data feeds in through one new internal field:
+
+- `sample_points` (JSON, internal / `display = 0`) — the array of
+  `[lat, lon, ele?, distanceFromStartM?]` tuples that drives the
+  polyline + start/end markers. **Accepts either**:
+  1. A hard-coded JSON array typed directly into the field
+     (`[[47.1234, 8.5678], [47.1240, 8.5685], …]`).
+  2. A `data_config`-driven interpolation that resolves to such
+     an array — e.g. `{{sampled_points}}` after `data_config`
+     loaded the corresponding column.
+  3. A full GPX answer payload (`{ name, time, sampledPoints,
+     … }`) — the renderer auto-extracts the `sampledPoints`
+     array so you can interpolate a whole `gpx` question answer
+     row without unwrapping it first.
+
+#### What you get on the page
+
+- A Leaflet container the full width of the section.
+- An OpenStreetMap base layer (`https://{s}.tile.openstreetmap.org/…`).
+- A blue polyline through all sample points (same colour /
+  thickness as the GPX question preview).
+- Start and End markers with tooltips.
+- `fitBounds` framing of the route.
+
+#### What you write in the CMS
+
+Hardcoded points example (everything on the section, no
+`data_config` needed):
+
+```json
+[[47.1234, 8.5678], [47.1240, 8.5685], [47.1255, 8.5700]]
+```
+
+Dynamic example with `data_config`:
+
+- `data_config` queries the `route_uploads` data table and pulls
+  the `gpx_route` column.
+- `sample_points` is set to `{{gpx_route}}`.
+- At render time the framework substitutes the full GPX answer
+  object; the renderer extracts `sampledPoints` automatically.
+
+#### Bundle / installation
+
+- The style ships with its own JS + CSS at
+  `server/component/style/gpxMap/js/gpx-map.js` and
+  `server/component/style/gpxMap/css/gpx-map.css`. Both are
+  picked up by `gulp/gulpfile.js` and bundled into
+  `css/ext/survey-js.min.css` next to the existing GPX question
+  styles.
+- The map renderer reuses the **vendored Leaflet 1.9.4** assets
+  already shipped with the plugin
+  (`server/component/style/surveyJS/js/6_leaflet.js`,
+  `server/component/style/surveyJS/css/leaflet.css`). No new CDN
+  fetch or external dependency.
+- The new style + its `sample_points` field are registered by
+  `server/db/v1.5.0.sql`.
+
+### GPX question — UX polish
+
+Follow-up to the v1.4.11 GPX question release based on designer
+feedback. No data-contract changes — surveys created on v1.4.11
+continue to load and submit identically; only the on-screen
+presentation of the question changes.
+
+- **Map takes the full row width; stats stack underneath.** The
+  preview layout switched from a two-column "map left / stats
+  right" grid to a single column with the Leaflet map on top and
+  the metadata table below. The map is now ~2× wider on a typical
+  question card, which makes the route polyline easier to inspect,
+  and the stats table no longer fights the map for horizontal
+  space on narrow screens.
+- **Time row displays the date only (`DD-MM-YYYY`).** The GPX
+  metadata `<time>` is typically a full ISO timestamp such as
+  `2024-09-29T13:42:00Z`, which truncated awkwardly in the stats
+  table. The stats panel now renders just the date portion
+  (`29-09-2024`). **The persisted answer is unchanged** — the
+  question's `value.time` still stores the full original string so
+  analysts retain the time-of-day, timezone and seconds.
+- **Action buttons match the SurveyJS theme + carry inline icons.**
+  "Choose GPX file" and "Clear" now render with an inline SVG icon
+  alongside their label and pick up colour, font and spacing from
+  the active SurveyJS DefaultV2 theme variables
+  (`--sjs-primary-backcolor`, `--sjs-special-red`, `--sjs-base-unit`,
+  …) instead of the previous hand-tuned palette. The buttons read
+  visually as part of the surrounding question rather than a
+  bolted-on custom widget.
+- **Button labels are translatable per locale.** Two new
+  `isLocalizable: true` properties surface on every GPX question:
+    - `chooseFileButtonText` — visible label + tooltip on the
+      upload button.
+    - `clearButtonText` — visible label + tooltip on the clear
+      button.
+  Both appear in the Creator's Translation tab next to `title` /
+  `description`, so designers can fill in per-locale wording
+  (`{ "default": "Choose GPX file", "de": "GPX-Datei wählen", … }`)
+  without touching code. When the properties are left blank a
+  built-in fallback table (en, de, fr, it) supplies a translated
+  default keyed off `survey.locale`; an empty locale or one with
+  no built-in entry falls back to English.
+- **Live locale switching.** When the host page swaps
+  `survey.locale` at runtime (e.g. a language picker on a
+  multilingual survey) the button labels and tooltips update in
+  place — no need to re-render the question.
+
 ## v1.4.11
 
 ### New: GPX question type

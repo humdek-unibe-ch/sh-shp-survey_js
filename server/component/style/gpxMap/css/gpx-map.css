@@ -1,0 +1,51 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
+
+/*
+ * Styles for the `gpxMap` SelfHelp style (plugin v1.5.0+).
+ *
+ * Picked up automatically by
+ *   gulp/gulpfile.js  ->  server/component/style/**\/css/*.css
+ * and bundled into css/ext/survey-js.min.css alongside the
+ * existing `gpx-question.css` / `video-segment.css` bundles.
+ *
+ * Visual contract
+ * ---------------
+ * The container deliberately reuses the same Leaflet container
+ * footprint as the GPX SurveyJS question (`.sjs-gpx__map`) so the
+ * map preview reads consistently whether it's rendered inside the
+ * SurveyJS runtime (question widget) or as a standalone SelfHelp
+ * section (this style).
+ */
+
+.sjs-gpx-map-style {
+    display: block;
+    width: 100%;
+}
+
+.sjs-gpx-map-style__map {
+    min-height: 360px;
+    height: 360px;
+    width: 100%;
+    border-radius: calc(0.5 * var(--sjs-base-unit, var(--base-unit, 8px)));
+    border: 1px solid var(--sjs-border-light, var(--border-light, #d1d5db));
+    overflow: hidden;
+    background-color: var(--sjs-general-backcolor-dim-light, var(--background-dim-light, #f3f4f6));
+}
+
+/*
+ * Shown when the section has no `sample_points` data yet (brand-new
+ * section, empty data_config result, …). Styled as a subdued
+ * placeholder card so the section is still visible in the CMS but
+ * doesn't shout for attention on the front-end.
+ */
+.sjs-gpx-map-style__empty {
+    padding: calc(2 * var(--sjs-base-unit, var(--base-unit, 8px)));
+    border: 1px dashed var(--sjs-border-light, var(--border-light, #d1d5db));
+    border-radius: calc(0.5 * var(--sjs-base-unit, var(--base-unit, 8px)));
+    background-color: var(--sjs-general-backcolor-dim-light, var(--background-dim-light, #f9fafb));
+    color: var(--sjs-general-forecolor-light, var(--foreground-light, #6b7280));
+    font-size: calc(0.875 * var(--sjs-font-questiontitle-size, var(--sjs-font-size, 16px)));
+    text-align: center;
+}

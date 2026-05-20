@@ -66,6 +66,21 @@ This plugin enables you to create, customize, and manage interactive surveys usi
   "watch this video" prompts and for "watch this excerpt and answer"
   workflows. See [`docs/VIDEO_SEGMENT.md`](docs/VIDEO_SEGMENT.md).
 
+### Standalone SelfHelp styles
+- **`gpxMap`** (since v1.5.0): renders a Leaflet / OpenStreetMap
+  preview from a list of GPX sample points, **outside** the
+  SurveyJS runtime. Drop the style onto any page or section to
+  display a saved route — on a profile page, a dashboard card, a
+  PDF preview, anywhere the SelfHelp CMS renders sections. Default
+  internal fields (`debug`, `data_config`, `condition`, `css`,
+  `css_mobile`) come standard; a new `sample_points` JSON field
+  drives the polyline + start / end markers. The field accepts a
+  bare `[[lat, lon], …]` array, a full `gpx` question answer
+  object (auto-extracts `sampledPoints`), or a
+  `data_config`-driven `{{var}}` interpolation that resolves to
+  either. Reuses the vendored Leaflet 1.9.4 bundle that already
+  ships with the plugin — no new CDN or external dependency.
+
 ### Response Collection
 - Comprehensive metadata collection (start/end times, duration, user agent, etc.)
 - Timeout settings for survey sessions
