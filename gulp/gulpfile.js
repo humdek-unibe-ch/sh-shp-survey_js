@@ -12,11 +12,18 @@ function clean() {
 }
 
 // Minify and concat CSS
+// IMPORTANT: leaflet.css (vendored, v1.4.11+) is excluded from the bundle
+// because it contains `url(images/...)` references that must resolve
+// relative to the CSS file's own location on disk. Concatenating it into
+// `css/ext/survey-js.min.css` would break the marker / layer-control
+// images, so leaflet.css is loaded separately in both DEBUG and
+// production modes from `server/component/style/surveyJS/css/leaflet.css`.
 function styles() {
   return gulp.src([
     '../server/component/**/css/*.css',
     '../server/component/style/css/*.css',
-    '../server/component/style/**/css/*.css'
+    '../server/component/style/**/css/*.css',
+    '!../server/component/style/surveyJS/css/leaflet.css'
   ])
     .pipe(csso())
     .pipe(concat('survey-js.min.css'))

@@ -174,6 +174,11 @@ class SurveyJSHooks extends BaseHooks
     {
         $res = $this->execute_private_method($args);
         $resArr = explode(';', strval($res));
+        // OpenStreetMap tile hosts used by the `gpx` question's Leaflet map
+        // preview (v1.4.11+). Required in `img-src` because Leaflet loads
+        // tiles as plain <img> elements.
+        $osm_img_src = "https://*.tile.openstreetmap.org https://tile.openstreetmap.org";
+        $img_src_patched = false;
         foreach ($resArr as $key => $value) {
             if (strpos($value, 'script-src') !== false) {
                 if ($this->router->route && in_array($this->router->route['name'], array(PAGE_SURVEY_JS_MODE, PAGE_SURVEY_JS_DASHBOARD))) {
@@ -191,12 +196,21 @@ class SurveyJSHooks extends BaseHooks
                 $value = str_replace("'self'", "'self' https://fonts.gstatic.com", $value);
             } else if (strpos($value, 'media-src') !== false) {
                 $value = str_replace("media-src", "media-src 'self' data:;", $value);
+            } else if (preg_match('/(^|\s)img-src(\s|$)/', $value)) {
+                // Append OSM tile hosts so the Leaflet map can fetch them.
+                $value = trim($value) . ' ' . $osm_img_src;
+                $img_src_patched = true;
             }
             $resArr[$key] = $value;
         }
         if (strpos(strval($res), 'media-src') === false) {
             // there is no media src, set it
             $resArr[$key] = "media-src 'self' data:;";
+        }
+        if (!$img_src_patched) {
+            // No img-src directive existed — add a permissive one that
+            // keeps the current behaviour (self + data:) and adds OSM.
+            $resArr[] = "img-src 'self' data: " . $osm_img_src;
         }
         return implode(";", $resArr);
     }

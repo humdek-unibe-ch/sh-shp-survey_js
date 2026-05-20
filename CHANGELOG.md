@@ -1,5 +1,114 @@
 # SurveyJS Plugin Changelog
 
+## v1.4.11
+
+### New: GPX question type
+
+A new standalone SurveyJS custom question type called **GPX Route**
+(toolbox label: *GPX Route*, type: `gpx`) for collecting hike / bike
+route uploads in surveys. Pick it from the Creator toolbox like any
+other question type.
+
+#### What you can configure
+
+In the question's property panel, under the **General** category:
+
+- **Sampled point count** (`sampledPointCount`, default 100, min 2) —
+  number of evenly-spaced points kept when downsampling the route for
+  storage and preview. The full original `<trkpt>` count is recorded
+  separately in the answer as `pointCountOriginal` so dashboards can
+  still tell how detailed the source file was.
+
+The standard SurveyJS title / required / visibility / logic properties
+all apply. `defaultValue` and `correctAnswer` are hidden because the
+answer is auto-generated from the uploaded file.
+
+#### What participants experience
+
+- A **Choose GPX file** button accepts a single `.gpx` upload. Files
+  with any other extension are rejected client-side.
+- The browser parses the GPX with `DOMParser`, flattens every
+  `<trkpt>` across all `<trk>`/`<trkseg>` sections, and computes the
+  total distance (haversine), elevation gain/loss, and hiking / biking
+  duration estimates.
+- An **OpenStreetMap basemap** preview renders immediately: a polyline
+  through the sampled points, plus Start / End markers, with
+  `fitBounds` framing the whole route.
+- A summary panel shows the computed stats next to the map.
+- A **Clear** button removes the parsed answer, the uploaded-file
+  reference, and deletes the previously-uploaded `.gpx` from disk via
+  a new safe backend action.
+- Replacing the file deletes the previously-uploaded `.gpx` and
+  uploads the new one before updating the answer.
+
+#### What gets stored as the answer
+
+The question fills **two fields** in the survey response:
+
+1. The **main answer field** (`name` / `valueName`) stores the parsed
+   route payload:
+
+   ```json
+   {
+     "name": "Route name or null",
+     "time": "metadata time or null",
+     "totalDistanceKm": 12.34,
+     "elevationGainM": 456,
+     "elevationLossM": 321,
+     "estimatedHikingTimeHours": 4.1,
+     "estimatedBikingTimeHours": 1.8,
+     "start": { "lat": 0, "lon": 0, "ele": 0, "distanceFromStartM": 0 },
+     "end":   { "lat": 0, "lon": 0, "ele": 0, "distanceFromStartM": 12345 },
+     "pointCountOriginal": 987,
+     "sampledPointCount": 100,
+     "sampledPoints": [[47.1, 8.5, 512, 0], ...]
+   }
+   ```
+
+2. The **sibling file field** `<effectiveAnswerName>_file` (where
+   `effectiveAnswerName` is `valueName` when set, otherwise `name`)
+   stores upload-file metadata in the same shape SurveyJS' generic
+   file question uses, so existing dashboard / review code renders it
+   without any special-casing:
+
+   ```json
+   [
+     {
+       "name": "my-route.gpx",
+       "type": "application/gpx+xml",
+       "content": "?file_path=upload/<survey>/<response>/<code>/<question>/<file>"
+     }
+   ]
+   ```
+
+The dashboard table now renders any tabulator column whose field name
+ends in `_file` as a clickable link to the stored file (`?file_path=…`
+served through the existing download endpoint, with a new MIME mapping
+of `.gpx → application/gpx+xml`).
+
+#### Bundle / installation
+
+- Re-run the plugin's gulp (`server/plugins/sh-shp-survey_js/gulp/`,
+  `npx gulp`) to regenerate `css/ext/survey-js.min.css`. The Leaflet
+  vendor CSS is **excluded** from the bundle and loaded standalone so
+  its `url(images/...)` references resolve correctly relative to its
+  on-disk location.
+- Hard-refresh the Creator after pulling (Ctrl+Shift+R) to drop
+  cached bundles.
+- **No SQL migration required** — the question is implemented entirely
+  in JS / CSS / controller code and stores its configuration inside
+  the survey JSON, with answers persisted via the existing
+  `user_input` pipeline.
+- Vendored assets (`server/component/style/surveyJS/js/6_leaflet.js`,
+  `.../css/leaflet.css`, `.../css/images/*`) are committed alongside
+  the plugin — no CDN or external download required at runtime.
+
+#### Where to read more
+
+- [`docs/GPX_QUESTION.md`](docs/GPX_QUESTION.md) — full feature
+  reference for the GPX question (property surface, value contract,
+  upload / delete flow, CSP, dashboard link rendering).
+
 ## v1.4.10
 
 ### Improvements

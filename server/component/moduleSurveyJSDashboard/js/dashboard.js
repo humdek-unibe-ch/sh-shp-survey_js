@@ -113,6 +113,13 @@ function initSurveyDashboardTable(survey_results) {
             surveyJson.pages.unshift(extra_params_q);
         }
 
+        // v1.4.11 — for every `gpx` question in the survey, append a
+        // matching `<effectiveName>_file` text question so the tabulator
+        // table renders a column for the uploaded-file metadata. Cells
+        // in that column are later rewritten into clickable links by
+        // `renderFileFieldLinks`.
+        injectGpxFileColumns(surveyJson);
+
         if (surveyJson.pages && surveyJson.pages.length > 0 && surveyJson.pages[0].name != 'internal_data') {
             surveyJson.pages.unshift({
                 name: 'internal_data',
@@ -189,7 +196,117 @@ function initSurveyDashboardTable(survey_results) {
             });
         });
 
+        // v1.4.11: render uploaded-file references (any tabulator field
+        // whose name ends in `_file`) as clickable links. The cell
+        // contains an upload-file metadata array stringified by the
+        // table renderer; we recover it from the source `survey_results`
+        // row instead of trying to parse the cell text.
+        renderFileFieldLinks(survey_results);
     }
+}
+
+/**
+ * Walk the survey JSON tree, collect every `gpx` question, and append a
+ * sibling `<effectiveName>_file` text question on a dedicated extra
+ * page so the tabulator dashboard renders a column for it. The widget
+ * stores upload-file metadata under that name; cells are rewritten to
+ * clickable links by `renderFileFieldLinks`.
+ *
+ * Idempotent: re-running it does not duplicate the appended page.
+ */
+function injectGpxFileColumns(surveyJson) {
+    if (!surveyJson || !Array.isArray(surveyJson.pages)) return;
+    var fileNames = [];
+
+    function walk(el) {
+        if (!el || typeof el !== 'object') return;
+        if (el.type && String(el.type).toLowerCase() === 'gpx') {
+            var effective = el.valueName || el.name;
+            if (effective) fileNames.push(effective + '_file');
+        }
+        if (Array.isArray(el.elements)) el.elements.forEach(walk);
+        if (Array.isArray(el.templateElements)) el.templateElements.forEach(walk);
+    }
+    surveyJson.pages.forEach(walk);
+
+    if (fileNames.length === 0) return;
+    var existingPage = surveyJson.pages.find(function (p) { return p && p.name === 'gpx_files'; });
+    if (existingPage) return; // idempotent
+
+    surveyJson.pages.push({
+        name: 'gpx_files',
+        elements: fileNames.map(function (n) {
+            return { name: n, type: 'text', title: n };
+        })
+    });
+}
+
+/**
+ * Walk every survey_results row, look up every key ending in `_file`,
+ * and rewrite the matching tabulator cell as an anchor pointing at the
+ * GPX/file path. Uses `record_id` (read from the sibling cell in the
+ * same Tabulator row) to look up the right `survey_results` entry, so
+ * sorting / filtering does not de-sync the link target.
+ *
+ * Idempotent: the next refresh re-binds.
+ */
+function renderFileFieldLinks(survey_results) {
+    if (!Array.isArray(survey_results) || survey_results.length === 0) return;
+    var fileFields = new Set();
+    survey_results.forEach(function (row) {
+        if (!row || typeof row !== 'object') return;
+        Object.keys(row).forEach(function (k) {
+            if (k.endsWith('_file')) fileFields.add(k);
+        });
+    });
+    if (fileFields.size === 0) return;
+
+    // Build an index by record_id for O(1) lookups.
+    var byRecordId = {};
+    survey_results.forEach(function (row) {
+        if (row && row.record_id !== undefined && row.record_id !== null) {
+            byRecordId[String(row.record_id)] = row;
+        }
+    });
+
+    fileFields.forEach(function (field) {
+        // Restrict to cells inside actual data rows (Tabulator gives
+        // them the `tabulator-row` ancestor); header cells live under
+        // `.tabulator-header` and are skipped.
+        var cells = $('.tabulator-row [tabulator-field="' + field + '"]');
+        cells.each(function () {
+            var $cell = $(this);
+            var $row  = $cell.closest('.tabulator-row');
+            if (!$row.length) return;
+            // Find the record_id cell within the same row.
+            var rid = $row.find('[tabulator-field="record_id"]').text().trim();
+            if (!rid) return;
+            var row = byRecordId[rid];
+            if (!row) return;
+            var val = row[field];
+            if (typeof val === 'string') {
+                try { val = JSON.parse(val); } catch (e) { /* leave as-is */ }
+            }
+            if (!Array.isArray(val) || val.length === 0 || !val[0]) return;
+            var entry = val[0];
+            var name  = entry.name || 'file';
+            var href  = entry.content || '';
+            if (!href || typeof href !== 'string') return;
+            // Server returns the link as `?file_path=…`; resolve against
+            // the current dashboard URL so the controller serves it.
+            var url = href.charAt(0) === '?'
+                ? (window.location.pathname + href)
+                : href;
+            var anchor = $('<a/>', {
+                href: url,
+                target: '_blank',
+                rel: 'noopener',
+                class: 'sjs-gpx-file-link',
+                text: name
+            });
+            $cell.empty().append(anchor);
+        });
+    });
 }
 
 /**

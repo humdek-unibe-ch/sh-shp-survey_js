@@ -345,6 +345,91 @@ class SurveyJSModel extends StyleModel
     }
 
     /**
+     * Save a GPX file uploaded by the `gpx` custom question.
+     *
+     * Validates the extension (.gpx only) and reuses the same upload
+     * folder layout as `save_uploaded_files()` so the dashboard's
+     * generic `?file_path=…` download endpoint works unchanged. Returns
+     * an associative array keyed by the original filename:
+     *     array("<file>.gpx" => "?file_path=upload/.../<saved>.gpx")
+     * or `false` on validation / IO failure.
+     *
+     * Introduced in v1.4.11.
+     */
+    public function save_uploaded_gpx()
+    {
+        $survey = $this->get_raw_survey();
+        if (!$survey || !isset($survey['survey_generated_id'])) return false;
+        $survey_id = $survey['survey_generated_id'];
+        $user_code = isset($_SESSION['user_code']) ? $_SESSION['user_code'] : 'no_code';
+        $return_files = array();
+
+        foreach ($_FILES as $index => $file) {
+            $question_name = isset($_POST['question_name']) ? $_POST['question_name'] : '';
+            $response_id   = isset($_POST['response_id'])   ? $_POST['response_id']   : '';
+            if ($question_name === '' || $response_id === '') return false;
+
+            // Whitelist .gpx only.
+            $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+            if ($ext !== 'gpx') return false;
+
+            $rel_path     = SURVEYJS_UPLOAD_FOLDER . '/' . $survey_id . '/' . $response_id . '/' . $user_code . '/' . $question_name;
+            $new_directory = __DIR__ . '/../../../../' . $rel_path;
+            $new_file_name = '[' . $survey_id . '][' . $response_id . '][' . $user_code . '][' . $question_name . ']' . $file['name'];
+            $new_file_name_full_path = $new_directory . '/' . $new_file_name;
+            $new_file_name_full_path = str_replace(array("\r", "\n"), '', $new_file_name_full_path);
+            $new_directory           = str_replace(array("\r", "\n"), '', $new_directory);
+            $rel_path                = str_replace(array("\r", "\n"), '', $rel_path);
+            $new_file_name           = str_replace(array("\r", "\n"), '', $new_file_name);
+
+            if (!is_dir($new_directory)) {
+                if (!mkdir($new_directory, 0755, true)) return false;
+            }
+            if (!move_uploaded_file($file['tmp_name'], $new_file_name_full_path)) return false;
+            $return_files[$file['name']] = '?file_path=' . $rel_path . '/' . $new_file_name;
+        }
+        return $return_files;
+    }
+
+    /**
+     * Delete a previously-uploaded GPX file. The `$file_path` argument
+     * is the value stored in the `_file` sibling field's `content`
+     * property — either with or without the leading `?file_path=` marker.
+     *
+     * Restricted to files inside the configured survey upload root so a
+     * malicious client cannot traverse out of the upload folder and
+     * delete arbitrary files on the server.
+     *
+     * Introduced in v1.4.11.
+     */
+    public function delete_uploaded_gpx($file_path)
+    {
+        if (!is_string($file_path) || $file_path === '') return false;
+        $marker = '?file_path=';
+        if (strpos($file_path, $marker) === 0) {
+            $file_path = substr($file_path, strlen($marker));
+        }
+        $file_path = str_replace(array("\r", "\n"), '', $file_path);
+        // Refuse path-traversal attempts.
+        if (strpos($file_path, '..') !== false) return false;
+        // Must start with the configured upload folder.
+        if (strpos($file_path, SURVEYJS_UPLOAD_FOLDER . '/') !== 0) return false;
+        // Only allow .gpx files for this controller action.
+        if (strtolower(pathinfo($file_path, PATHINFO_EXTENSION)) !== 'gpx') return false;
+
+        $upload_root_abs = realpath(__DIR__ . '/../../../../' . SURVEYJS_UPLOAD_FOLDER);
+        $abs             = realpath(__DIR__ . '/../../../../' . $file_path);
+        if (!$abs || !$upload_root_abs) return false;
+        // Belt-and-braces: real path must live inside the upload root.
+        if (strpos($abs, $upload_root_abs) !== 0) return false;
+        if (!is_file($abs)) {
+            // Already gone — treat as success so the client can move on.
+            return true;
+        }
+        return @unlink($abs);
+    }
+
+    /**
      * Load the last response for the survey in edit mode.
      * 
      * @param int $id_dataTables The ID of the data table.

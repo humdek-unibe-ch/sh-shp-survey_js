@@ -174,6 +174,8 @@ class ModuleSurveyJSView extends BaseView
                 __DIR__ . "/js/7_survey.i18n.min.js",
                 __DIR__ . "/js/7_surveyjs-widgets.min.js",
                 __DIR__ . "/../style/surveyJS/js/5_videoSegmentWidget.js", // Custom `video` question type (v1.4.8; file name kept on disk for git-history continuity)
+                __DIR__ . "/../style/surveyJS/js/6_leaflet.js",            // Vendored Leaflet 1.9.4 (v1.4.11) — also loaded in the Creator preview for `gpx`
+                __DIR__ . "/../style/surveyJS/js/7_gpxQuestionWidget.js",  // Custom `gpx` question type (v1.4.11)
                 // __DIR__ . "/js/9_quill_integration.js",
                 __DIR__ . "/js/8_survey.js",                
             );
@@ -199,12 +201,18 @@ class ModuleSurveyJSView extends BaseView
                     __DIR__ . "/css/survey-creator-core.min.css",
                     __DIR__ . "/css/quill.snow.min.css",
                     __DIR__ . "/css/survey.css",
-                    __DIR__ . "/../style/surveyJS/css/video-segment.css" // Custom `video` question styles (v1.4.8; file name kept on disk for git-history continuity)
+                    __DIR__ . "/../style/surveyJS/css/video-segment.css", // Custom `video` question styles (v1.4.8; file name kept on disk for git-history continuity)
+                    __DIR__ . "/../style/surveyJS/css/leaflet.css",       // Vendored Leaflet 1.9.4 (v1.4.11) — Creator preview map for `gpx`
+                    __DIR__ . "/../style/surveyJS/css/gpx-question.css"   // Custom `gpx` question styles (v1.4.11)
                 );
             } else {
                 $local = array(__DIR__ . "/../../../css/ext/survey-js.min.css?v=" . rtrim(shell_exec("git describe --tags")));
                 // Add Quill CSS even in production mode
                 $local[] = __DIR__ . "/css/quill.snow.min.css";
+                // leaflet.css is excluded from the bundle (see gulpfile.js); load it
+                // standalone so its url(images/...) refs resolve correctly relative
+                // to its real on-disk location.
+                $local[] = __DIR__ . "/../style/surveyJS/css/leaflet.css";
             }
         }
         return parent::get_css_includes($local);
