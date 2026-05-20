@@ -210,7 +210,9 @@ class SurveyJSView extends StyleView
                 __DIR__ . "/js/3_surveyjs-widgets.min.js",
                 __DIR__ . "/../../moduleSurveyJS/js/0_quill.min.js", // Add Quill library
                 __DIR__ . "/js/4_surveyJS.js",
-                __DIR__ . "/js/5_videoSegmentWidget.js" // Custom `video` question type (v1.4.8; file name kept on disk for git-history continuity)
+                __DIR__ . "/js/5_videoSegmentWidget.js", // Custom `video` question type (v1.4.8; file name kept on disk for git-history continuity)
+                __DIR__ . "/js/6_leaflet.js",            // Vendored Leaflet 1.9.4 (v1.4.11) — used by the `gpx` question
+                __DIR__ . "/js/7_gpxQuestionWidget.js"   // Custom `gpx` question type (v1.4.11)
             );
         }
         return parent::get_js_includes($local);
@@ -232,11 +234,17 @@ class SurveyJSView extends StyleView
                     __DIR__ . "/css/defaultV2.min.css",
                     __DIR__ . "/css/survey.css",
                     __DIR__ . "/css/video-segment.css", // Custom `video` question styles (v1.4.8; file name kept on disk for git-history continuity)
+                    __DIR__ . "/css/leaflet.css",       // Vendored Leaflet 1.9.4 (v1.4.11) — loaded standalone so its url(images/...) refs resolve correctly
+                    __DIR__ . "/css/gpx-question.css",  // Custom `gpx` question styles (v1.4.11)
                     __DIR__ . "/../../moduleSurveyJS/css/quill.snow.min.css" // Add Quill CSS
                 );
             } else {
                 $local = array(
                     __DIR__ . "/../../../../css/ext/survey-js.min.css?v=" . rtrim(shell_exec("git describe --tags")),
+                    // leaflet.css is excluded from the bundle (see gulpfile.js) because it
+                    // contains url(images/...) references that must resolve relative to
+                    // its own location on disk. Load it standalone in both DEBUG and prod.
+                    __DIR__ . "/css/leaflet.css",
                     __DIR__ . "/../../moduleSurveyJS/css/quill.snow.min.css" // Add Quill CSS even in production mode
                 );
             }

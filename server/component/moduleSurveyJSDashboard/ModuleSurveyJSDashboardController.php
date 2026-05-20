@@ -57,6 +57,12 @@ class ModuleSurveyJSDashboardController extends BaseController
                 case 'png':
                     $mime = 'image/png';
                     break;
+                case 'gpx':
+                    // GPX (XML) — served with the standard
+                    // application/gpx+xml media type so consumers can
+                    // discover the format. (v1.4.11)
+                    $mime = 'application/gpx+xml';
+                    break;
                 default:
                     $mime = 'application/force-download';
             }

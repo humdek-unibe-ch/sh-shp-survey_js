@@ -30,6 +30,18 @@ This plugin enables you to create, customize, and manage interactive surveys usi
 
 ### Custom Question Types
 - **Rich Text Editor** (`quill`): Markdown/HTML rich text input.
+- **GPX Route** (`gpx`, since v1.4.11): standalone custom question that
+  accepts a single `.gpx` track file, parses it client-side, renders a
+  Leaflet + OpenStreetMap route preview with start / end markers, and
+  saves both the parsed payload and the uploaded raw file. The main
+  answer field stores a structured payload (`totalDistanceKm`,
+  `elevationGainM`/`elevationLossM`, hiking / biking duration
+  estimates, `start` / `end`, `sampledPoints`); an auto-generated
+  sibling `<answer>_file` field stores upload metadata so the
+  dashboard renders a clickable GPX link. Configurable
+  `sampledPointCount` (default 100, min 2) controls the downsampled
+  point set used for both storage and preview. Leaflet is vendored
+  locally, no CDN. See [`docs/GPX_QUESTION.md`](docs/GPX_QUESTION.md).
 - **Video** (`video`, since v1.4.8): standalone custom question that
   plays an HTML5 video. The URL is in the `videoUrl` property —
   root-relative paths such as `/assets/video.mp4` are resolved against
@@ -53,6 +65,21 @@ This plugin enables you to create, customize, and manage interactive surveys usi
   applied directly to the `<video>` element. Useful both for plain
   "watch this video" prompts and for "watch this excerpt and answer"
   workflows. See [`docs/VIDEO_SEGMENT.md`](docs/VIDEO_SEGMENT.md).
+
+### Standalone SelfHelp styles
+- **`gpxMap`** (since v1.5.0): renders a Leaflet / OpenStreetMap
+  preview from a list of GPX sample points, **outside** the
+  SurveyJS runtime. Drop the style onto any page or section to
+  display a saved route — on a profile page, a dashboard card, a
+  PDF preview, anywhere the SelfHelp CMS renders sections. Default
+  internal fields (`debug`, `data_config`, `condition`, `css`,
+  `css_mobile`) come standard; a new `sample_points` JSON field
+  drives the polyline + start / end markers. The field accepts a
+  bare `[[lat, lon], …]` array, a full `gpx` question answer
+  object (auto-extracts `sampledPoints`), or a
+  `data_config`-driven `{{var}}` interpolation that resolves to
+  either. Reuses the vendored Leaflet 1.9.4 bundle that already
+  ships with the plugin — no new CDN or external dependency.
 
 ### Response Collection
 - Comprehensive metadata collection (start/end times, duration, user agent, etc.)
@@ -113,4 +140,5 @@ The plugin includes a comprehensive dashboard for viewing and analyzing survey r
 
 - [Survey usage guide](docs/SURVEY_USAGE.md) — how to create/configure/test surveys in SelfHelp.
 - [Video question type](docs/VIDEO_SEGMENT.md) — properties, playback rules, validation and examples.
-- [`docs/examples/video-segment-example.json`](docs/examples/video-segment-example.json) — minimal SurveyJS JSON using the new question.
+- [GPX question type](docs/GPX_QUESTION.md) — properties, value contract, upload / delete flow, map preview.
+- [`docs/examples/video-segment-example.json`](docs/examples/video-segment-example.json) — minimal SurveyJS JSON using the video question.

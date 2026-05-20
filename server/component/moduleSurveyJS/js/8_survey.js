@@ -200,6 +200,38 @@ function initSurveyCreator() {
                     json: videoDefaultJson
                 });
             }
+
+            // --- GPX question toolbox customization (v1.4.11) ---
+            // The `gpx` custom widget (7_gpxQuestionWidget.js) is a
+            // STANDALONE question type with parent "empty". The widget
+            // exposes its resolved icon name via
+            // window.__gpxQuestionIconName (either "icon-gpx-question"
+            // when SvgRegistry is available, or "icon-file" as a
+            // fallback).
+            const gpxIcon = (typeof window.__gpxQuestionIconName === "string" && window.__gpxQuestionIconName)
+                ? window.__gpxQuestionIconName
+                : "icon-file";
+            let gpxToolboxIndex = toolboxItems.findIndex((item) => item.name === "gpx");
+            const gpxDefaultJson = {
+                type: "gpx",
+                name: "gpx_route",
+                title: "Upload GPX route",
+                sampledPointCount: 100
+            };
+            if (gpxToolboxIndex !== -1) {
+                let gpxItem = toolboxItems[gpxToolboxIndex];
+                gpxItem.name = "gpx";
+                gpxItem.title = "GPX Route";
+                gpxItem.iconName = gpxIcon;
+                gpxItem.json = gpxDefaultJson;
+            } else {
+                creator.toolbox.addItem({
+                    name: "gpx",
+                    title: "GPX Route",
+                    iconName: gpxIcon,
+                    json: gpxDefaultJson
+                });
+            }
         }
         // Apply HTML markup to survey contents
         if (creator.survey) {
@@ -216,6 +248,11 @@ function initSurveyCreator() {
         // the canonical (and only) match is "video".
         const isVideoQuestion = (obj) =>
             !!(obj && typeof obj.getType === "function" && obj.getType() === "video");
+
+        // Helper — true when the property panel is editing a `gpx`
+        // question. v1.4.11.
+        const isGpxQuestion = (obj) =>
+            !!(obj && typeof obj.getType === "function" && obj.getType() === "gpx");
 
         // Cross-field property validation (start < end) is intentionally
         // NOT hooked into `creator.onPropertyValidationCustomError`. That
@@ -246,11 +283,28 @@ function initSurveyCreator() {
             "defaultValue",
             "correctAnswer"
         ];
+        // v1.4.11 — same rationale for the GPX question. Its main value
+        // is the parsed-GPX payload (auto-generated from the uploaded
+        // file) and the `_file` sibling field carries the upload
+        // metadata. Default-value / correct-answer editors don't make
+        // sense for either.
+        const GPX_QUESTION_HIDDEN_PROPS = [
+            "defaultValue",
+            "correctAnswer"
+        ];
         if (creator.onShowingProperty) {
             creator.onShowingProperty.add((_, options) => {
-                if (!isVideoQuestion(options.obj)) return;
-                if (VIDEO_QUESTION_HIDDEN_PROPS.indexOf(options.property.name) !== -1) {
-                    options.canShow = false;
+                if (isVideoQuestion(options.obj)) {
+                    if (VIDEO_QUESTION_HIDDEN_PROPS.indexOf(options.property.name) !== -1) {
+                        options.canShow = false;
+                    }
+                    return;
+                }
+                if (isGpxQuestion(options.obj)) {
+                    if (GPX_QUESTION_HIDDEN_PROPS.indexOf(options.property.name) !== -1) {
+                        options.canShow = false;
+                    }
+                    return;
                 }
             });
         }

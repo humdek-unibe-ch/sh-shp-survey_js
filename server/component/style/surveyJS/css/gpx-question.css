@@ -1,0 +1,248 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
+
+/*
+ * Styles for the `gpx` custom SurveyJS question (v1.4.11+).
+ *
+ * Picked up automatically by
+ *   gulp/gulpfile.js  ->  server/component/style/**\/css/*.css
+ * and bundled into css/ext/survey-js.min.css.
+ *
+ * Layout
+ * ------
+ *   .sjs-gpx                   -> outer column: controls / error / preview.
+ *   .sjs-gpx__controls         -> file input + current-file label + clear.
+ *   .sjs-gpx__error            -> question-level error banner.
+ *   .sjs-gpx__status           -> transient progress message.
+ *   .sjs-gpx__preview          -> map (full width) with stats panel below.
+ *   .sjs-gpx__map              -> Leaflet container (full width).
+ *   .sjs-gpx__stats            -> per-route summary table (below the map).
+ *
+ * Theming
+ * -------
+ * The action buttons (.sjs-gpx__file-button, .sjs-gpx__clear) deliberately
+ * pull colour, font and spacing from the SurveyJS DefaultV2 theme CSS
+ * variables (--sjs-primary-backcolor, --sjs-base-unit, --sjs-font-* …)
+ * so the GPX question reads visually as part of the surrounding survey
+ * rather than a foreign custom widget. The variables fall back to
+ * hard-coded values from the v1.9.124 theme defaults when the host
+ * page hasn't loaded the theme yet (e.g. early Creator preview frames).
+ */
+
+.sjs-gpx {
+    display: flex;
+    flex-direction: column;
+    gap: calc(1.5 * var(--sjs-base-unit, var(--base-unit, 8px)));
+    width: 100%;
+}
+
+.sjs-gpx__controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: calc(1 * var(--sjs-base-unit, var(--base-unit, 8px)));
+}
+
+.sjs-gpx__file-label {
+    margin: 0;
+    cursor: pointer;
+    display: inline-flex;
+}
+
+/*
+ * The "Choose GPX file" pseudo-button. Drawn as a <span> so the label
+ * also functions as the native file-input trigger (clicking the label
+ * fires the input). Styled to mirror the SurveyJS DefaultV2 file
+ * question's primary action button (`.sd-file__choose-btn`): light
+ * tinted background, primary-colored text + icon, pill-ish radius.
+ */
+.sjs-gpx__file-button {
+    display: inline-flex;
+    align-items: center;
+    gap: calc(1 * var(--sjs-base-unit, var(--base-unit, 8px)));
+    padding: calc(1.25 * var(--sjs-base-unit, var(--base-unit, 8px)))
+             calc(2.5 * var(--sjs-base-unit, var(--base-unit, 8px)));
+    border: none;
+    border-radius: calc(0.5 * var(--sjs-base-unit, var(--base-unit, 8px)));
+    background-color: var(--sjs-primary-backcolor-light, var(--primary-light, rgba(25, 179, 148, 0.1)));
+    color: var(--sjs-primary-backcolor, var(--primary, #19b394));
+    font-family: var(--sjs-font-family, inherit);
+    font-size: var(--sjs-font-questiontitle-size, var(--sjs-font-size, 16px));
+    font-weight: 600;
+    line-height: 1.2;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+    user-select: none;
+}
+
+.sjs-gpx__file-button:hover {
+    background-color: var(--sjs-primary-backcolor-dark, rgba(25, 179, 148, 0.18));
+}
+
+.sjs-gpx__file-button:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--sjs-primary-backcolor, var(--primary, #19b394));
+}
+
+.sjs-gpx__input {
+    /* Hide the native input but keep it accessible via the label. */
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    border: 0;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+}
+
+.sjs-gpx__current {
+    font-size: calc(0.875 * var(--sjs-font-questiontitle-size, var(--sjs-font-size, 16px)));
+    color: var(--sjs-general-forecolor, var(--foreground, #161616));
+    word-break: break-all;
+}
+
+/*
+ * The Clear button. Real <button> so keyboard / a11y are free; styled
+ * as a subdued danger-tinted variant of the "choose" button so the two
+ * actions read as a related pair without competing for visual weight.
+ */
+.sjs-gpx__clear {
+    display: inline-flex;
+    align-items: center;
+    gap: calc(0.75 * var(--sjs-base-unit, var(--base-unit, 8px)));
+    padding: calc(1 * var(--sjs-base-unit, var(--base-unit, 8px)))
+             calc(2 * var(--sjs-base-unit, var(--base-unit, 8px)));
+    border: none;
+    border-radius: calc(0.5 * var(--sjs-base-unit, var(--base-unit, 8px)));
+    background-color: var(--sjs-general-backcolor-dim-light, var(--background-dim-light, #f9f9f9));
+    color: var(--sjs-special-red, var(--red, #e60a3e));
+    font-family: var(--sjs-font-family, inherit);
+    font-size: calc(0.875 * var(--sjs-font-questiontitle-size, var(--sjs-font-size, 16px)));
+    font-weight: 500;
+    line-height: 1.2;
+    cursor: pointer;
+    transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.sjs-gpx__clear:hover {
+    background-color: var(--sjs-special-red-light, rgba(230, 10, 62, 0.1));
+}
+
+.sjs-gpx__clear:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--sjs-special-red, var(--red, #e60a3e));
+}
+
+/*
+ * Inline action-button icons. Sized in relative units (em) so they
+ * scale with the host font-size — keeps them visually balanced against
+ * the button text whatever the theme's --sjs-font-size resolves to.
+ * `currentColor` lets the icon inherit the button's text colour
+ * (primary for "choose", danger-red for "clear") with no per-icon
+ * fill override.
+ */
+.sjs-gpx__icon {
+    width: 1.25em;
+    height: 1.25em;
+    flex: 0 0 auto;
+    color: currentColor;
+}
+
+/*
+ * Question-level banners. Tinted with the SurveyJS error/info palette
+ * variables so they pick up the active theme; fall back to plain RGB
+ * for hosts that pre-date those tokens.
+ */
+.sjs-gpx__error {
+    padding: calc(1.25 * var(--sjs-base-unit, var(--base-unit, 8px)))
+             calc(2 * var(--sjs-base-unit, var(--base-unit, 8px)));
+    border: 1px solid var(--sjs-special-red-light, #f5c6cb);
+    background-color: var(--sjs-special-red-light, #f8d7da);
+    color: var(--sjs-special-red-forecolor, #721c24);
+    border-radius: calc(0.5 * var(--sjs-base-unit, var(--base-unit, 8px)));
+    font-size: calc(0.875 * var(--sjs-font-questiontitle-size, var(--sjs-font-size, 16px)));
+}
+
+.sjs-gpx__status {
+    padding: calc(1 * var(--sjs-base-unit, var(--base-unit, 8px)))
+             calc(2 * var(--sjs-base-unit, var(--base-unit, 8px)));
+    border: 1px solid var(--sjs-primary-backcolor-light, #bfdbfe);
+    background-color: var(--sjs-primary-backcolor-light, #eff6ff);
+    color: var(--sjs-primary-backcolor, #1e3a8a);
+    border-radius: calc(0.5 * var(--sjs-base-unit, var(--base-unit, 8px)));
+    font-size: calc(0.875 * var(--sjs-font-questiontitle-size, var(--sjs-font-size, 16px)));
+}
+
+/*
+ * Preview area: the map gets the FULL row width and the stats panel
+ * stacks underneath it. Previous v1.4.11 layout used a two-column
+ * grid (map on the left, stats on the right); designer feedback was
+ * that the map should be the primary focal element and the stats only
+ * support it. Stacking gives the map ~2x more horizontal space and
+ * makes the question a clean vertical scroll on narrow screens with
+ * no special media-query path.
+ */
+.sjs-gpx__preview {
+    display: flex;
+    flex-direction: column;
+    gap: calc(1.5 * var(--sjs-base-unit, var(--base-unit, 8px)));
+}
+
+.sjs-gpx__map {
+    min-height: 360px;
+    height: 360px;
+    width: 100%;
+    border-radius: calc(0.5 * var(--sjs-base-unit, var(--base-unit, 8px)));
+    border: 1px solid var(--sjs-border-light, var(--border-light, #d1d5db));
+    overflow: hidden;
+    background-color: var(--sjs-general-backcolor-dim-light, var(--background-dim-light, #f3f4f6));
+}
+
+.sjs-gpx__stats {
+    border: 1px solid var(--sjs-border-light, var(--border-light, #d1d5db));
+    border-radius: calc(0.5 * var(--sjs-base-unit, var(--base-unit, 8px)));
+    background-color: var(--sjs-general-backcolor, var(--background, #ffffff));
+    padding: calc(1 * var(--sjs-base-unit, var(--base-unit, 8px)));
+    overflow: auto;
+}
+
+.sjs-gpx__stats-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: calc(0.875 * var(--sjs-font-questiontitle-size, var(--sjs-font-size, 16px)));
+}
+
+.sjs-gpx__stats-table th,
+.sjs-gpx__stats-table td {
+    padding: calc(0.5 * var(--sjs-base-unit, var(--base-unit, 8px)))
+             calc(1 * var(--sjs-base-unit, var(--base-unit, 8px)));
+    border-bottom: 1px solid var(--sjs-border-light, var(--border-light, #e5e7eb));
+    text-align: left;
+    vertical-align: top;
+}
+
+.sjs-gpx__stats-table th {
+    width: 30%;
+    color: var(--sjs-general-forecolor-light, var(--foreground-light, #4b5563));
+    font-weight: 600;
+}
+
+.sjs-gpx__stats-table tr:last-child th,
+.sjs-gpx__stats-table tr:last-child td {
+    border-bottom: none;
+}
+
+/*
+ * Dashboard helper: file-shaped values whose field name ends in
+ * `_file` are rendered as a clickable link by `dashboard.js`. Style
+ * the link so it stands out from regular cell text.
+ */
+.sjs-gpx-file-link {
+    color: var(--sjs-primary-backcolor, var(--primary, #1d4ed8));
+    text-decoration: underline;
+}
+.sjs-gpx-file-link:hover {
+    text-decoration: none;
+}

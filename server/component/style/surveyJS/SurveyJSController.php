@@ -43,6 +43,28 @@ class SurveyJSController extends BaseController
                 uopz_allow_exit(true);
                 exit();
             }
+        } else if (isset($_POST['upload_gpx']) && isset($_FILES) && isset($_POST['response_id']) && isset($_POST['question_name'])) {
+            // GPX-specific eager upload (v1.4.11). Validates the .gpx
+            // extension, saves the raw file alongside other survey
+            // uploads, and returns the same `?file_path=…` shape used
+            // for generic uploads so downstream code stays unchanged.
+            $files = $this->model->save_uploaded_gpx();
+            header("Content-Type: application/json");
+            if ($files) {
+                echo json_encode($files, JSON_UNESCAPED_UNICODE);
+            } else {
+                echo json_encode(array("status" => "error", "error" => "Error while saving the GPX file!"), JSON_UNESCAPED_UNICODE);
+            };
+            uopz_allow_exit(true);
+            exit();
+        } else if (isset($_POST['delete_gpx']) && isset($_POST['file_path'])) {
+            // GPX-specific delete (v1.4.11). Limited to files inside the
+            // configured survey upload root to prevent path traversal.
+            $ok = $this->model->delete_uploaded_gpx($_POST['file_path']);
+            header("Content-Type: application/json");
+            echo json_encode(array("status" => $ok ? "ok" : "error"), JSON_UNESCAPED_UNICODE);
+            uopz_allow_exit(true);
+            exit();
         } else if (isset($_POST['upload_files']) && isset($_FILES) && isset($_POST['response_id']) && isset($_POST['question_name'])) {
             $files = $this->model->save_uploaded_files();
             header("Content-Type: application/json");
