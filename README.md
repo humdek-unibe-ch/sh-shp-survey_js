@@ -10,6 +10,14 @@ This plugin enables you to create, customize, and manage interactive surveys usi
 
 - SelfHelp v7.3.1+ (for full functionality)
 - MySQL database with adequate `max_allowed_packet` size (recommended >1MB for file uploads)
+- A valid [SurveyJS Creator license](https://surveyjs.io/pricing) for teams using the survey builder in production, as this plugin integrates and depends on the SurveyJS Creator library
+
+## Licensing Note
+
+This plugin is built on top of the [SurveyJS Creator](https://surveyjs.io/survey-creator) library. If you plan to create, edit, or manage surveys with the integrated creator interface, please make sure you have the appropriate SurveyJS Creator license for your project and usage model.
+
+For current licensing details and plan options, refer to the official SurveyJS pricing page:
+- [SurveyJS Pricing and Licensing](https://surveyjs.io/pricing)
 
 ## Installation
 
