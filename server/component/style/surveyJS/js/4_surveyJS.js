@@ -310,7 +310,7 @@ function initSurveyJS() {
 
             const exportToPdfOptions = {};
             Survey.setLicenseKey(
-                "ZWUzYjk4NjctYmYzMi00ZmFiLWFlODQtMGE4OTBjMTNiYTRkOzE9MjAyNC0wNC0yNSwyPTIwMjQtMDQtMjUsND0yMDI0LTA0LTI1"
+                "ZWUzYjk4NjctYmYzMi00ZmFiLWFlODQtMGE4OTBjMTNiYTRkOzE9MjAyNy0wNi0xNCwyPTIwMjctMDYtMTQsND0yMDI3LTA2LTE0"
             );
             const savePdf = function (surveyData) {
                 const surveyPdf = new SurveyPDF.SurveyPDF(surveyContent, exportToPdfOptions);

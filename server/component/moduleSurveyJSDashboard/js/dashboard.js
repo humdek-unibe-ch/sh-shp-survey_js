@@ -49,8 +49,8 @@ function initSurveyDashboard(survey_results) {
         const dashboardOptions = {
             allowHideQuestions: true,
         }
-        SurveyCore.setLicenseKey(
-            "ZWUzYjk4NjctYmYzMi00ZmFiLWFlODQtMGE4OTBjMTNiYTRkOzE9MjAyNC0wNC0yNSwyPTIwMjQtMDQtMjUsND0yMDI0LTA0LTI1"
+        Survey.setLicenseKey(
+            "ZWUzYjk4NjctYmYzMi00ZmFiLWFlODQtMGE4OTBjMTNiYTRkOzE9MjAyNy0wNi0xNCwyPTIwMjctMDYtMTQsND0yMDI3LTA2LTE0"
         );
         window['surveyjs-widgets'].microphone(Survey);
 
@@ -162,8 +162,8 @@ function initSurveyDashboardTable(survey_results) {
             downloadOptions: { fileName: surveyId + '_[' + year + '_' + month + '_' + day + '-' + hours + '_' + minutes + ']' }
         }
 
-        SurveyCore.setLicenseKey(
-            "ZWUzYjk4NjctYmYzMi00ZmFiLWFlODQtMGE4OTBjMTNiYTRkOzE9MjAyNC0wNC0yNSwyPTIwMjQtMDQtMjUsND0yMDI0LTA0LTI1"
+        Survey.setLicenseKey(
+            "ZWUzYjk4NjctYmYzMi00ZmFiLWFlODQtMGE4OTBjMTNiYTRkOzE9MjAyNy0wNi0xNCwyPTIwMjctMDYtMTQsND0yMDI3LTA2LTE0"
         );
 
         const surveyJSDashboardTable = new SurveyAnalyticsTabulator.Tabulator(

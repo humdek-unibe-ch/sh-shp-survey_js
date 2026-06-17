@@ -24,6 +24,7 @@
   },
   "dependencies": {
     "gulp": "^4.0.2",
-    "gulp-terser": "^1.2.0"
+    "gulp-terser": "^1.2.0",
+    "survey-pdf": "^2.5.28"
   }
 }
