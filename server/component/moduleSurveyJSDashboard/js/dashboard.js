@@ -49,7 +49,7 @@ function initSurveyDashboard(survey_results) {
         const dashboardOptions = {
             allowHideQuestions: true,
         }
-        Survey.setLicenseKey(
+        SurveyCore.setLicenseKey(
             "ZWUzYjk4NjctYmYzMi00ZmFiLWFlODQtMGE4OTBjMTNiYTRkOzE9MjAyNC0wNC0yNSwyPTIwMjQtMDQtMjUsND0yMDI0LTA0LTI1"
         );
         window['surveyjs-widgets'].microphone(Survey);
@@ -162,7 +162,7 @@ function initSurveyDashboardTable(survey_results) {
             downloadOptions: { fileName: surveyId + '_[' + year + '_' + month + '_' + day + '-' + hours + '_' + minutes + ']' }
         }
 
-        Survey.setLicenseKey(
+        SurveyCore.setLicenseKey(
             "ZWUzYjk4NjctYmYzMi00ZmFiLWFlODQtMGE4OTBjMTNiYTRkOzE9MjAyNC0wNC0yNSwyPTIwMjQtMDQtMjUsND0yMDI0LTA0LTI1"
         );
 

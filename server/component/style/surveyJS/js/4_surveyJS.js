@@ -89,7 +89,7 @@ function initSurveyJS() {
         }
         window['surveyjs-widgets'].microphone(Survey);
         expandSurveyJsForSelfhelp();
-        Survey.StylesManager.applyTheme(surveyFields['survey_js_theme']);
+        // Survey.StylesManager.applyTheme() was removed in SurveyJS v2; theming is now CSS-only via survey-core.min.css
         var survey = new Survey.Model(surveyContent);
         var currentLocale = $(this).attr("class").split(" ").filter(function (className) {
             return className.startsWith("selfHelp-locale-");
@@ -309,7 +309,7 @@ function initSurveyJS() {
         if (surveyFields && surveyFields['save_pdf'] == 1) {
 
             const exportToPdfOptions = {};
-            Survey.setLicenseKey(
+            SurveyCore.setLicenseKey(
                 "ZWUzYjk4NjctYmYzMi00ZmFiLWFlODQtMGE4OTBjMTNiYTRkOzE9MjAyNC0wNC0yNSwyPTIwMjQtMDQtMjUsND0yMDI0LTA0LTI1"
             );
             const savePdf = function (surveyData) {

@@ -3,7 +3,7 @@ const creatorOptions = {
     isAutoSave: true,
     showTranslationTab: true
 };
-Survey.setLicenseKey(
+SurveyCore.setLicenseKey(
     "ZWUzYjk4NjctYmYzMi00ZmFiLWFlODQtMGE4OTBjMTNiYTRkOzE9MjAyNC0wNC0yNSwyPTIwMjQtMDQtMjUsND0yMDI0LTA0LTI1"
 );
 Survey.Serializer.addProperty("page", {
@@ -308,7 +308,7 @@ function initSurveyCreator() {
                 }
             });
         }
-        creator.render("surveyJSCreator");
+        SurveyCreator.SurveyCreatorWidget(creator, document.getElementById("surveyJSCreator"));
         $("#surveyJSCreator").removeAttr("data-config");
     }
 }
