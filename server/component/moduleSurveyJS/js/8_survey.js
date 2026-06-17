@@ -4,7 +4,7 @@ const creatorOptions = {
     autoSaveEnabled: true,
     showTranslationTab: true
 };
-SurveyCore.setLicenseKey(
+Survey.setLicenseKey(
     "ZWUzYjk4NjctYmYzMi00ZmFiLWFlODQtMGE4OTBjMTNiYTRkOzE9MjAyNC0wNC0yNSwyPTIwMjQtMDQtMjUsND0yMDI0LTA0LTI1"
 );
 Survey.Serializer.addProperty("page", {

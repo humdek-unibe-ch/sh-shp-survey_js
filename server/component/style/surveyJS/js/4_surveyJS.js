@@ -309,7 +309,7 @@ function initSurveyJS() {
         if (surveyFields && surveyFields['save_pdf'] == 1) {
 
             const exportToPdfOptions = {};
-            SurveyCore.setLicenseKey(
+            Survey.setLicenseKey(
                 "ZWUzYjk4NjctYmYzMi00ZmFiLWFlODQtMGE4OTBjMTNiYTRkOzE9MjAyNC0wNC0yNSwyPTIwMjQtMDQtMjUsND0yMDI0LTA0LTI1"
             );
             const savePdf = function (surveyData) {
