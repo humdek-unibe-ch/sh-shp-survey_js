@@ -1,6 +1,7 @@
+
 const creatorOptions = {
     showLogicTab: true,
-    isAutoSave: true,
+    autoSaveEnabled: true,
     showTranslationTab: true
 };
 SurveyCore.setLicenseKey(

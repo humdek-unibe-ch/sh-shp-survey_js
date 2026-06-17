@@ -203,7 +203,7 @@ class ModuleSurveyJSView extends BaseView
                     __DIR__ . "/../style/surveyJS/css/gpx-question.css"   // Custom `gpx` question styles (v1.4.11)
                 );
             } else {
-                $local = array(__DIR__ . "/../../../css/ext/survey-js.min.css?v=" . rtrim(shell_exec("git describe --tags")));
+                $local = array(__DIR__ . "/../../../css/ext/survey-js.min.css?v=" . rtrim((string) shell_exec("git describe --tags")));
                 // Add Quill CSS even in production mode
                 $local[] = __DIR__ . "/css/quill.snow.min.css";
                 // leaflet.css is excluded from the bundle (see gulpfile.js); load it

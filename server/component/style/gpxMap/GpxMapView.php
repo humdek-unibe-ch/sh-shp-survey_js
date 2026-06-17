@@ -164,7 +164,7 @@ class GpxMapView extends StyleView
                 );
             } else {
                 $local = array(
-                    __DIR__ . "/../../../../css/ext/survey-js.min.css?v=" . rtrim(shell_exec("git describe --tags")),
+                    __DIR__ . "/../../../../css/ext/survey-js.min.css?v=" . rtrim((string) shell_exec("git describe --tags")),
                     // leaflet.css is excluded from the bundle (see
                     // gulpfile.js) because url(images/...) refs must
                     // resolve relative to its own on-disk location.

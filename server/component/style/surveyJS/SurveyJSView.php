@@ -240,7 +240,7 @@ class SurveyJSView extends StyleView
                 );
             } else {
                 $local = array(
-                    __DIR__ . "/../../../../css/ext/survey-js.min.css?v=" . rtrim(shell_exec("git describe --tags")),
+                    __DIR__ . "/../../../../css/ext/survey-js.min.css?v=" . rtrim((string) shell_exec("git describe --tags")),
                     // leaflet.css is excluded from the bundle (see gulpfile.js) because it
                     // contains url(images/...) references that must resolve relative to
                     // its own location on disk. Load it standalone in both DEBUG and prod.
