@@ -309,7 +309,7 @@ function initSurveyCreator() {
                 }
             });
         }
-        SurveyCreator.SurveyCreatorWidget(creator, document.getElementById("surveyJSCreator"));
+        creator.render("surveyJSCreator");
         $("#surveyJSCreator").removeAttr("data-config");
     }
 }
