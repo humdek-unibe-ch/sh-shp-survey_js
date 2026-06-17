@@ -165,7 +165,6 @@ class ModuleSurveyJSView extends BaseView
         if (empty($local)) {
             $local = array(
                 __DIR__ . "/js/0_quill.min.js",
-                __DIR__ . "/js/1_knockout-latest.js",
                 __DIR__ . "/js/2_survey.core.min.js",
                 __DIR__ . "/js/3_survey-knockout-ui.min.js",
                 __DIR__ . "/js/4_survey-creator-core.min.js",
@@ -195,9 +194,7 @@ class ModuleSurveyJSView extends BaseView
         if (empty($local)) {
             if (DEBUG) {
                 $local = array(
-                    __DIR__ . "/css/survey.min.css",
-                    __DIR__ . "/../style/surveyJS/css/modern.min.css",
-                    __DIR__ . "/../style/surveyJS/css/defaultV2.min.css",
+                    __DIR__ . "/css/survey.min.css", // survey-core v2.5.28 (replaces modern.min.css + defaultV2.min.css)
                     __DIR__ . "/css/survey-creator-core.min.css",
                     __DIR__ . "/css/quill.snow.min.css",
                     __DIR__ . "/css/survey.css",

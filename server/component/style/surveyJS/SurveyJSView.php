@@ -204,11 +204,12 @@ class SurveyJSView extends StyleView
     {
         if (empty($local)) {
             $local = array(
-                __DIR__ . "/js/1_survey.jquery.min.js",
+                __DIR__ . "/../../moduleSurveyJS/js/2_survey.core.min.js", // survey-core v2.5.28
+                __DIR__ . "/js/1_survey.jquery.min.js",                    // survey-js-ui v2.5.28 (jQuery plugin shim over Preact renderer; replaces v1 survey-jquery+Knockout bundle)
                 __DIR__ . "/js/2_jspdf.umd.min.js",
                 __DIR__ . "/js/3_survey.pdf.min.js",
                 __DIR__ . "/js/3_surveyjs-widgets.min.js",
-                __DIR__ . "/../../moduleSurveyJS/js/0_quill.min.js", // Add Quill library
+                __DIR__ . "/../../moduleSurveyJS/js/0_quill.min.js",
                 __DIR__ . "/js/4_surveyJS.js",
                 __DIR__ . "/js/5_videoSegmentWidget.js", // Custom `video` question type (v1.4.8; file name kept on disk for git-history continuity)
                 __DIR__ . "/js/6_leaflet.js",            // Vendored Leaflet 1.9.4 (v1.4.11) — used by the `gpx` question
@@ -230,13 +231,12 @@ class SurveyJSView extends StyleView
         if (empty($local)) {
             if (DEBUG) {
                 $local = array(
-                    __DIR__ . "/css/modern.min.css",
-                    __DIR__ . "/css/defaultV2.min.css",
+                    __DIR__ . "/css/survey-core.min.css", // survey-core v2.5.28 (replaces modern.min.css + defaultV2.min.css)
                     __DIR__ . "/css/survey.css",
                     __DIR__ . "/css/video-segment.css", // Custom `video` question styles (v1.4.8; file name kept on disk for git-history continuity)
                     __DIR__ . "/css/leaflet.css",       // Vendored Leaflet 1.9.4 (v1.4.11) — loaded standalone so its url(images/...) refs resolve correctly
                     __DIR__ . "/css/gpx-question.css",  // Custom `gpx` question styles (v1.4.11)
-                    __DIR__ . "/../../moduleSurveyJS/css/quill.snow.min.css" // Add Quill CSS
+                    __DIR__ . "/../../moduleSurveyJS/css/quill.snow.min.css"
                 );
             } else {
                 $local = array(
@@ -245,7 +245,7 @@ class SurveyJSView extends StyleView
                     // contains url(images/...) references that must resolve relative to
                     // its own location on disk. Load it standalone in both DEBUG and prod.
                     __DIR__ . "/css/leaflet.css",
-                    __DIR__ . "/../../moduleSurveyJS/css/quill.snow.min.css" // Add Quill CSS even in production mode
+                    __DIR__ . "/../../moduleSurveyJS/css/quill.snow.min.css"
                 );
             }
         }

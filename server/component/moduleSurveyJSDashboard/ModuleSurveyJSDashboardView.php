@@ -132,7 +132,6 @@ class ModuleSurveyJSDashboardView extends BaseView
     {
         if (empty($local)) {
             $local = array(
-                __DIR__ . "/../moduleSurveyJS/js/1_knockout-latest.js",
                 __DIR__ . "/../moduleSurveyJS/js/2_survey.core.min.js",
                 __DIR__ . "/../moduleSurveyJS/js/7_surveyjs-widgets.min.js",
                 __DIR__ . "/js/plotly-latest.min.js",
