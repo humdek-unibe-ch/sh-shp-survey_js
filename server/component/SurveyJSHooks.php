@@ -48,7 +48,7 @@ class SurveyJSHooks extends BaseHooks
             "live_search" => 1,
             "is_required" => 1,
             "disabled" => $disabled,
-            "items" => $this->db->fetch_table_as_select_values('view_surveys', 'id', array('survey_generated_id', 'survey_name'))
+            "items" => $this->db->fetch_table_as_select_values('view_surveys', 'id', array('survey_generated_id', 'survey_name'), 'WHERE published IS NOT NULL')
         ));
     }
 

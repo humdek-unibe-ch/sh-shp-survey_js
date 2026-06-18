@@ -9,4 +9,7 @@
     <td><?php echo $survey['survey_name']; ?></td>
     <td><?php echo $survey['created_at']; ?></td>
     <td><?php echo $survey['updated_at']; ?></td>
+    <td><?php echo $survey['published'] ? '<span class="badge bg-success">Yes</span>' : '<span class="badge bg-secondary">No</span>'; ?></td>
+    <?php $hasPending = !$survey['published_at'] || $survey['updated_at'] > $survey['published_at']; ?>
+    <td><?php echo $hasPending ? '<span class="badge bg-warning text-dark">Yes</span>' : '<span class="badge bg-secondary">No</span>'; ?></td>
 </tr>
