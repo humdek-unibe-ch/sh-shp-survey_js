@@ -1007,9 +1007,8 @@
         function persistState(eventType) {
             try {
                 var t = video.currentTime;
-                // We can only declare the video "watched" once we know how
-                // long it actually is.
-                var watched = isFinite(end) ? (t >= end - 0.05) : false;
+                // Once watched, always watched — post-end rewind seek events cannot flip it back to false.
+                var watched = (completedAt !== null) || (isFinite(end) ? (t >= end - 0.05) : false);
                 if (watched && !completedAt) completedAt = safeISO();
 
                 var clampedTime = Math.max(start, isFinite(end) ? Math.min(end, t) : t);
@@ -1217,11 +1216,12 @@
         };
 
         var onEnded = function () {
+            // Clamp to `end` before persistState so watched evaluates true, then rewind to `start` for replay.
+            if (isFinite(end)) video.currentTime = end;
+            persistState("ended");
             enforcing = true;
             video.currentTime = start;
             enforcing = false;
-            // Re-record so `watched` and `completedAt` survive the rewind.
-            persistState("ended");
         };
 
         video.addEventListener("loadedmetadata", onLoadedMetadata);
