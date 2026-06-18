@@ -195,7 +195,9 @@ class SurveyJSHooks extends BaseHooks
             } else if (strpos($value, 'font-src') !== false) {
                 $value = str_replace("'self'", "'self' https://fonts.gstatic.com", $value);
             } else if (strpos($value, 'media-src') !== false) {
-                $value = str_replace("media-src", "media-src 'self' data:;", $value);
+                // Allow self, data URIs, and any https host so that
+                // survey creators can embed videos from external sources.
+                $value = preg_replace('/\bmedia-src\b/', "media-src 'self' data: https:", trim($value));
             } else if (preg_match('/(^|\s)img-src(\s|$)/', $value)) {
                 // Append OSM tile hosts so the Leaflet map can fetch them.
                 $value = trim($value) . ' ' . $osm_img_src;
@@ -204,8 +206,8 @@ class SurveyJSHooks extends BaseHooks
             $resArr[$key] = $value;
         }
         if (strpos(strval($res), 'media-src') === false) {
-            // there is no media src, set it
-            $resArr[$key] = "media-src 'self' data:;";
+            // there is no media-src directive — add one
+            $resArr[] = "media-src 'self' data: https:";
         }
         if (!$img_src_patched) {
             // No img-src directive existed — add a permissive one that
