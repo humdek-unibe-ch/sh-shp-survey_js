@@ -1,6 +1,6 @@
 # SurveyJS Plugin Changelog
 
-## v1.6.0 (Work in progress)
+## v1.6.0
 
 SurveyJS libraries upgraded to **v2.5.28** (Preact / survey-js-ui). Knockout is no longer loaded.
 
