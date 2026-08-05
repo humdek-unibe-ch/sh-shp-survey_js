@@ -131,6 +131,9 @@ class ModuleSurveyJSDashboardView extends BaseView
     public function get_js_includes($local = array())
     {
         if (empty($local)) {
+            // survey-core / survey-analytics / tabulator / plotly are kept on the
+            // same major line as the rest of the plugin (v2.5.28 / Tabulator 6 /
+            // Plotly 2). No Knockout — analytics reads Survey.Model from survey-core.
             $local = array(
                 __DIR__ . "/../moduleSurveyJS/js/2_survey.core.min.js",
                 __DIR__ . "/../moduleSurveyJS/js/7_surveyjs-widgets.min.js",

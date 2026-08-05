@@ -12,6 +12,7 @@ SurveyJS libraries upgraded to **v2.5.28** (Preact / survey-js-ui). Knockout is 
 - Remove CMS `survey-js-theme` (v2 theming is CSS-only; `StylesManager.applyTheme` is gone).
 - Fix Versions viewer includes to use `survey-core` CSS/JS (was still on deleted `defaultV2`).
 - Drop unused `1_knockout-latest.js` from the package.
+- Dashboard: bump `survey-analytics` (+ tabulator adapter) to **2.5.28**, Tabulator **6.5.2**, Plotly **2.35.3** (were still on analytics/tabulator/plotly 1.9.x / 4.x / 1.x).
 
 ### Product
 - CMS survey select lists **published** surveys only; field help text updated.
