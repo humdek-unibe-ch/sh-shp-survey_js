@@ -372,7 +372,7 @@
     //
     // We unconditionally write to BOTH (and fall back to top-level locale
     // strings when `qt` is absent) because the exact path varies between
-    // survey-creator-knockout v1.8.x and v1.9.x.
+    // survey-creator-js (and older survey-creator builds).
     // -------------------------------------------------------------------
     function setQuestionTypeName(localesContainer, name, displayName) {
         if (!localesContainer) return;
@@ -395,12 +395,12 @@
         }
     }
     // Seed the canonical "video" type in every locale namespace SurveyJS /
-    // survey-creator-knockout might consult.
+    // survey-creator-js might consult.
     setQuestionTypeName(Survey.surveyLocalization, COMPONENT_NAME, COMPONENT_TITLE);
     if (typeof SurveyCreator !== "undefined" && SurveyCreator.editorLocalization) {
         setQuestionTypeName(SurveyCreator.editorLocalization, COMPONENT_NAME, COMPONENT_TITLE);
     }
-    // Some survey-creator-knockout builds expose `localization` instead of
+    // Some survey-creator-js builds expose `localization` instead of
     // `editorLocalization`; same data, different namespace.
     if (typeof SurveyCreator !== "undefined" && SurveyCreator.localization && SurveyCreator.localization.locales) {
         setQuestionTypeName(SurveyCreator.localization, COMPONENT_NAME, COMPONENT_TITLE);
@@ -411,13 +411,13 @@
     //
     // We expose the resolved icon name via window.__videoQuestionIconName
     // so 8_survey.js can use whichever icon actually exists in this build
-    // of survey-creator-knockout. We try, in order:
+    // of survey-creator-js. We try, in order:
     //   a) Register a custom video-camera SVG via SurveyCreator.SvgRegistry
     //   b) Fall back to the built-in "icon-image" (always present).
     //
     // SurveyCreator.SvgRegistry has been part of survey-creator-core since
     // v1.8.x but has been re-exported under different paths in different
-    // packagings (knockout vs. core). We probe several known locations.
+    // packagings (creator-js vs. core). We probe several known locations.
     // -------------------------------------------------------------------
     var VIDEO_ICON_SVG =
         '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">' +
@@ -456,7 +456,7 @@
     }
     // Exposed for 8_survey.js (Creator init) so the toolbox item can use
     // whichever icon actually exists in this build of
-    // survey-creator-knockout.
+    // survey-creator-js.
     window.__videoQuestionIconName = iconName;
 
     // -------------------------------------------------------------------

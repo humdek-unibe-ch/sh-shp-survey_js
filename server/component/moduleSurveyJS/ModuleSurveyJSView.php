@@ -165,10 +165,10 @@ class ModuleSurveyJSView extends BaseView
         if (empty($local)) {
             $local = array(
                 __DIR__ . "/js/0_quill.min.js",
-                __DIR__ . "/js/2_survey.core.min.js",
-                __DIR__ . "/js/3_survey-knockout-ui.min.js",
+                __DIR__ . "/js/2_survey.core.min.js",       // survey-core v2.5.28
+                __DIR__ . "/js/3_survey-js-ui.min.js",      // survey-js-ui (Preact) v2.5.28 — not Knockout
                 __DIR__ . "/js/4_survey-creator-core.min.js",
-                __DIR__ . "/js/5_survey-creator-knockout.min.js",
+                __DIR__ . "/js/5_survey-creator-js.min.js", // survey-creator-js v2.5.28 — not Knockout
                 __DIR__ . "/js/6_survey-creator-core.i18n.min.js",
                 __DIR__ . "/js/7_survey.i18n.min.js",
                 __DIR__ . "/js/7_surveyjs-widgets.min.js",

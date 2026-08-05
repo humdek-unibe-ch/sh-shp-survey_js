@@ -125,7 +125,7 @@ class ModuleSurveyJSVersionsView extends BaseView
         if (empty($local)) {
             $local = array(
                 __DIR__ . "/../moduleSurveyJS/js/2_survey.core.min.js", // survey-core v2.5.28
-                __DIR__ . "/../style/surveyJS/js/1_survey.jquery.min.js", // survey-js-ui v2.5.28
+                __DIR__ . "/../style/surveyJS/js/1_survey-js-ui.min.js", // survey-js-ui v2.5.28
                 __DIR__ . "/js/surveyVersions.js",
             );
         }

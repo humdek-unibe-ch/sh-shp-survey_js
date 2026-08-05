@@ -5,7 +5,8 @@
 SurveyJS libraries upgraded to **v2.5.28** (Preact / survey-js-ui). Knockout is no longer loaded.
 
 ### Library / runtime
-- Swap runtime and Creator bundles to SurveyJS 2.5.28; load `survey-core` + `survey-js-ui`.
+- Swap runtime and Creator bundles to SurveyJS 2.5.28; load `survey-core` + `survey-js-ui` + `survey-creator-js` (Preact). Knockout is not loaded.
+- Vendor filenames match packages: `3_survey-js-ui.min.js`, `5_survey-creator-js.min.js`, `1_survey-js-ui.min.js` (replaced legacy `*-knockout*` / `survey.jquery` names).
 - Replace v1 theme CSS (`modern` / `defaultV2`) with `survey-core.min.css`.
 - Bump `survey-pdf` to 2.5.28; refresh license key.
 - Creator: `autoSaveEnabled` (replaces deprecated `isAutoSave`); render via `creator.render()`.

@@ -198,7 +198,7 @@ class SurveyJSView extends StyleView
         if (empty($local)) {
             $local = array(
                 __DIR__ . "/../../moduleSurveyJS/js/2_survey.core.min.js", // survey-core v2.5.28
-                __DIR__ . "/js/1_survey.jquery.min.js",                    // survey-js-ui v2.5.28 (jQuery plugin shim over Preact renderer; replaces v1 survey-jquery+Knockout bundle)
+                __DIR__ . "/js/1_survey-js-ui.min.js",                     // survey-js-ui v2.5.28 (Preact renderer + jQuery .Survey() plugin)
                 __DIR__ . "/js/2_jspdf.umd.min.js",
                 __DIR__ . "/js/3_survey.pdf.min.js",
                 __DIR__ . "/js/3_surveyjs-widgets.min.js",
