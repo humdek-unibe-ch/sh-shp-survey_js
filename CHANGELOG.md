@@ -17,7 +17,7 @@ SurveyJS libraries upgraded to **v2.5.28** (Preact / survey-js-ui). Knockout is 
 ### Product
 - CMS survey select lists **published** surveys only; field help text updated.
 - Admin survey table shows **Published** and **Pending Changes**.
-- CSP `media-src` allows `https:` for external survey videos.
+- CSP `media-src` allows `https:` for external survey videos (directive rewritten cleanly so `https:` cannot glue onto the next directive).
 - Video watch gate no longer unsets completion after rewind/replay.
 
 ### After update

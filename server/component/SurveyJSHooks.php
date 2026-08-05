@@ -147,7 +147,13 @@ class SurveyJSHooks extends BaseHooks
         // tiles as plain <img> elements.
         $osm_img_src = "https://*.tile.openstreetmap.org https://tile.openstreetmap.org";
         $img_src_patched = false;
+        $media_src_patched = false;
         foreach ($resArr as $key => $value) {
+            $value = trim($value);
+            if ($value === '') {
+                unset($resArr[$key]);
+                continue;
+            }
             if (strpos($value, 'script-src') !== false) {
                 if ($this->router->route && in_array($this->router->route['name'], array(PAGE_SURVEY_JS_MODE, PAGE_SURVEY_JS_DASHBOARD))) {
                     // enable only for 2 pages
@@ -162,19 +168,21 @@ class SurveyJSHooks extends BaseHooks
                 }
             } else if (strpos($value, 'font-src') !== false) {
                 $value = str_replace("'self'", "'self' https://fonts.gstatic.com", $value);
-            } else if (strpos($value, 'media-src') !== false) {
-                // Allow self, data URIs, and any https host so that
-                // survey creators can embed videos from external sources.
-                $value = preg_replace('/\bmedia-src\b/', "media-src 'self' data: https:", trim($value));
-            } else if (preg_match('/(^|\s)img-src(\s|$)/', $value)) {
+            } else if (preg_match('/^media-src\b/', $value)) {
+                // Replace the whole directive. Do not preg-replace the keyword
+                // in place — that can leave a trailing `https:` scheme source
+                // glued to the next directive (e.g. `https:frame-src`) when a
+                // later hop concatenates without a separator.
+                $value = "media-src 'self' data: https:";
+                $media_src_patched = true;
+            } else if (preg_match('/^img-src\b/', $value)) {
                 // Append OSM tile hosts so the Leaflet map can fetch them.
-                $value = trim($value) . ' ' . $osm_img_src;
+                $value = $value . ' ' . $osm_img_src;
                 $img_src_patched = true;
             }
             $resArr[$key] = $value;
         }
-        if (strpos(strval($res), 'media-src') === false) {
-            // there is no media-src directive — add one
+        if (!$media_src_patched) {
             $resArr[] = "media-src 'self' data: https:";
         }
         if (!$img_src_patched) {
@@ -182,7 +190,9 @@ class SurveyJSHooks extends BaseHooks
             // keeps the current behaviour (self + data:) and adds OSM.
             $resArr[] = "img-src 'self' data: " . $osm_img_src;
         }
-        return implode(";", $resArr);
+        // Trailing `;` keeps later CSP appenders from gluing the next
+        // directive name onto our last scheme source (`https:`).
+        return implode('; ', $resArr) . ';';
     }
 
     /**
