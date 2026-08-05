@@ -19,6 +19,7 @@ SurveyJS libraries upgraded to **v2.5.28** (Preact / survey-js-ui). Knockout is 
 - Admin survey table shows **Published** and **Pending Changes**.
 - CSP `media-src` allows `https:` for external survey videos (directive rewritten cleanly so `https:` cannot glue onto the next directive).
 - Video watch gate no longer unsets completion after rewind/replay.
+- Fix Publish/Delete when survey title is a plain string or missing (`title.default` threw).
 
 ### After update
 - Run `server/db/v1.6.0.sql`.
