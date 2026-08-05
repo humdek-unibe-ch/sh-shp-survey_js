@@ -89,7 +89,6 @@ function initSurveyJS() {
         }
         window['surveyjs-widgets'].microphone(Survey);
         expandSurveyJsForSelfhelp();
-        Survey.StylesManager.applyTheme(surveyFields['survey_js_theme']);
         var survey = new Survey.Model(surveyContent);
         var currentLocale = $(this).attr("class").split(" ").filter(function (className) {
             return className.startsWith("selfHelp-locale-");
@@ -233,7 +232,14 @@ function initSurveyJS() {
                             options.showSaveSuccess();
                             if (survey.data['trigger_type'] == 'finished') {
                                 if (surveyFields['redirect_at_end']) {
-                                    window.location.href = surveyFields['redirect_at_end'];
+                                    var redirectUrl = resolveRedirectAtEnd(
+                                        surveyFields['redirect_at_end'],
+                                        survey.data,
+                                        surveyFields['base_path'] || ''
+                                    );
+                                    if (redirectUrl) {
+                                        window.location.href = redirectUrl;
+                                    }
                                 }
                             }
                         } else {
@@ -310,7 +316,7 @@ function initSurveyJS() {
 
             const exportToPdfOptions = {};
             Survey.setLicenseKey(
-                "ZWUzYjk4NjctYmYzMi00ZmFiLWFlODQtMGE4OTBjMTNiYTRkOzE9MjAyNC0wNC0yNSwyPTIwMjQtMDQtMjUsND0yMDI0LTA0LTI1"
+                "ZWUzYjk4NjctYmYzMi00ZmFiLWFlODQtMGE4OTBjMTNiYTRkOzE9MjAyNy0wNi0xNCwyPTIwMjctMDYtMTQsND0yMDI3LTA2LTE0"
             );
             const savePdf = function (surveyData) {
                 const surveyPdf = new SurveyPDF.SurveyPDF(surveyContent, exportToPdfOptions);
@@ -485,6 +491,54 @@ function dataNotSaved() {
         type: "red",
     });
 }
+
+/**
+ * Resolve redirect_at_end for navigation after a finished survey save.
+ * Templates containing {{questionName}} are filled from surveyData; primitive
+ * values are encodeURIComponent'd. Missing / object / array values become ''.
+ * Relative templated results are joined with basePath. Static (non-template)
+ * values from PHP are returned unchanged — they are already get_link_url URLs.
+ */
+function resolveRedirectAtEnd(template, surveyData, basePath) {
+    if (!template) {
+        return '';
+    }
+    var raw = String(template);
+    // PHP already resolved page-keyword redirects; do not touch them.
+    if (!/\{\{[^}]+\}\}/.test(raw)) {
+        return raw;
+    }
+
+    var data = surveyData || {};
+    var resolved = raw.replace(/\{\{([^}]+)\}\}/g, function (_match, name) {
+        var key = String(name).trim();
+        var value = data[key];
+        if (value === null || value === undefined) {
+            return '';
+        }
+        var type = typeof value;
+        if (type === 'string' || type === 'number' || type === 'boolean') {
+            return encodeURIComponent(String(value));
+        }
+        return '';
+    });
+
+    // Already absolute (http/https) or protocol-relative — use as-is.
+    if (/^(https?:)?\/\//i.test(resolved)) {
+        return resolved;
+    }
+
+    var base = basePath == null ? '' : String(basePath);
+    if (!base) {
+        return resolved;
+    }
+    // Join base_path and relative path without duplicating slashes.
+    if (resolved.charAt(0) === '/') {
+        return base.replace(/\/+$/, '') + resolved;
+    }
+    return base.replace(/\/+$/, '') + '/' + resolved.replace(/^\/+/, '');
+}
+
 function expandSurveyJsForSelfhelp() {
     Survey.Serializer.addProperty("page", {
         name: "resetOnBack:boolean",

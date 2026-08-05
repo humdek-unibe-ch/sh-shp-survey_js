@@ -190,7 +190,7 @@
     // We deliberately ship small, self-contained inline SVGs rather than
     // routing through the Creator's SvgRegistry (used for the toolbox
     // icon) because the runtime page does not always load
-    // survey-creator-knockout — the SvgRegistry is only present in the
+    // survey-creator-js — the SvgRegistry is only present in the
     // Creator. Inlining keeps the icons available in both contexts
     // without an extra asset request, and lets us style them via
     // `currentColor` so they inherit the surrounding text colour

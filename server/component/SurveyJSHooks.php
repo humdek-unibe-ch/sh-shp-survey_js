@@ -48,31 +48,7 @@ class SurveyJSHooks extends BaseHooks
             "live_search" => 1,
             "is_required" => 1,
             "disabled" => $disabled,
-            "items" => $this->db->fetch_table_as_select_values('view_surveys', 'id', array('survey_generated_id', 'survey_name'))
-        ));
-    }
-
-    /**
-     * Output select SurveyJS themes
-     * @param string $value
-     * Value of the field
-     * @param string $name
-     * The name of the fields
-     * @param int $disabled 0 or 1
-     * If the field is in edit mode or view mode (disabled)
-     * @return object
-     * Return instance of BaseStyleComponent -> select style
-     */
-    private function outputSelectSurveyJSThemes($value, $name, $disabled)
-    {
-        return new BaseStyleComponent("select", array(
-            "value" => $value,
-            "name" => $name,
-            "max" => 10,
-            "live_search" => 0,
-            "is_required" => 1,
-            "disabled" => $disabled,
-            "items" => $this->db->fetch_table_as_select_values('lookups', 'lookup_code', array('lookup_value'), 'WHERE type_code = :type_code', array(":type_code" => SURVEY_JS_THEMES))
+            "items" => $this->db->fetch_table_as_select_values('view_surveys', 'id', array('survey_generated_id', 'survey_name'), 'WHERE published IS NOT NULL')
         ));
     }
 
@@ -92,14 +68,6 @@ class SurveyJSHooks extends BaseHooks
         if ($field['name'] == 'survey-js') {
             $field_name_prefix = "fields[" . $field['name'] . "][" . $field['id_language'] . "]" . "[" . $field['id_gender'] . "]";
             $selectField = $this->outputSelectSurveyJSField($field['content'], $field_name_prefix . "[content]", $disabled);
-            if ($selectField && $res) {
-                $children = $res->get_view()->get_children();
-                $children[] = $selectField;
-                $res->get_view()->set_children($children);
-            }
-        } else if ($field['name'] == 'survey-js-theme') {
-            $field_name_prefix = "fields[" . $field['name'] . "][" . $field['id_language'] . "]" . "[" . $field['id_gender'] . "]";
-            $selectField = $this->outputSelectSurveyJSThemes($field['content'], $field_name_prefix . "[content]", $disabled);
             if ($selectField && $res) {
                 $children = $res->get_view()->get_children();
                 $children[] = $selectField;
@@ -179,7 +147,13 @@ class SurveyJSHooks extends BaseHooks
         // tiles as plain <img> elements.
         $osm_img_src = "https://*.tile.openstreetmap.org https://tile.openstreetmap.org";
         $img_src_patched = false;
+        $media_src_patched = false;
         foreach ($resArr as $key => $value) {
+            $value = trim($value);
+            if ($value === '') {
+                unset($resArr[$key]);
+                continue;
+            }
             if (strpos($value, 'script-src') !== false) {
                 if ($this->router->route && in_array($this->router->route['name'], array(PAGE_SURVEY_JS_MODE, PAGE_SURVEY_JS_DASHBOARD))) {
                     // enable only for 2 pages
@@ -194,25 +168,31 @@ class SurveyJSHooks extends BaseHooks
                 }
             } else if (strpos($value, 'font-src') !== false) {
                 $value = str_replace("'self'", "'self' https://fonts.gstatic.com", $value);
-            } else if (strpos($value, 'media-src') !== false) {
-                $value = str_replace("media-src", "media-src 'self' data:;", $value);
-            } else if (preg_match('/(^|\s)img-src(\s|$)/', $value)) {
+            } else if (preg_match('/^media-src\b/', $value)) {
+                // Replace the whole directive. Do not preg-replace the keyword
+                // in place — that can leave a trailing `https:` scheme source
+                // glued to the next directive (e.g. `https:frame-src`) when a
+                // later hop concatenates without a separator.
+                $value = "media-src 'self' data: https:";
+                $media_src_patched = true;
+            } else if (preg_match('/^img-src\b/', $value)) {
                 // Append OSM tile hosts so the Leaflet map can fetch them.
-                $value = trim($value) . ' ' . $osm_img_src;
+                $value = $value . ' ' . $osm_img_src;
                 $img_src_patched = true;
             }
             $resArr[$key] = $value;
         }
-        if (strpos(strval($res), 'media-src') === false) {
-            // there is no media src, set it
-            $resArr[$key] = "media-src 'self' data:;";
+        if (!$media_src_patched) {
+            $resArr[] = "media-src 'self' data: https:";
         }
         if (!$img_src_patched) {
             // No img-src directive existed — add a permissive one that
             // keeps the current behaviour (self + data:) and adds OSM.
             $resArr[] = "img-src 'self' data: " . $osm_img_src;
         }
-        return implode(";", $resArr);
+        // Trailing `;` keeps later CSP appenders from gluing the next
+        // directive name onto our last scheme source (`https:`).
+        return implode('; ', $resArr) . ';';
     }
 
     /**

@@ -1,5 +1,33 @@
 # SurveyJS Plugin Changelog
 
+## v1.6.0 (Work in progress)
+
+SurveyJS libraries upgraded to **v2.5.28** (Preact / survey-js-ui). Knockout is no longer loaded.
+
+### Library / runtime
+- Swap runtime and Creator bundles to SurveyJS 2.5.28; load `survey-core` + `survey-js-ui` + `survey-creator-js` (Preact). Knockout is not loaded.
+- Vendor filenames match packages: `3_survey-js-ui.min.js`, `5_survey-creator-js.min.js`, `1_survey-js-ui.min.js` (replaced legacy `*-knockout*` / `survey.jquery` names).
+- Replace v1 theme CSS (`modern` / `defaultV2`) with `survey-core.min.css`.
+- Bump `survey-pdf` to 2.5.28; refresh license key.
+- Creator: `autoSaveEnabled` (replaces deprecated `isAutoSave`); render via `creator.render()`.
+- Remove CMS `survey-js-theme` (v2 theming is CSS-only; `StylesManager.applyTheme` is gone), including `fields` / `fieldType` / section translations / lookups.
+- Fix Versions viewer includes to use `survey-core` CSS/JS (was still on deleted `defaultV2`).
+- Drop unused `1_knockout-latest.js` from the package.
+- Dashboard: bump `survey-analytics` (+ tabulator adapter) to **2.5.28**, Tabulator **6.5.2**, Plotly **2.35.3** (were still on analytics/tabulator/plotly 1.9.x / 4.x / 1.x).
+
+### Product
+- CMS survey select lists **published** surveys only; field help text updated.
+- Admin survey table shows **Published** and **Pending Changes**.
+- CSP `media-src` allows `https:` for external survey videos (directive rewritten cleanly so `https:` cannot glue onto the next directive).
+- Video watch gate no longer unsets completion after rewind/replay.
+- Fix Publish/Delete when survey title is a plain string or missing (`title.default` threw).
+- `redirect_at_end` supports `{{questionName}}` templates filled client-side from submitted survey data (e.g. `test/{{code}}`); plain page keywords still use `get_link_url`.
+
+### After update
+- Run `server/db/v1.6.0.sql`.
+- Clear CMS / styles / hooks cache.
+- Rebuild CSS with gulp if you customize styles (`css/ext/survey-js.min.css`).
+
 ## v1.5.0
 
 ### New: `gpxMap` style

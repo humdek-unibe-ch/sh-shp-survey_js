@@ -49,11 +49,6 @@ class SurveyJSView extends StyleView
     private $auto_save_interval;
 
     /**
-     * Selected survey theme
-     */
-    private $survey_js_theme;
-
-    /**
      * If true the survey can be saved as a PDF
      */
     private $save_pdf;
@@ -93,9 +88,36 @@ class SurveyJSView extends StyleView
         $this->timeout = $this->model->get_db_field('timeout', 0);
         $this->url_params = $this->model->get_db_field('url_params', '');
         $this->save_pdf = $this->model->get_db_field('save_pdf');
-        $this->survey_js_theme = $this->model->get_db_field('survey-js-theme');
     }
 
+
+    /* Private Methods ********************************************************/
+
+    /**
+     * Prepare redirect_at_end for the client.
+     *
+     * Templates containing `{{questionName}}` are passed through so JS can
+     * interpolate from survey.data after finish. Plain page keywords keep the
+     * existing get_link_url resolution.
+     *
+     * @param string $raw
+     *  CMS redirect_at_end value.
+     * @return string
+     */
+    private function prepare_redirect_at_end($raw)
+    {
+        $raw = trim((string) $raw);
+        if ($raw === '') {
+            return '';
+        }
+        // Strip a leading # only; keep path structure for templates.
+        $raw = preg_replace('/^#+/', '', $raw);
+        if (preg_match('/\{\{[^}]+\}\}/', $raw)) {
+            return $raw;
+        }
+        $keyword = preg_replace('/^\/+/', '', $raw);
+        return $this->model->get_link_url(str_replace("/", "", $keyword));
+    }
 
     /* Public Methods *********************************************************/
 
@@ -124,15 +146,12 @@ class SurveyJSView extends StyleView
                     $alert->output_content();
                 }
             } else {
-                $redirect_at_end = preg_replace('/^\/+/', '', $this->redirect_at_end); // remove the first /
-                $redirect_at_end = preg_replace('/^#+/', '', $this->redirect_at_end); // remove the first #
-                $redirect_at_end = $this->model->get_link_url(str_replace("/", "", $redirect_at_end));
+                $redirect_at_end = $this->prepare_redirect_at_end($this->redirect_at_end);
                 $survey_fields = array(
                     "restart_on_refresh" => boolval($this->restart_on_refresh),
                     "redirect_at_end" => $redirect_at_end,
                     "auto_save_interval" => $this->auto_save_interval,
                     "timeout" => $this->timeout,
-                    "survey_js_theme" => $this->survey_js_theme,
                     "save_pdf" => $this->save_pdf,
                     "survey_generated_id" => isset($this->survey['survey_generated_id']) ? $this->survey['survey_generated_id'] : null,
                     // Expose SelfHelp's BASE_PATH so client-side custom widgets
@@ -172,10 +191,12 @@ class SurveyJSView extends StyleView
     public function output_content_mobile()
     {
         $style = parent::output_content_mobile();
-        $redirect_at_end = preg_replace('/^\/+/', '', $this->redirect_at_end); // remove the first /
-        $redirect_at_end = preg_replace('/^#+/', '', $this->redirect_at_end); // remove the first #
-        $redirect_at_end = $this->model->get_link_url(str_replace("/", "", $redirect_at_end));
-        $style['redirect_at_end']['content'] = str_replace(BASE_PATH, "", $redirect_at_end);
+        $redirect_at_end = $this->prepare_redirect_at_end($this->redirect_at_end);
+        // Templates stay as-is for client interpolation; resolved URLs drop BASE_PATH.
+        if ($redirect_at_end !== '' && !preg_match('/\{\{[^}]+\}\}/', $redirect_at_end)) {
+            $redirect_at_end = str_replace(BASE_PATH, "", $redirect_at_end);
+        }
+        $style['redirect_at_end']['content'] = $redirect_at_end;
         $style['survey_json'] = isset($this->survey['content']) && $this->survey['content'] ? json_decode($this->survey['content']) : [];
         $style['alert'] = '';
         $style['show_survey'] = true;
@@ -204,11 +225,12 @@ class SurveyJSView extends StyleView
     {
         if (empty($local)) {
             $local = array(
-                __DIR__ . "/js/1_survey.jquery.min.js",
+                __DIR__ . "/../../moduleSurveyJS/js/2_survey.core.min.js", // survey-core v2.5.28
+                __DIR__ . "/js/1_survey-js-ui.min.js",                     // survey-js-ui v2.5.28 (Preact renderer + jQuery .Survey() plugin)
                 __DIR__ . "/js/2_jspdf.umd.min.js",
                 __DIR__ . "/js/3_survey.pdf.min.js",
                 __DIR__ . "/js/3_surveyjs-widgets.min.js",
-                __DIR__ . "/../../moduleSurveyJS/js/0_quill.min.js", // Add Quill library
+                __DIR__ . "/../../moduleSurveyJS/js/0_quill.min.js",
                 __DIR__ . "/js/4_surveyJS.js",
                 __DIR__ . "/js/5_videoSegmentWidget.js", // Custom `video` question type (v1.4.8; file name kept on disk for git-history continuity)
                 __DIR__ . "/js/6_leaflet.js",            // Vendored Leaflet 1.9.4 (v1.4.11) — used by the `gpx` question
@@ -230,22 +252,21 @@ class SurveyJSView extends StyleView
         if (empty($local)) {
             if (DEBUG) {
                 $local = array(
-                    __DIR__ . "/css/modern.min.css",
-                    __DIR__ . "/css/defaultV2.min.css",
+                    __DIR__ . "/css/survey-core.min.css", // survey-core v2.5.28 (replaces modern.min.css + defaultV2.min.css)
                     __DIR__ . "/css/survey.css",
                     __DIR__ . "/css/video-segment.css", // Custom `video` question styles (v1.4.8; file name kept on disk for git-history continuity)
                     __DIR__ . "/css/leaflet.css",       // Vendored Leaflet 1.9.4 (v1.4.11) — loaded standalone so its url(images/...) refs resolve correctly
                     __DIR__ . "/css/gpx-question.css",  // Custom `gpx` question styles (v1.4.11)
-                    __DIR__ . "/../../moduleSurveyJS/css/quill.snow.min.css" // Add Quill CSS
+                    __DIR__ . "/../../moduleSurveyJS/css/quill.snow.min.css"
                 );
             } else {
                 $local = array(
-                    __DIR__ . "/../../../../css/ext/survey-js.min.css?v=" . rtrim(shell_exec("git describe --tags")),
+                    __DIR__ . "/../../../../css/ext/survey-js.min.css?v=" . rtrim((string) shell_exec("git describe --tags")),
                     // leaflet.css is excluded from the bundle (see gulpfile.js) because it
                     // contains url(images/...) references that must resolve relative to
                     // its own location on disk. Load it standalone in both DEBUG and prod.
                     __DIR__ . "/css/leaflet.css",
-                    __DIR__ . "/../../moduleSurveyJS/css/quill.snow.min.css" // Add Quill CSS even in production mode
+                    __DIR__ . "/../../moduleSurveyJS/css/quill.snow.min.css"
                 );
             }
         }

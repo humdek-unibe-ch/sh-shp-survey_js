@@ -165,11 +165,10 @@ class ModuleSurveyJSView extends BaseView
         if (empty($local)) {
             $local = array(
                 __DIR__ . "/js/0_quill.min.js",
-                __DIR__ . "/js/1_knockout-latest.js",
-                __DIR__ . "/js/2_survey.core.min.js",
-                __DIR__ . "/js/3_survey-knockout-ui.min.js",
+                __DIR__ . "/js/2_survey.core.min.js",       // survey-core v2.5.28
+                __DIR__ . "/js/3_survey-js-ui.min.js",      // survey-js-ui (Preact) v2.5.28 — not Knockout
                 __DIR__ . "/js/4_survey-creator-core.min.js",
-                __DIR__ . "/js/5_survey-creator-knockout.min.js",
+                __DIR__ . "/js/5_survey-creator-js.min.js", // survey-creator-js v2.5.28 — not Knockout
                 __DIR__ . "/js/6_survey-creator-core.i18n.min.js",
                 __DIR__ . "/js/7_survey.i18n.min.js",
                 __DIR__ . "/js/7_surveyjs-widgets.min.js",
@@ -195,9 +194,7 @@ class ModuleSurveyJSView extends BaseView
         if (empty($local)) {
             if (DEBUG) {
                 $local = array(
-                    __DIR__ . "/css/survey.min.css",
-                    __DIR__ . "/../style/surveyJS/css/modern.min.css",
-                    __DIR__ . "/../style/surveyJS/css/defaultV2.min.css",
+                    __DIR__ . "/css/survey.min.css", // survey-core v2.5.28 (replaces modern.min.css + defaultV2.min.css)
                     __DIR__ . "/css/survey-creator-core.min.css",
                     __DIR__ . "/css/quill.snow.min.css",
                     __DIR__ . "/css/survey.css",
@@ -206,7 +203,7 @@ class ModuleSurveyJSView extends BaseView
                     __DIR__ . "/../style/surveyJS/css/gpx-question.css"   // Custom `gpx` question styles (v1.4.11)
                 );
             } else {
-                $local = array(__DIR__ . "/../../../css/ext/survey-js.min.css?v=" . rtrim(shell_exec("git describe --tags")));
+                $local = array(__DIR__ . "/../../../css/ext/survey-js.min.css?v=" . rtrim((string) shell_exec("git describe --tags")));
                 // Add Quill CSS even in production mode
                 $local[] = __DIR__ . "/css/quill.snow.min.css";
                 // leaflet.css is excluded from the bundle (see gulpfile.js); load it

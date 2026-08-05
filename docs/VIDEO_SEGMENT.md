@@ -713,7 +713,7 @@ to `DEFAULT_REQUIRED_WATCH_MESSAGES` in `5_videoSegmentWidget.js`.
 
 The widget tries to register a video-camera SVG via
 `SurveyCreator.SvgRegistry.registerIconFromSvg("video-question", ...)`.
-If that registry is not exposed by this build of survey-creator-knockout,
+If that registry is not exposed by this build of survey-creator-js,
 the widget falls back to the built-in `icon-image`. The resolved icon
 name is made available to `8_survey.js` through
 `window.__videoQuestionIconName`.

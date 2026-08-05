@@ -1,10 +1,11 @@
+
 const creatorOptions = {
     showLogicTab: true,
-    isAutoSave: true,
+    autoSaveEnabled: true,
     showTranslationTab: true
 };
 Survey.setLicenseKey(
-    "ZWUzYjk4NjctYmYzMi00ZmFiLWFlODQtMGE4OTBjMTNiYTRkOzE9MjAyNC0wNC0yNSwyPTIwMjQtMDQtMjUsND0yMDI0LTA0LTI1"
+    "ZWUzYjk4NjctYmYzMi00ZmFiLWFlODQtMGE4OTBjMTNiYTRkOzE9MjAyNy0wNi0xNCwyPTIwMjctMDYtMTQsND0yMDI3LTA2LTE0"
 );
 Survey.Serializer.addProperty("page", {
     name: "resetOnBack:boolean",
@@ -321,7 +322,7 @@ function initDeleteSurvey() {
 }
 
 function deleteSurvey() {
-    var survey_name = JSON.parse(creator.text)['title'];
+    var survey_name = getSurveyDisplayTitle(JSON.parse(creator.text));
     if (survey_name) {
         $.confirm({
             title: 'Delete survey: <code>' + survey_name + "</code>",
@@ -353,6 +354,35 @@ function deleteSurvey() {
 
 }
 
+/**
+ * SurveyJS title may be a plain string or a localized object
+ * (`{ default: "…" }` / `{ en: "…" }`). Never read `.default` until
+ * we know `title` is an object — a missing title used to throw on Publish.
+ */
+function getSurveyDisplayTitle(surveyJson) {
+    var title = surveyJson && surveyJson.title;
+    if (title == null || title === '') {
+        return '';
+    }
+    if (typeof title === 'string') {
+        return title;
+    }
+    if (typeof title === 'object') {
+        if (title.default) {
+            return title.default;
+        }
+        if (title.en) {
+            return title.en;
+        }
+        for (var key in title) {
+            if (Object.prototype.hasOwnProperty.call(title, key) && title[key]) {
+                return title[key];
+            }
+        }
+    }
+    return '';
+}
+
 function initPublishSurvey() {
     $("#survey-js-publish").off('click').on('click', (e) => {
         e.preventDefault();
@@ -362,7 +392,7 @@ function initPublishSurvey() {
 
 function publishSurvey() {
     var surveyJson = JSON.parse(creator.text);
-    var survey_name = surveyJson.title.default || surveyJson.title;
+    var survey_name = getSurveyDisplayTitle(surveyJson);
     if (survey_name) {
         $.confirm({
             title: 'Publish survey: <code>' + survey_name + "</code>",

@@ -12,6 +12,8 @@
                 <th scope="col">Survey Name</th>
                 <th scope="col">Created At</th>
                 <th scope="col">Updated At</th>
+                <th scope="col">Published</th>
+                <th scope="col">Pending Changes</th>
             </tr>
         </thead>
         <tbody>
