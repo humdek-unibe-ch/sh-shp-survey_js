@@ -23,9 +23,7 @@ function styles() {
     '../server/component/**/css/*.css',
     '../server/component/style/css/*.css',
     '../server/component/style/**/css/*.css',
-    '!../server/component/style/surveyJS/css/leaflet.css',
-    // '!../server/component/style/surveyJS/css/modern.min.css',    // v1 theme — excluded; survey-core.min.css (same dir) is the v2 replacement already picked up by the glob above
-    // '!../server/component/style/surveyJS/css/defaultV2.min.css'  // v1 theme — excluded for the same reason
+    '!../server/component/style/surveyJS/css/leaflet.css'
   ])
     .pipe(csso())
     .pipe(concat('survey-js.min.css'))
