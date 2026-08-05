@@ -176,8 +176,7 @@ section and configure its fields:
 
 | Field                       | Purpose                                                                                  |
 | --------------------------- | ---------------------------------------------------------------------------------------- |
-| `survey-js`                 | The survey to render (selected from the dropdown of all available surveys).              |
-| `survey-js-theme`           | Visual theme (e.g. `defaultV2`, `modern`).                                               |
+| `survey-js`                 | The survey to render (published surveys only).                                           |
 | `restart_on_refresh`        | If `1`, refreshing the page starts a new attempt; if `0`, restores the in-progress one.  |
 | `redirect_at_end`           | URL to redirect to after submission.                                                     |
 | `auto_save_interval`        | Auto-save in-progress responses every N seconds (`0` to disable).                        |

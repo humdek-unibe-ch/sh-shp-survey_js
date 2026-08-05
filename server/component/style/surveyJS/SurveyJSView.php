@@ -49,11 +49,6 @@ class SurveyJSView extends StyleView
     private $auto_save_interval;
 
     /**
-     * Selected survey theme
-     */
-    private $survey_js_theme;
-
-    /**
      * If true the survey can be saved as a PDF
      */
     private $save_pdf;
@@ -93,7 +88,6 @@ class SurveyJSView extends StyleView
         $this->timeout = $this->model->get_db_field('timeout', 0);
         $this->url_params = $this->model->get_db_field('url_params', '');
         $this->save_pdf = $this->model->get_db_field('save_pdf');
-        $this->survey_js_theme = $this->model->get_db_field('survey-js-theme');
     }
 
 
@@ -132,7 +126,6 @@ class SurveyJSView extends StyleView
                     "redirect_at_end" => $redirect_at_end,
                     "auto_save_interval" => $this->auto_save_interval,
                     "timeout" => $this->timeout,
-                    "survey_js_theme" => $this->survey_js_theme,
                     "save_pdf" => $this->save_pdf,
                     "survey_generated_id" => isset($this->survey['survey_generated_id']) ? $this->survey['survey_generated_id'] : null,
                     // Expose SelfHelp's BASE_PATH so client-side custom widgets

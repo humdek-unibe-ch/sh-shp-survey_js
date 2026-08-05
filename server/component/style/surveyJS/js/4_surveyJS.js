@@ -89,7 +89,6 @@ function initSurveyJS() {
         }
         window['surveyjs-widgets'].microphone(Survey);
         expandSurveyJsForSelfhelp();
-        // Survey.StylesManager.applyTheme() was removed in SurveyJS v2; theming is now CSS-only via survey-core.min.css
         var survey = new Survey.Model(surveyContent);
         var currentLocale = $(this).attr("class").split(" ").filter(function (className) {
             return className.startsWith("selfHelp-locale-");

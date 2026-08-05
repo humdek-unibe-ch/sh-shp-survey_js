@@ -7,7 +7,6 @@
 <?php
 define('SURVEYJS_TABLE_SURVEYS', 'surveys');
 define('SURVEYJS_TABLE_SURVEYS_VERSIONS', 'surveys_versions');
-define('SURVEY_JS_THEMES', 'survey-js-themes');
 define('SURVEY_JS_FETCH_RESULTS', 'fetch_results');
 /* Page keywords */
 define('PAGE_SURVEY_JS_MODE', 'moduleSurveyJSMode');

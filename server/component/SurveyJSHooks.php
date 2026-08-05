@@ -53,30 +53,6 @@ class SurveyJSHooks extends BaseHooks
     }
 
     /**
-     * Output select SurveyJS themes
-     * @param string $value
-     * Value of the field
-     * @param string $name
-     * The name of the fields
-     * @param int $disabled 0 or 1
-     * If the field is in edit mode or view mode (disabled)
-     * @return object
-     * Return instance of BaseStyleComponent -> select style
-     */
-    private function outputSelectSurveyJSThemes($value, $name, $disabled)
-    {
-        return new BaseStyleComponent("select", array(
-            "value" => $value,
-            "name" => $name,
-            "max" => 10,
-            "live_search" => 0,
-            "is_required" => 1,
-            "disabled" => $disabled,
-            "items" => $this->db->fetch_table_as_select_values('lookups', 'lookup_code', array('lookup_value'), 'WHERE type_code = :type_code', array(":type_code" => SURVEY_JS_THEMES))
-        ));
-    }
-
-    /**
      * Return a BaseStyleComponent object
      * @param object $args
      * Params passed to the method
@@ -92,14 +68,6 @@ class SurveyJSHooks extends BaseHooks
         if ($field['name'] == 'survey-js') {
             $field_name_prefix = "fields[" . $field['name'] . "][" . $field['id_language'] . "]" . "[" . $field['id_gender'] . "]";
             $selectField = $this->outputSelectSurveyJSField($field['content'], $field_name_prefix . "[content]", $disabled);
-            if ($selectField && $res) {
-                $children = $res->get_view()->get_children();
-                $children[] = $selectField;
-                $res->get_view()->set_children($children);
-            }
-        } else if ($field['name'] == 'survey-js-theme') {
-            $field_name_prefix = "fields[" . $field['name'] . "][" . $field['id_language'] . "]" . "[" . $field['id_gender'] . "]";
-            $selectField = $this->outputSelectSurveyJSThemes($field['content'], $field_name_prefix . "[content]", $disabled);
             if ($selectField && $res) {
                 $children = $res->get_view()->get_children();
                 $children[] = $selectField;
