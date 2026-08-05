@@ -21,6 +21,8 @@ WHERE `id_styles` = get_style_id('surveyJS')
 -- ---------------------------------------------------------------------------
 -- 2) Remove the CMS survey-js-theme field. SurveyJS v2 theming is CSS-only
 --    (survey-core.min.css); StylesManager.applyTheme() no longer exists.
+--    Delete style links and stored section values first, then the field /
+--    fieldType definitions and theme lookups.
 -- ---------------------------------------------------------------------------
 DELETE FROM `styles_fields`
 WHERE `id_styles` = get_style_id('surveyJS')
@@ -28,6 +30,12 @@ WHERE `id_styles` = get_style_id('surveyJS')
 
 DELETE FROM `sections_fields_translation`
 WHERE `id_fields` = get_field_id('survey-js-theme');
+
+DELETE FROM `fields`
+WHERE `name` = 'survey-js-theme';
+
+DELETE FROM `fieldType`
+WHERE `name` = 'select-survey-js-theme';
 
 DELETE FROM `lookups`
 WHERE `type_code` = 'survey-js-themes';

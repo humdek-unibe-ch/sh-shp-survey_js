@@ -10,7 +10,7 @@ SurveyJS libraries upgraded to **v2.5.28** (Preact / survey-js-ui). Knockout is 
 - Replace v1 theme CSS (`modern` / `defaultV2`) with `survey-core.min.css`.
 - Bump `survey-pdf` to 2.5.28; refresh license key.
 - Creator: `autoSaveEnabled` (replaces deprecated `isAutoSave`); render via `creator.render()`.
-- Remove CMS `survey-js-theme` (v2 theming is CSS-only; `StylesManager.applyTheme` is gone).
+- Remove CMS `survey-js-theme` (v2 theming is CSS-only; `StylesManager.applyTheme` is gone), including `fields` / `fieldType` / section translations / lookups.
 - Fix Versions viewer includes to use `survey-core` CSS/JS (was still on deleted `defaultV2`).
 - Drop unused `1_knockout-latest.js` from the package.
 - Dashboard: bump `survey-analytics` (+ tabulator adapter) to **2.5.28**, Tabulator **6.5.2**, Plotly **2.35.3** (were still on analytics/tabulator/plotly 1.9.x / 4.x / 1.x).
