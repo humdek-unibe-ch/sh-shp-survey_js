@@ -39,3 +39,11 @@ WHERE `name` = 'select-survey-js-theme';
 
 DELETE FROM `lookups`
 WHERE `type_code` = 'survey-js-themes';
+
+-- ---------------------------------------------------------------------------
+-- 3) Document redirect_at_end template support ({{questionName}} from survey data).
+-- ---------------------------------------------------------------------------
+UPDATE `styles_fields`
+SET `help` = 'Redirect after the survey is finished. Use a page keyword (e.g. home), or a path template with {{questionName}} placeholders filled from the submitted survey answers (e.g. test/{{code}}).'
+WHERE `id_styles` = get_style_id('surveyJS')
+  AND `id_fields` = get_field_id('redirect_at_end');

@@ -91,6 +91,34 @@ class SurveyJSView extends StyleView
     }
 
 
+    /* Private Methods ********************************************************/
+
+    /**
+     * Prepare redirect_at_end for the client.
+     *
+     * Templates containing `{{questionName}}` are passed through so JS can
+     * interpolate from survey.data after finish. Plain page keywords keep the
+     * existing get_link_url resolution.
+     *
+     * @param string $raw
+     *  CMS redirect_at_end value.
+     * @return string
+     */
+    private function prepare_redirect_at_end($raw)
+    {
+        $raw = trim((string) $raw);
+        if ($raw === '') {
+            return '';
+        }
+        // Strip a leading # only; keep path structure for templates.
+        $raw = preg_replace('/^#+/', '', $raw);
+        if (preg_match('/\{\{[^}]+\}\}/', $raw)) {
+            return $raw;
+        }
+        $keyword = preg_replace('/^\/+/', '', $raw);
+        return $this->model->get_link_url(str_replace("/", "", $keyword));
+    }
+
     /* Public Methods *********************************************************/
 
     /**
@@ -118,9 +146,7 @@ class SurveyJSView extends StyleView
                     $alert->output_content();
                 }
             } else {
-                $redirect_at_end = preg_replace('/^\/+/', '', $this->redirect_at_end); // remove the first /
-                $redirect_at_end = preg_replace('/^#+/', '', $this->redirect_at_end); // remove the first #
-                $redirect_at_end = $this->model->get_link_url(str_replace("/", "", $redirect_at_end));
+                $redirect_at_end = $this->prepare_redirect_at_end($this->redirect_at_end);
                 $survey_fields = array(
                     "restart_on_refresh" => boolval($this->restart_on_refresh),
                     "redirect_at_end" => $redirect_at_end,
@@ -165,10 +191,12 @@ class SurveyJSView extends StyleView
     public function output_content_mobile()
     {
         $style = parent::output_content_mobile();
-        $redirect_at_end = preg_replace('/^\/+/', '', $this->redirect_at_end); // remove the first /
-        $redirect_at_end = preg_replace('/^#+/', '', $this->redirect_at_end); // remove the first #
-        $redirect_at_end = $this->model->get_link_url(str_replace("/", "", $redirect_at_end));
-        $style['redirect_at_end']['content'] = str_replace(BASE_PATH, "", $redirect_at_end);
+        $redirect_at_end = $this->prepare_redirect_at_end($this->redirect_at_end);
+        // Templates stay as-is for client interpolation; resolved URLs drop BASE_PATH.
+        if ($redirect_at_end !== '' && !preg_match('/\{\{[^}]+\}\}/', $redirect_at_end)) {
+            $redirect_at_end = str_replace(BASE_PATH, "", $redirect_at_end);
+        }
+        $style['redirect_at_end']['content'] = $redirect_at_end;
         $style['survey_json'] = isset($this->survey['content']) && $this->survey['content'] ? json_decode($this->survey['content']) : [];
         $style['alert'] = '';
         $style['show_survey'] = true;

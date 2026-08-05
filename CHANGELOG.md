@@ -1,6 +1,6 @@
 # SurveyJS Plugin Changelog
 
-## v1.6.0
+## v1.6.0 (Work in progress)
 
 SurveyJS libraries upgraded to **v2.5.28** (Preact / survey-js-ui). Knockout is no longer loaded.
 
@@ -21,6 +21,7 @@ SurveyJS libraries upgraded to **v2.5.28** (Preact / survey-js-ui). Knockout is 
 - CSP `media-src` allows `https:` for external survey videos (directive rewritten cleanly so `https:` cannot glue onto the next directive).
 - Video watch gate no longer unsets completion after rewind/replay.
 - Fix Publish/Delete when survey title is a plain string or missing (`title.default` threw).
+- `redirect_at_end` supports `{{questionName}}` templates filled client-side from submitted survey data (e.g. `test/{{code}}`); plain page keywords still use `get_link_url`.
 
 ### After update
 - Run `server/db/v1.6.0.sql`.

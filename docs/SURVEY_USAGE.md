@@ -178,7 +178,7 @@ section and configure its fields:
 | --------------------------- | ---------------------------------------------------------------------------------------- |
 | `survey-js`                 | The survey to render (published surveys only).                                           |
 | `restart_on_refresh`        | If `1`, refreshing the page starts a new attempt; if `0`, restores the in-progress one.  |
-| `redirect_at_end`           | URL to redirect to after submission.                                                     |
+| `redirect_at_end`           | Redirect after submission. Page keyword (e.g. `home`) or path template with `{{questionName}}` placeholders filled from submitted survey data (e.g. `test/{{code}}`). |
 | `auto_save_interval`        | Auto-save in-progress responses every N seconds (`0` to disable).                        |
 | `timeout`                   | Survey expiry, in minutes since start. `0` means no timeout.                             |
 | `url_params`                | If set, query-string params are forwarded into the survey as `extra_param_*` values.     |
