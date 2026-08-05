@@ -1,5 +1,29 @@
 # SurveyJS Plugin Changelog
 
+## v1.6.0
+
+SurveyJS libraries upgraded to **v2.5.28** (Preact / survey-js-ui). Knockout is no longer loaded.
+
+### Library / runtime
+- Swap runtime and Creator bundles to SurveyJS 2.5.28; load `survey-core` + `survey-js-ui`.
+- Replace v1 theme CSS (`modern` / `defaultV2`) with `survey-core.min.css`.
+- Bump `survey-pdf` to 2.5.28; refresh license key.
+- Creator: `autoSaveEnabled` (replaces deprecated `isAutoSave`); render via `creator.render()`.
+- Remove CMS `survey-js-theme` (v2 theming is CSS-only; `StylesManager.applyTheme` is gone).
+- Fix Versions viewer includes to use `survey-core` CSS/JS (was still on deleted `defaultV2`).
+- Drop unused `1_knockout-latest.js` from the package.
+
+### Product
+- CMS survey select lists **published** surveys only; field help text updated.
+- Admin survey table shows **Published** and **Pending Changes**.
+- CSP `media-src` allows `https:` for external survey videos.
+- Video watch gate no longer unsets completion after rewind/replay.
+
+### After update
+- Run `server/db/v1.6.0.sql`.
+- Clear CMS / styles / hooks cache.
+- Rebuild CSS with gulp if you customize styles (`css/ext/survey-js.min.css`).
+
 ## v1.5.0
 
 ### New: `gpxMap` style
