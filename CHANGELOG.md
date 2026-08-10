@@ -1,5 +1,10 @@
 # SurveyJS Plugin Changelog
 
+## Unreleased
+
+### Fixes
+- Expired sessions no longer surface as a bare "Data not saved!" alert (#22). When a save comes back as the rendered `no_access_guest` page (HTML, HTTP 200) instead of the controller's JSON — or as a 401/403 — the survey now reports that the session expired and sends the user to the login page. Genuine save failures still show the original error. Post-login return relies on core's `$_SESSION['target_url']`, so the user lands back on the survey.
+
 ## v1.6.0
 
 SurveyJS libraries upgraded to **v2.5.28** (Preact / survey-js-ui). Knockout is no longer loaded.

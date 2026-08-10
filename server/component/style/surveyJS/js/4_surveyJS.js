@@ -2,6 +2,8 @@ var autoSaveTimers = {};
 // A variable that will store files until the survey is completed
 const tempFileStorage = {};
 var surveyJSIsSaving = false;
+// Set once the session-expired dialog is shown, so concurrent saves don't stack dialogs.
+var surveyJSSessionExpiredHandled = false;
 
 // --- Quill Rich Text Editor Widget Registration ---
 (function registerQuillWidget() {
@@ -402,14 +404,25 @@ function saveSurveyJS(survey, newPageNo) {
                 if (r.result) {
                     resolve(true);
                 } else {
-                    dataNotSaved();
+                    // An expired session fails the ACL check before the controller
+                    // runs, so the body is the no_access_guest page (HTML, 200).
+                    if (typeof r === 'string' && /<html|<!doctype|no_access_guest/i.test(r)) {
+                        sessionExpired();
+                    } else {
+                        dataNotSaved();
+                    }
                     resolve(false);
                 }
 
             },
             error: function (xhr, status, error) {
                 console.error('Save survey data failed:', error);
-                dataNotSaved();
+                // 401/403: deployments that answer with a status code instead of a page.
+                if (xhr && (xhr.status === 401 || xhr.status === 403)) {
+                    sessionExpired();
+                } else {
+                    dataNotSaved();
+                }
                 resolve(false);
             }
         });
@@ -489,6 +502,39 @@ function dataNotSaved() {
         title: 'Error!',
         content: 'Data not saved!',
         type: "red",
+    });
+}
+
+/**
+ * Tell the user the session expired and send them to login. No return URL is
+ * needed: core redirects back via $_SESSION['target_url'] (Login::get_target_url).
+ */
+function sessionExpired() {
+    if (surveyJSSessionExpiredHandled) {
+        return;
+    }
+    surveyJSSessionExpiredHandled = true;
+    var basePath = (typeof window.SELFHELP_BASE_PATH !== 'undefined' && window.SELFHELP_BASE_PATH) || '';
+    var loginUrl = basePath + '/login';
+    var goToLogin = function () {
+        window.location.href = loginUrl;
+    };
+    $.alert({
+        title: 'Session expired',
+        content: 'Your session has expired, so your latest answers could not be saved. You will be taken to the login page to sign in again.',
+        type: "orange",
+        typeAnimated: true,
+        buttons: {
+            ok: {
+                text: 'Go to login',
+                btnClass: 'btn-primary',
+                action: goToLogin
+            }
+        },
+        onDestroy: function () {
+            // Redirect on ESC / click-outside too.
+            goToLogin();
+        }
     });
 }
 
