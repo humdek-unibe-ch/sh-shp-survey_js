@@ -524,6 +524,9 @@ function sessionExpired() {
         content: 'Your session has expired, so your latest answers could not be saved. You will be taken to the login page to sign in again.',
         type: "orange",
         typeAnimated: true,
+        // Redirect on its own after 5s so an unattended survey does not sit on
+        // a dead session; the button label shows the countdown.
+        autoClose: 'ok|5000',
         buttons: {
             ok: {
                 text: 'Go to login',
