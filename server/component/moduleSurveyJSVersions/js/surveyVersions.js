@@ -58,10 +58,23 @@ function initVersionsTable() {
                 contextMenuClasses: ['text-secondary'],
                 action: function (row) {
                     try {
-                        surveyContent = JSON.parse(row[0][1]);
+                        // Base64 in the cell: raw JSON would be parsed as HTML by the
+                        // browser and read back mangled. Decode as UTF-8 to keep umlauts.
+                        var config = new TextDecoder().decode(
+                            Uint8Array.from(atob(row[0][1]), function (c) {
+                                return c.charCodeAt(0);
+                            })
+                        );
+                        var surveyContent = JSON.parse(config);
                         var version_id = row[0][0];
                         initModalRestoreBtn(version_id);
                         var survey = new Survey.Model(surveyContent);
+                        // Render rich text markup instead of escaping it, as applyHtml() does.
+                        survey.onTextMarkdown.add(function (sender, options) {
+                            if (options.text.indexOf('<') > -1) {
+                                options.html = options.text;
+                            }
+                        });
                         $('#survey-js-version-viewer').Survey({ model: survey });
                         $(".survey-js-modal-holder").modal({
                             backdrop: false
