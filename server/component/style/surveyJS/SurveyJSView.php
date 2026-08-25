@@ -169,6 +169,16 @@ class SurveyJSView extends StyleView
                     $extra_surveyjs_params = isset($url_components['query']) ? $url_components['query'] : ''; // check if the url contains url parameters (the same format as Qualtrics)
                     $extra_params_arr = array();
                     parse_str($extra_surveyjs_params, $extra_params_arr);
+                    // Route parameters are added underneath, because only those reach
+                    // a style's data_config. A query parameter of the same name wins.
+                    $route = $this->model->get_services()->get_router()->route;
+                    if (isset($route['params']) && is_array($route['params'])) {
+                        foreach ($route['params'] as $name => $value) {
+                            if (is_scalar($value) && !isset($extra_params_arr[$name])) {
+                                $extra_params_arr[$name] = $value;
+                            }
+                        }
+                    }
                     $survey_fields['extra_params'] = $extra_params_arr;
                 }
                 $survey_fields = json_encode($survey_fields);

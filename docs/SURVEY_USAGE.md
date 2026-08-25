@@ -181,9 +181,11 @@ section and configure its fields:
 | `redirect_at_end`           | Redirect after submission. Page keyword (e.g. `home`) or path template with `{{questionName}}` placeholders filled from submitted survey data (e.g. `test/{{code}}`). |
 | `auto_save_interval`        | Auto-save in-progress responses every N seconds (`0` to disable).                        |
 | `timeout`                   | Survey expiry, in minutes since start. `0` means no timeout.                             |
-| `url_params`                | If set, query-string params are forwarded into the survey as `extra_param_*` values.     |
+| `url_params`                | If set, the URL's parameters are forwarded into the survey as `extra_param_*` values. Both route parameters and the query string are read; a query parameter wins on a name clash. |
 | `save_pdf`                  | If `1`, adds a "Save as PDF" navigation button.                                          |
 | `own_entries_only`          | If `1` (default), users can only edit their own responses in edit mode.                  |
+| `update_based_on`           | Column that identifies a response row. Empty (default) keys rows on the generated `response_id`, one row per submission. Set to a column name and the survey updates the row already holding that value, so several components sharing a `survey_generated_id` build one row. A key matching no row falls back to the default rather than inserting. |
+| `block_updates_when`        | Column that locks a row. Empty (default) never locks. Set to a column name and a row whose value there is set and not `"0"` is never written to again — use with `update_based_on` to make a key single-use. |
 | `dynamic_replacement`       | A JSON template that overrides the dropdown selection for advanced dynamic content.      |
 | `label_survey_done`         | Markdown shown when the survey has already been completed.                               |
 | `label_survey_not_active`   | Markdown shown when the survey is outside its active window.                             |

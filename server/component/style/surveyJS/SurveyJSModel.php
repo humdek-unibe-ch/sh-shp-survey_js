@@ -50,6 +50,12 @@ class SurveyJSModel extends StyleModel
      */
     private $own_entries_only;
 
+    /** Column that identifies a response row; '' keys on `response_id` as before. */
+    private $update_based_on;
+
+    /** Column whose truthy value locks a row against further updates; '' never locks. */
+    private $block_updates_when;
+
     /**
      * JSON object where can be defined global translation keys and use the key to load the proper translation based on the selected language. A key is accessed by {{key_name}}, and this will be replaced with the value for the selected language
      */
@@ -78,6 +84,8 @@ class SurveyJSModel extends StyleModel
         $this->once_per_schedule = $this->get_db_field('once_per_schedule', 0);
         $this->once_per_user = $this->get_db_field('once_per_user', 0);
         $this->own_entries_only = $this->get_db_field('own_entries_only', 1);
+        $this->update_based_on = $this->get_db_field('update_based_on', '');
+        $this->block_updates_when = $this->get_db_field('block_updates_when', '');
         $this->start_time = $this->get_db_field('start_time', '00:00');
         $this->end_time = $this->get_db_field('end_time', '00:00');
         $this->dynamic_replacement = $this->get_db_field('dynamic_replacement', '');
@@ -227,6 +235,112 @@ class SurveyJSModel extends StyleModel
     }
 
     /**
+     * The updateBasedOn key this survey identifies a row with, or null for the
+     * default `response_id` behaviour.
+     *
+     * `get_data()` takes a filter string rather than bound parameters, so a
+     * value that could break out of it is rejected instead of escaped.
+     *
+     * @param array $data
+     *  The prepared data being saved.
+     * @return array|null
+     */
+    private function get_update_based_on_key($data)
+    {
+        $col = trim((string) $this->update_based_on);
+        if ($col === '' || !isset($data[$col])) {
+            return null;
+        }
+        // A column name is an identifier; a value is compared literally.
+        if (!preg_match('/^[A-Za-z_][A-Za-z0-9_]*$/', $col)) {
+            return null;
+        }
+        $value = $data[$col];
+        if (!is_scalar($value)) {
+            return null;
+        }
+        $value = (string) $value;
+        if ($value === '' || !preg_match('/^[A-Za-z0-9_.:@\- ]{1,190}$/', $value)) {
+            return null;
+        }
+        return array($col => $value);
+    }
+
+    /**
+     * Whether the row this key points at is locked against updates.
+     *
+     * `block_updates_when` names a column; a row whose value there is set and
+     * not "0" is finished as far as the study is concerned, so a later
+     * submission must not overwrite it. Empty (the default) never locks.
+     *
+     * @param string $table_name
+     *  The data table the survey writes to.
+     * @param array $key
+     *  Column => value, as returned by get_update_based_on_key().
+     * @return bool
+     */
+    private function row_is_locked($table_name, $key)
+    {
+        $col = trim((string) $this->block_updates_when);
+        if ($col === '' || !preg_match('/^[A-Za-z_][A-Za-z0-9_]*$/', $col)) {
+            return false;
+        }
+        $id_table = $this->user_input->get_dataTable_id($table_name);
+        if (!$id_table) {
+            return false;
+        }
+        $filter = '';
+        foreach ($key as $k => $value) {
+            $filter .= ' AND ' . $k . ' = "' . $value . '"';
+        }
+        $record = $this->user_input->get_data(
+            $id_table,
+            $filter,
+            $this->own_entries_only,
+            $this->own_entries_only && isset($_SESSION['id_user']) ? $_SESSION['id_user'] : null,
+            true
+        );
+        if (empty($record)) {
+            return false;
+        }
+        // db_first returns one associative row, not a list.
+        if (!is_array($record) || !isset($record[$col])) {
+            return false;
+        }
+        $value = trim((string) $record[$col]);
+        return $value !== '' && $value !== '0';
+    }
+
+    /**
+     * Whether a row already answers to this key.
+     *
+     * @param string $table_name
+     *  The data table the survey writes to.
+     * @param array $key
+     *  Column => value, as returned by get_update_based_on_key().
+     * @return bool
+     */
+    private function row_exists($table_name, $key)
+    {
+        $id_table = $this->user_input->get_dataTable_id($table_name);
+        if (!$id_table) {
+            return false;
+        }
+        $filter = '';
+        foreach ($key as $col => $value) {
+            $filter .= ' AND ' . $col . ' = "' . $value . '"';
+        }
+        $record = $this->user_input->get_data(
+            $id_table,
+            $filter,
+            $this->own_entries_only,
+            $this->own_entries_only && isset($_SESSION['id_user']) ? $_SESSION['id_user'] : null,
+            true
+        );
+        return !empty($record);
+    }
+
+    /**
      * Save survey js data as external table
      * @param object $data
      * Object with the data that should be saved
@@ -237,7 +351,28 @@ class SurveyJSModel extends StyleModel
         $survey = $this->get_raw_survey();
         if (isset($survey['survey_generated_id']) && isset($data['survey_generated_id']) && $data['survey_generated_id'] == $survey['survey_generated_id']) {
             if (isset($data['trigger_type'])) {
+                $key = $this->get_update_based_on_key($data);
+                // Join the shared row only if one already answers to the key. The
+                // key is often answered part way through, so falling through keeps
+                // this submission's own row instead of opening a second.
+                if ($key !== null && $this->row_exists($data['survey_generated_id'], $key)) {
+                    // The row is finished; a later submission must not overwrite it.
+                    if ($this->row_is_locked($data['survey_generated_id'], $key)) {
+                        return false;
+                    }
+                    return $this->user_input->save_data(transactionBy_by_user, $data['survey_generated_id'], $data, $key, $this->own_entries_only);
+                }
                 if ($data['trigger_type'] == actionTriggerTypes_started) {
+                    // A keyed survey reaching `started` again — a reopened form,
+                    // a restored response — already has a row for this
+                    // response_id, and inserting would leave the earlier one
+                    // behind once the key arrives and the save moves to it.
+                    if ($key === null && trim((string) $this->update_based_on) !== '') {
+                        $own = array("response_id" => $data['response_id']);
+                        if ($this->row_exists($data['survey_generated_id'], $own)) {
+                            return $this->user_input->save_data(transactionBy_by_user, $data['survey_generated_id'], $data, $own, $this->own_entries_only);
+                        }
+                    }
                     return $this->user_input->save_data(transactionBy_by_user, $data['survey_generated_id'], $data);
                 } else {
                     return $this->user_input->save_data(transactionBy_by_user, $data['survey_generated_id'], $data, array(

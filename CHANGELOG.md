@@ -7,6 +7,14 @@
 - The version preview no longer shows raw markup (`<p>`, `<b>`, ...) in question titles and descriptions authored with the rich text editor. SurveyJS escapes text by default; the viewer now registers the same `onTextMarkdown` hook the survey renderer applies through `applyHtml()`, so the content renders formatted.
 - Expired sessions no longer surface as a bare "Data not saved!" alert (#22). When a save comes back as the rendered `no_access_guest` page (HTML, HTTP 200) instead of the controller's JSON — or as a 401/403 — the survey now reports that the session expired and sends the user to the login page. Genuine save failures still show the original error. Post-login return relies on core's `$_SESSION['target_url']`, so the user lands back on the survey.
 
+## v1.7.0
+
+### New feature
+- `update_based_on` on the `surveyJS` style: names the column that identifies a response row. Empty (the default) keeps the existing behaviour, rows keyed on the generated `response_id`, one row per submission. Set to a column name, the survey updates the row already holding that value, so several components sharing a `survey_generated_id` build one row together, for example a questionnaire split across pages or a survey chained with a `labJS` experiment. A key matching no row falls back to the default rather than inserting, because the key is often a question answered part way through and inserting then would abandon the row already opened. A keyed survey reaching `started` again updates the row it already has for that `response_id` instead of opening a second one.
+- The keyed column must identify one participant on its own. With guest participants every write shares a user, so a value repeated across people would merge them into one row.
+- `url_params` now also exposes route parameters, not only the query string, so a value carried in the URL path reaches the survey. A query parameter still wins on a name clash.
+- `block_updates_when` on the `surveyJS` style: names a column that locks a row once it is set. Empty (the default) never locks. Set to a column name and a row whose value there is set and not "0" is never written to again, so a resubmission under an already-used key cannot overwrite finished data. Pairs with `update_based_on`: one names the key, the other makes it single-use. The check runs in the model, so it holds for a direct POST as well as a normal submission.
+
 ## v1.6.0
 
 SurveyJS libraries upgraded to **v2.5.28** (Preact / survey-js-ui). Knockout is no longer loaded.

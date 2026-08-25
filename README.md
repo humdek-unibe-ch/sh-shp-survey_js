@@ -94,6 +94,9 @@ For current licensing details and plan options, refer to the official SurveyJS p
 - Timeout settings for survey sessions
 - Configurable access controls (own_entries_only mode)
 - Edit mode for existing responses
+- `update_based_on`: names the column that identifies a response row. Empty (the default) keys rows on the generated `response_id`, one row per submission. Set to a column name and the survey updates the row already holding that value, so several components sharing a `survey_generated_id` build one row together. A key matching no row falls back to the default rather than inserting.
+- `block_updates_when`: names a column that locks a row. Empty (the default) never locks. Set to a column name and a row whose value there is set and not `"0"` is never written to again — use with `update_based_on` to make a key single-use.
+- `url_params`: passes the URL's parameters to the survey, each stored as `extra_param_<name>`. Both route parameters and the query string are read; a query parameter wins on a name clash.
 
 ### Page Navigation Control
 - Reset answers when returning to previous pages (resetOnBack property)
