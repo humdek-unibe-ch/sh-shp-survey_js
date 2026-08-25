@@ -273,16 +273,27 @@ class SurveyJSModel extends StyleModel
      * not "0" is finished as far as the study is concerned, so a later
      * submission must not overwrite it. Empty (the default) never locks.
      *
+     * A survey that writes the column itself is never locked by it. Such a
+     * survey sends the value on every save including its first, so checking
+     * the stored row would make it refuse its own later writes — the
+     * `finished` one included, leaving the row stuck on `started`. Only a
+     * submission that does not carry the column can be blocked by it.
+     *
      * @param string $table_name
      *  The data table the survey writes to.
      * @param array $key
      *  Column => value, as returned by get_update_based_on_key().
+     * @param array $data
+     *  The incoming submission.
      * @return bool
      */
-    private function row_is_locked($table_name, $key)
+    private function row_is_locked($table_name, $key, $data)
     {
         $col = trim((string) $this->block_updates_when);
         if ($col === '' || !preg_match('/^[A-Za-z_][A-Za-z0-9_]*$/', $col)) {
+            return false;
+        }
+        if (isset($data[$col])) {
             return false;
         }
         $id_table = $this->user_input->get_dataTable_id($table_name);
@@ -356,8 +367,9 @@ class SurveyJSModel extends StyleModel
                 // key is often answered part way through, so falling through keeps
                 // this submission's own row instead of opening a second.
                 if ($key !== null && $this->row_exists($data['survey_generated_id'], $key)) {
-                    // The row is finished; a later submission must not overwrite it.
-                    if ($this->row_is_locked($data['survey_generated_id'], $key)) {
+                    // Finished by an earlier submission, so this one must not
+                    // overwrite it. A submission supplying the column is not blocked.
+                    if ($this->row_is_locked($data['survey_generated_id'], $key, $data)) {
                         return false;
                     }
                     return $this->user_input->save_data(transactionBy_by_user, $data['survey_generated_id'], $data, $key, $this->own_entries_only);
