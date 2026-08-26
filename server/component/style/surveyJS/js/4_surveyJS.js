@@ -73,10 +73,19 @@ $(document).ready(function () {
     initSurveyJS();
 });
 
+/** Per survey: does the study follow redirect_at_end when a save is refused. */
+var redirectWhenBlocked = {};
+
 function initSurveyJS() {
     $('.selfHelp-survey-js-holder').each(function () {
         const surveyContent = $(this).data('survey-js');
         const surveyFields = $(this).data('survey-js-fields');
+        // Kept for saveSurveyJS: the attribute is removed just below, and a
+        // refused save has to know whether the study handles it itself.
+        if (surveyFields && surveyFields['survey_generated_id']) {
+            redirectWhenBlocked[surveyFields['survey_generated_id']] =
+                !!surveyFields['redirect_when_blocked'];
+        }
         const lastResponse = $(this).data('survey-js-last-response');
         $(this).removeAttr('data-survey-js');
         $(this).removeAttr('data-survey-js-fields');
@@ -230,7 +239,21 @@ function initSurveyJS() {
             uploadFiles(survey)
                 .then(() => {
                     saveSurveyJS(sender).then((res) => {
-                        if (res) {
+                        if (!res && surveyFields['redirect_when_blocked']) {
+                            // The study treats a refused save as an expected end -
+                            // a resubmission under a finished key - so send the
+                            // participant on instead of showing an error.
+                            var blockedUrl = resolveRedirectAtEnd(
+                                surveyFields['redirect_at_end'],
+                                survey.data,
+                                surveyFields['base_path'] || ''
+                            );
+                            if (blockedUrl) {
+                                window.location.href = blockedUrl;
+                            } else {
+                                options.showSaveError();
+                            }
+                        } else if (res) {
                             options.showSaveSuccess();
                             if (survey.data['trigger_type'] == 'finished') {
                                 if (surveyFields['redirect_at_end']) {
@@ -408,7 +431,8 @@ function saveSurveyJS(survey, newPageNo) {
                     // runs, so the body is the no_access_guest page (HTML, 200).
                     if (typeof r === 'string' && /<html|<!doctype|no_access_guest/i.test(r)) {
                         sessionExpired();
-                    } else {
+                    } else if (!surveyRedirectsWhenBlocked(data)) {
+                        // The study handles a refused save itself when that is set.
                         dataNotSaved();
                     }
                     resolve(false);
@@ -420,7 +444,7 @@ function saveSurveyJS(survey, newPageNo) {
                 // 401/403: deployments that answer with a status code instead of a page.
                 if (xhr && (xhr.status === 401 || xhr.status === 403)) {
                     sessionExpired();
-                } else {
+                } else if (!surveyRedirectsWhenBlocked(data)) {
                     dataNotSaved();
                 }
                 resolve(false);
@@ -495,6 +519,20 @@ function uploadFiles(survey) {
                 });
         }
     });
+}
+
+/**
+ * Whether the study handles a refused save itself.
+ *
+ * `redirect_when_blocked` means a save can be refused as an expected end -
+ * a resubmission under a finished `block_updates_when` key - so the caller
+ * redirects and no error is shown.
+ *
+ * @returns {boolean}
+ */
+function surveyRedirectsWhenBlocked(data) {
+    var id = data && data['survey_generated_id'];
+    return !!(id && redirectWhenBlocked[id]);
 }
 
 function dataNotSaved() {

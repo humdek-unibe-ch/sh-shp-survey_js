@@ -158,7 +158,12 @@ class SurveyJSView extends StyleView
                     // (e.g. the `video` question) can resolve root-relative
                     // URLs such as "/assets/video.mp4" against the SelfHelp
                     // install path.
-                    "base_path" => defined('BASE_PATH') ? BASE_PATH : ''
+                    "base_path" => defined('BASE_PATH') ? BASE_PATH : '',
+                    // When a save is refused - a resubmission under a finished
+                    // `block_updates_when` key - follow redirect_at_end instead of
+                    // reporting an error. Off by default: a failed save normally
+                    // needs to be visible.
+                    "redirect_when_blocked" => boolval($this->model->get_db_field('redirect_when_blocked', 0))
                 );
                 if (method_exists($this->model, 'is_cms_page') && $this->model->is_cms_page()) {
                     // if it is in CMS unset the survey id, we do not want to save it
