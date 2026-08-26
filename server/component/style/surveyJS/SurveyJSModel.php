@@ -53,9 +53,6 @@ class SurveyJSModel extends StyleModel
     /** Column that identifies a response row; '' keys on `response_id` as before. */
     private $update_based_on;
 
-    /** Column whose truthy value locks a row against further updates; '' never locks. */
-    private $block_updates_when;
-
     /**
      * JSON object where can be defined global translation keys and use the key to load the proper translation based on the selected language. A key is accessed by {{key_name}}, and this will be replaced with the value for the selected language
      */
@@ -85,7 +82,6 @@ class SurveyJSModel extends StyleModel
         $this->once_per_user = $this->get_db_field('once_per_user', 0);
         $this->own_entries_only = $this->get_db_field('own_entries_only', 1);
         $this->update_based_on = $this->get_db_field('update_based_on', '');
-        $this->block_updates_when = $this->get_db_field('block_updates_when', '');
         $this->start_time = $this->get_db_field('start_time', '00:00');
         $this->end_time = $this->get_db_field('end_time', '00:00');
         $this->dynamic_replacement = $this->get_db_field('dynamic_replacement', '');
@@ -267,62 +263,6 @@ class SurveyJSModel extends StyleModel
     }
 
     /**
-     * Whether the row this key points at is locked against updates.
-     *
-     * `block_updates_when` names a column; a row whose value there is set and
-     * not "0" is finished as far as the study is concerned, so a later
-     * submission must not overwrite it. Empty (the default) never locks.
-     *
-     * A survey that writes the column itself is never locked by it. Such a
-     * survey sends the value on every save including its first, so checking
-     * the stored row would make it refuse its own later writes — the
-     * `finished` one included, leaving the row stuck on `started`. Only a
-     * submission that does not carry the column can be blocked by it.
-     *
-     * @param string $table_name
-     *  The data table the survey writes to.
-     * @param array $key
-     *  Column => value, as returned by get_update_based_on_key().
-     * @param array $data
-     *  The incoming submission.
-     * @return bool
-     */
-    private function row_is_locked($table_name, $key, $data)
-    {
-        $col = trim((string) $this->block_updates_when);
-        if ($col === '' || !preg_match('/^[A-Za-z_][A-Za-z0-9_]*$/', $col)) {
-            return false;
-        }
-        if (isset($data[$col])) {
-            return false;
-        }
-        $id_table = $this->user_input->get_dataTable_id($table_name);
-        if (!$id_table) {
-            return false;
-        }
-        $filter = '';
-        foreach ($key as $k => $value) {
-            $filter .= ' AND ' . $k . ' = "' . $value . '"';
-        }
-        $record = $this->user_input->get_data(
-            $id_table,
-            $filter,
-            $this->own_entries_only,
-            $this->own_entries_only && isset($_SESSION['id_user']) ? $_SESSION['id_user'] : null,
-            true
-        );
-        if (empty($record)) {
-            return false;
-        }
-        // db_first returns one associative row, not a list.
-        if (!is_array($record) || !isset($record[$col])) {
-            return false;
-        }
-        $value = trim((string) $record[$col]);
-        return $value !== '' && $value !== '0';
-    }
-
-    /**
      * Whether a row already answers to this key.
      *
      * @param string $table_name
@@ -367,11 +307,6 @@ class SurveyJSModel extends StyleModel
                 // key is often answered part way through, so falling through keeps
                 // this submission's own row instead of opening a second.
                 if ($key !== null && $this->row_exists($data['survey_generated_id'], $key)) {
-                    // Finished by an earlier submission, so this one must not
-                    // overwrite it. A submission supplying the column is not blocked.
-                    if ($this->row_is_locked($data['survey_generated_id'], $key, $data)) {
-                        return false;
-                    }
                     return $this->user_input->save_data(transactionBy_by_user, $data['survey_generated_id'], $data, $key, $this->own_entries_only);
                 }
                 if ($data['trigger_type'] == actionTriggerTypes_started) {

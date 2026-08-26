@@ -18,27 +18,3 @@ VALUES (get_style_id('surveyJS'), get_field_id('update_based_on'), '',
 UPDATE `styles_fields`
 SET `help` = 'If enabled, parameters can be passed via the url, as a path segment or query string. Example: `?code=test&par1=2&par2=2`'
 WHERE `id_styles` = get_style_id('surveyJS') AND `id_fields` = get_field_id('url_params');
-
--- Let a study lock a row once it is finished. `block_updates_when` names a
--- column; a row whose value there is set and not "0" refuses further writes,
--- so a resubmission under an already-used key cannot overwrite it. A survey
--- that asks the column itself is never blocked by it, so the survey finishing
--- a run can still save. Empty (the default) never locks, so existing surveys
--- are unaffected.
-INSERT IGNORE INTO `fields` (`id`, `name`, `id_type`, `display`)
-VALUES (NULL, 'block_updates_when', get_field_type_id('text'), 0);
-
-INSERT IGNORE INTO `styles_fields` (`id_styles`, `id_fields`, `default_value`, `help`)
-VALUES (get_style_id('surveyJS'), get_field_id('block_updates_when'), '',
-'Column that locks a row against further updates. Empty keeps the default: a keyed row is always updated. Set to a column name and a row whose value there is set and not "0" refuses further writes - use with update_based_on to make a key single-use. A survey that asks the column itself is never blocked by it, so the survey that finishes a run can still save.');
-
--- Let a study treat a refused save as an expected end rather than an error.
--- With `block_updates_when` set, a resubmission under a finished key is
--- refused on purpose; the participant should be sent on instead of shown
--- "Data not saved!". Off by default, so a failed save stays visible.
-INSERT IGNORE INTO `fields` (`id`, `name`, `id_type`, `display`)
-VALUES (NULL, 'redirect_when_blocked', get_field_type_id('checkbox'), 0);
-
-INSERT IGNORE INTO `styles_fields` (`id_styles`, `id_fields`, `default_value`, `help`)
-VALUES (get_style_id('surveyJS'), get_field_id('redirect_when_blocked'), '0',
-'If enabled, a save that is refused follows redirect_at_end instead of showing an error. Intended for studies using block_updates_when, where a resubmission under a finished key is expected. Leave off so genuine save failures stay visible.');
