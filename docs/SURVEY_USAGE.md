@@ -185,7 +185,6 @@ section and configure its fields:
 | `save_pdf`                  | If `1`, adds a "Save as PDF" navigation button.                                          |
 | `own_entries_only`          | If `1` (default), users can only edit their own responses in edit mode.                  |
 | `update_based_on`           | Column that identifies a response row. Empty (default) keys rows on the generated `response_id`, one row per submission. Set to a column name and the survey updates the row already holding that value, so several components sharing a `survey_generated_id` build one row. A key matching no row falls back to the default rather than inserting. |
-| `block_updates_when`        | Column that locks a row. Empty (default) never locks. Set to a column name and a row whose value there is set and not `"0"` refuses further writes — use with `update_based_on` to make a key single-use. A survey that asks the column itself is never blocked by it, so the survey that finishes a run can still save. |
 | `dynamic_replacement`       | A JSON template that overrides the dropdown selection for advanced dynamic content.      |
 | `label_survey_done`         | Markdown shown when the survey has already been completed.                               |
 | `label_survey_not_active`   | Markdown shown when the survey is outside its active window.                             |
