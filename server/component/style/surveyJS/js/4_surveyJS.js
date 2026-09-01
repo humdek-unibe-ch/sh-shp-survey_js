@@ -74,7 +74,7 @@ $(document).ready(function () {
 });
 
 function initSurveyJS() {
-    $('.selfHelp-survey-js-holder').each(function () {
+    $('.selfHelp-survey-js-holder').each(function (surveyIndex) {
         const surveyContent = $(this).data('survey-js');
         const surveyFields = $(this).data('survey-js-fields');
         const lastResponse = $(this).data('survey-js-last-response');
@@ -92,6 +92,9 @@ function initSurveyJS() {
         window['surveyjs-widgets'].microphone(Survey);
         expandSurveyJsForSelfhelp();
         var survey = new Survey.Model(surveyContent);
+        // Each survey instance keeps its own element id counter, so two surveys
+        // on one page would otherwise emit identical input ids.
+        survey.elementIdPrefix = "sjs" + surveyIndex + "_";
         var currentLocale = $(this).attr("class").split(" ").filter(function (className) {
             return className.startsWith("selfHelp-locale-");
         });
