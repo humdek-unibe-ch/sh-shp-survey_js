@@ -15,6 +15,7 @@ SurveyJS libraries upgraded to **v3.0.2**. Survey Creator Dashboard now renders 
 - The Creator still runs on Preact: `survey-creator-js` v3 lists react/react-dom/survey-react-ui as UMD dependencies, but only on its CommonJS/AMD branch. Its browser-global branch resolves all three from `window.SurveyUI`, which `survey-js-ui` provides. No React is loaded.
 - Refresh `survey-core`, `survey-creator-core`, `survey-analytics` and Tabulator CSS from the 3.0.2 packages.
 - Set a per-instance `elementIdPrefix` when rendering surveys. In v2 element ids came from one global counter, so multiple surveys on a page got unique input ids; in v3 each survey instance restarts its own counter and two surveys emitted identical ids (`sq_0i_0`, `sq_1i`, ...). Pages with more than one surveyJS section are affected.
+- Construct the Survey Creator on DOM ready instead of at script parse time. The v3 Creator initialises its theme variables in the constructor by appending a probe element to `document.body` to read computed styles; the Creator script loads in `<head>`, where `document.body` is still null, so the constructor threw `Cannot read properties of null (reading 'appendChild')` and the Creator never rendered.
 
 ### Notes
 - v3 deprecates the `--sjs-` CSS variable prefix in favour of `--sjs2-`, but maps the old names internally, so existing custom CSS keeps working.
