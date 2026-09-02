@@ -17,6 +17,17 @@ SurveyJS libraries upgraded to **v3.0.2**. Survey Creator Dashboard now renders 
 - Set a per-instance `elementIdPrefix` when rendering surveys. In v2 element ids came from one global counter, so multiple surveys on a page got unique input ids; in v3 each survey instance restarts its own counter and two surveys emitted identical ids (`sq_0i_0`, `sq_1i`, ...). Pages with more than one surveyJS section are affected.
 - Construct the Survey Creator on DOM ready instead of at script parse time. The v3 Creator initialises its theme variables in the constructor by appending a probe element to `document.body` to read computed styles; the Creator script loads in `<head>`, where `document.body` is still null, so the constructor threw `Cannot read properties of null (reading 'appendChild')` and the Creator never rendered.
 
+### Theming (#13)
+
+Survey authors can pick a theme per survey in the Creator, using the themes SurveyJS ships.
+
+- Enable the Survey Creator **Theme tab** (`showThemeTab`) and vendor the themes bundle as `4_survey-themes.min.js` (`window.SurveyTheme`).
+- Call `SurveyCreatorCore.registerSurveyTheme()` before the Creator is constructed. The tab only lists themes that have been registered; without this it offers `default` alone. Authors get the eight families SurveyJS ships (default, contrast, borderless, flat, plain, three-dimensional, soft, monochrome) in light/dark and panelless variants.
+- The theme is stored **inside the survey config** under a `theme` key rather than in a new column. Publishing is `published = config` and versions snapshot `config`, so the theme travels with save, publish and restore for free and `surveys` needs no schema change. `saveThemeFunc` and `saveSurveyFunc` share one save path.
+- The runtime pulls `theme` out of the config, applies it with `applyTheme()` and builds the model from the rest, so SurveyJS never sees a property it does not define. The versions preview applies the version's own stored theme, so an old version renders as participants saw it.
+
+**Note on Bootstrap.** SurveyJS also publishes theme *adapters* that map its tokens onto a host framework's CSS variables. An adapter and a theme cannot be combined: the adapter writes direct `background-color` / `border-color` rules on SurveyJS controls (`.sd-item__control`, `.sd-radio__decorator`, `.sd-action--primary`), which override the tokens a theme sets — option hover states and the Complete button keep the framework colour while the rest of the survey follows the theme. Upstream documents one adapter per application and never combines the two. This release takes the theme route.
+
 ### Notes
 - v3 deprecates the `--sjs-` CSS variable prefix in favour of `--sjs2-`, but maps the old names internally, so existing custom CSS keeps working.
 - v3 changes navigation buttons from `<input type="button">` to `<button>` with a nested `<span>`. The plugin defines no `sd-btn` selectors, so no CSS changes were needed.

@@ -91,7 +91,17 @@ function initSurveyJS() {
         }
         window['surveyjs-widgets'].microphone(Survey);
         expandSurveyJsForSelfhelp();
+        // The Creator keeps its theme inside the survey config. Pull it out before
+        // building the model so SurveyJS never sees a property it does not define.
+        var surveyTheme = null;
+        if (surveyContent && typeof surveyContent === "object" && surveyContent.theme) {
+            surveyTheme = surveyContent.theme;
+            delete surveyContent.theme;
+        }
         var survey = new Survey.Model(surveyContent);
+        if (surveyTheme) {
+            survey.applyTheme(surveyTheme);
+        }
         // Each survey instance keeps its own element id counter, so two surveys
         // on one page would otherwise emit identical input ids.
         survey.elementIdPrefix = "sjs" + surveyIndex + "_";
