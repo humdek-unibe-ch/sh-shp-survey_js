@@ -23,7 +23,14 @@ function styles() {
     '../server/component/**/css/*.css',
     '../server/component/style/css/*.css',
     '../server/component/style/**/css/*.css',
-    '!../server/component/style/surveyJS/css/leaflet.css'
+    '!../server/component/style/surveyJS/css/leaflet.css',
+    // The theme layer must be concatenated after survey-core.min.css, but the
+    // globs above are alphabetical and would place bootstrap-*.css before it.
+    // Exclude both here and re-append them in order.
+    '!../server/component/style/surveyJS/css/bootstrap5-variables.css',
+    '!../server/component/style/surveyJS/css/bootstrap-adapter.css',
+    '../server/component/style/surveyJS/css/bootstrap5-variables.css',
+    '../server/component/style/surveyJS/css/bootstrap-adapter.css'
   ])
     .pipe(csso())
     .pipe(concat('survey-js.min.css'))

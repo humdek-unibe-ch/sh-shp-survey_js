@@ -253,6 +253,8 @@ class SurveyJSView extends StyleView
             if (DEBUG) {
                 $local = array(
                     __DIR__ . "/css/survey-core.min.css", // survey-core v2.5.28 (replaces modern.min.css + defaultV2.min.css)
+                    __DIR__ . "/css/bootstrap5-variables.css", // Bootstrap 5.3.3 --bs-* variables only (no component rules)
+                    __DIR__ . "/css/bootstrap-adapter.css", // SurveyJS Bootstrap theme adapter (upstream, unmodified)
                     __DIR__ . "/css/survey.css",
                     __DIR__ . "/css/video-segment.css", // Custom `video` question styles (v1.4.8; file name kept on disk for git-history continuity)
                     __DIR__ . "/css/leaflet.css",       // Vendored Leaflet 1.9.4 (v1.4.11) — loaded standalone so its url(images/...) refs resolve correctly
