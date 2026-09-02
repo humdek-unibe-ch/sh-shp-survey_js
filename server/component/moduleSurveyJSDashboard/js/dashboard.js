@@ -54,10 +54,11 @@ function initSurveyDashboard(survey_results) {
         );
         window['surveyjs-widgets'].microphone(Survey);
 
-        const surveyJSDashboard = new SurveyAnalytics.VisualizationPanel(
-            survey.getAllQuestions(),
-            survey_results,
-            dashboardOptions
+        const surveyJSDashboard = new SurveyAnalytics.Dashboard(
+            Object.assign({
+                questions: survey.getAllQuestions(),
+                data: survey_results
+            }, dashboardOptions)
         );
 
         if (!!localStorageSurveyDashboardPanel) {

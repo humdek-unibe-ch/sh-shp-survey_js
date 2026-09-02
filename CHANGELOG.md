@@ -2,6 +2,30 @@
 
 ## Unreleased
 
+## v1.7.0
+
+SurveyJS libraries upgraded to **v3.0.2**. Survey Creator Dashboard now renders through Chart.js; Plotly is no longer shipped.
+
+### Library / runtime
+- Bump `survey-core`, `survey-js-ui`, `survey-creator-core`, `survey-creator-js`, `survey-analytics` and `survey-pdf` to **3.0.2**.
+- Dashboard: the default `survey-analytics` v3 bundle renders through **Chart.js 4.5.1** (+ `chartjs-plugin-datalabels` 2.2.0) instead of Plotly. `plotly-latest.min.js` (4.5 MB) is removed from the package; Chart.js is 208 KB.
+- Dashboard: `new SurveyAnalytics.VisualizationPanel(questions, data, options)` replaced by `new SurveyAnalytics.Dashboard({ questions, data, ... })`. `Dashboard` extends `VisualizationPanel`, so the existing `state` / `onStateChanged` localStorage persistence and `layout()` call are unchanged.
+- Bump jsPDF to **4.2.1** and `jspdf-autotable` to **5.0.8** (`survey-pdf` v3 accepts jsPDF `^2 || ^3 || ^4`).
+- Bump Tabulator to **6.5.2**.
+- The Creator still runs on Preact: `survey-creator-js` v3 lists react/react-dom/survey-react-ui as UMD dependencies, but only on its CommonJS/AMD branch. Its browser-global branch resolves all three from `window.SurveyUI`, which `survey-js-ui` provides. No React is loaded.
+- Refresh `survey-core`, `survey-creator-core`, `survey-analytics` and Tabulator CSS from the 3.0.2 packages.
+- Set a per-instance `elementIdPrefix` when rendering surveys. In v2 element ids came from one global counter, so multiple surveys on a page got unique input ids; in v3 each survey instance restarts its own counter and two surveys emitted identical ids (`sq_0i_0`, `sq_1i`, ...). Pages with more than one surveyJS section are affected.
+- Construct the Survey Creator on DOM ready instead of at script parse time. The v3 Creator initialises its theme variables in the constructor by appending a probe element to `document.body` to read computed styles; the Creator script loads in `<head>`, where `document.body` is still null, so the constructor threw `Cannot read properties of null (reading 'appendChild')` and the Creator never rendered.
+
+### Notes
+- v3 deprecates the `--sjs-` CSS variable prefix in favour of `--sjs2-`, but maps the old names internally, so existing custom CSS keeps working.
+- v3 changes navigation buttons from `<input type="button">` to `<button>` with a nested `<span>`. The plugin defines no `sd-btn` selectors, so no CSS changes were needed.
+
+### After update
+- Run `server/db/v1.7.0.sql`.
+- Clear CMS / styles / hooks cache.
+- Rebuild CSS with gulp if you customize styles (`css/ext/survey-js.min.css`).
+
 ### Fixes
 - Viewing a saved survey version no longer fails with "Corrupted version!". The versions table carried the survey JSON as raw text in a (hidden) table cell, so the browser parsed the markup inside question texts and descriptions (`<p>`, `<b>`, ...) as real HTML: unclosed tags were closed, `<`/`>` in the remaining text were re-escaped to `&lt;`/`&gt;`, and the string DataTables read back was no longer valid JSON. `JSON.parse` threw and the catch-all reported the version as corrupted — the stored data was always fine. Any survey containing markup was affected (9 of 10 versions in a local database); only markup-free surveys opened. The cell now carries the config base64-encoded and `surveyVersions.js` decodes it as UTF-8 before parsing, which round-trips unchanged and also stops the config from being injected into the page as HTML. Because the page markup and that script now share an encoding contract, the script is included with a `?v=<filemtime>` cache key so a browser holding the previous copy refetches it instead of feeding the encoded value to `JSON.parse`.
 - The version preview no longer shows raw markup (`<p>`, `<b>`, ...) in question titles and descriptions authored with the rich text editor. SurveyJS escapes text by default; the viewer now registers the same `onTextMarkdown` hook the survey renderer applies through `applyHtml()`, so the content renders formatted.

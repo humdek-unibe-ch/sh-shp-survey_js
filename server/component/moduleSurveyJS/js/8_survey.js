@@ -92,10 +92,14 @@ function applyHtml(_, options) {
     options.html = str;
 }
 
-const creator = new SurveyCreator.SurveyCreator(creatorOptions);
+// Constructed on DOM ready: the v3 Creator probes computed styles against
+// document.body while initialising its theme variables, and this script loads
+// in <head>, where document.body is still null.
+let creator;
 var published_json = '';
 
 $(document).ready(function () {
+    creator = new SurveyCreator.SurveyCreator(creatorOptions);
     initSurveyCreator();
     initSurveysTable();
     initDeleteSurvey();
