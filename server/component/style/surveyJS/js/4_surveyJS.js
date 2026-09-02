@@ -92,6 +92,19 @@ function initSurveyJS() {
         window['surveyjs-widgets'].microphone(Survey);
         expandSurveyJsForSelfhelp();
         var survey = new Survey.Model(surveyContent);
+        // A survey may carry a `theme` object (v3 shape: `cssVariables`, and
+        // optionally `themeName` / `isPanelless`). survey-core does not read it
+        // off the model itself, so apply it here. Kept generic on purpose: the
+        // values are per-survey and live in the survey JSON, so a study sets its
+        // own look without the plugin hardcoding any project's choices.
+        if (surveyContent && surveyContent.theme && typeof survey.applyTheme === "function") {
+            try {
+                survey.applyTheme(surveyContent.theme);
+            } catch (e) {
+                // A malformed theme must not stop the survey from rendering.
+                console.warn("SurveyJS: could not apply theme", e);
+            }
+        }
         // Each survey instance keeps its own element id counter, so two surveys
         // on one page would otherwise emit identical input ids.
         survey.elementIdPrefix = "sjs" + surveyIndex + "_";

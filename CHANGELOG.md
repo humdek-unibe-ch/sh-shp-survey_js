@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+### Fixes
+- Survey navigation buttons ("Next", "Previous", "Complete") now follow the SelfHelp language instead of staying English. The buttons are not part of the survey JSON; they come from survey-core's built-in string table, which ships English only, with every other language in a separate `survey.i18n` bundle. That bundle was included by the CMS module but not by the `surveyJS` style that renders surveys to participants, so `survey.locale` had no translations to switch to — authored question texts translated (they carry their own per-locale values in the survey JSON) while the buttons did not. The style now loads `7_survey.i18n.min.js` after `survey-core`, which it extends.
+
 ## v1.7.0
 
 SurveyJS libraries upgraded to **v3.0.2**. Survey Creator Dashboard now renders through Chart.js; Plotly is no longer shipped.
