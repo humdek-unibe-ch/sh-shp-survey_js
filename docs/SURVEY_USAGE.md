@@ -183,13 +183,40 @@ section and configure its fields:
 | `timeout`                   | Survey expiry, in minutes since start. `0` means no timeout.                             |
 | `url_params`                | If set, the URL's parameters are forwarded into the survey as `extra_param_*` values. Both route parameters and the query string are read; a query parameter wins on a name clash. |
 | `save_pdf`                  | If `1`, adds a "Save as PDF" navigation button.                                          |
-| `own_entries_only`          | If `1` (default), users can only edit their own responses in edit mode.                  |
-| `update_based_on`           | Column that identifies a response row. Empty (default) keys rows on the generated `response_id`, one row per submission. Set to a column name and the survey updates the row already holding that value, so several components sharing a `survey_generated_id` build one row. A key matching no row falls back to the default rather than inserting. |
+| `own_entries_only`          | If `1` (default), users can only edit their own responses in edit mode. Note that guest participants share one user id, so this isolates nobody in a study without accounts. |
+| `update_based_on`           | Column that identifies a response row. Empty (default) keys rows on the generated `response_id`, one row per submission. Set to a column name and the survey updates the row already holding that value, so several components sharing a `survey_generated_id` build one row. A key matching no row falls back to the default rather than inserting. See [Keying rows on a participant code](#keying-rows-on-a-participant-code). |
 | `dynamic_replacement`       | A JSON template that overrides the dropdown selection for advanced dynamic content.      |
 | `label_survey_done`         | Markdown shown when the survey has already been completed.                               |
 | `label_survey_not_active`   | Markdown shown when the survey is outside its active window.                             |
 
 These are the same fields documented in the main [README](../README.md).
+
+### Keying rows on a participant code
+
+A study without user accounts runs every participant as the same guest user.
+`own_entries_only` therefore isolates nobody, and the default "one row per
+submission, resumed within the session" cannot tell two participants apart: the
+newest row belongs to whoever answered last, not to the person at the screen.
+
+Set `update_based_on` to a column that is unique to one participant — normally
+the code the url carries, stored as `extra_param_<name>` when `url_params` is
+on. Rows are then found by that value rather than by the session:
+
+| `update_based_on` | key in the url | row restored |
+| --- | --- | --- |
+| empty | — | the newest row for the session |
+| set | present | the row holding that value |
+| set | absent | none; the survey starts empty |
+
+The last case is deliberate. The key is itself a survey field, so restoring
+another participant's row would hand over their key and the following save would
+join it.
+
+A row already marked `finished` is never joined. Reopening a completed survey
+starts a row of its own rather than turning the original back to `updated` and
+replacing its answers with the empty form. **An export can therefore hold more
+than one row per key** — select on `trigger_type = 'finished'` instead of
+assuming one row per participant.
 
 ## 5. Testing surveys locally
 

@@ -95,6 +95,26 @@ For current licensing details and plan options, refer to the official SurveyJS p
 - Configurable access controls (own_entries_only mode)
 - Edit mode for existing responses
 - `update_based_on`: names the column that identifies a response row. Empty (the default) keys rows on the generated `response_id`, one row per submission. Set to a column name and the survey updates the row already holding that value, so several components sharing a `survey_generated_id` build one row together. A key matching no row falls back to the default rather than inserting.
+
+  Which row is *loaded* follows the same key:
+
+  | `update_based_on` | key in the url | row restored |
+  | --- | --- | --- |
+  | empty | — | the newest row for the session |
+  | set | present | the row holding that value |
+  | set | absent | none; the survey starts empty |
+
+  The last case matters because the key is itself a survey field: restoring
+  another participant's row would hand over their key, and the save would then
+  join it. Guests share one user id, so `own_entries_only` isolates nobody and
+  "newest row for the session" means whoever answered last — which is why a
+  study with guest participants should key on something the url carries.
+
+  A row already marked `finished` is never joined. Revisiting a completed
+  survey opens a row of its own instead of turning the original back to
+  `updated` and replacing its answers. An export can therefore hold more than
+  one row per key, so analysis should select on `trigger_type = 'finished'`
+  rather than assume one row per participant.
 - `url_params`: passes the URL's parameters to the survey, each stored as `extra_param_<name>`. Both route parameters and the query string are read; a query parameter wins on a name clash.
 
 ### Page Navigation Control
