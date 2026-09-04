@@ -206,7 +206,18 @@ class SurveyJSModel extends StyleModel
         }
         $id_dataTables = $this->user_input->get_dataTable_id($survey['survey_generated_id']);
         if ($id_dataTables) {
-            $last_response = $this->user_input->get_data($id_dataTables, 'ORDER BY record_id DESC', true, $_SESSION['id_user'], true);
+            // Guests share one user id, so `own_entries_only` isolates nobody:
+            // the newest row is whoever answered last. Scope by the key instead.
+            $key = $this->get_key_from_request();
+            if ($key !== null) {
+                $last_response = $this->find_row($survey['survey_generated_id'], $key);
+            } else if (trim((string) $this->update_based_on) !== '') {
+                // Keyed but no key in the request: restoring another row would
+                // hand over its key too, and the save would then join it.
+                $last_response = null;
+            } else {
+                $last_response = $this->user_input->get_data($id_dataTables, 'ORDER BY record_id DESC', true, $_SESSION['id_user'], true);
+            }
         }
         if (isset($last_response['_json'])) {
             $last_response_json = json_decode($last_response['_json'], true);
@@ -228,6 +239,32 @@ class SurveyJSModel extends StyleModel
             $survey['content'] = json_encode($this->dynamic_replacement);
         }
         return $survey;
+    }
+
+    /**
+     * The update_based_on key for the current request, or null.
+     *
+     * The value arrives in the url. The route names it whatever the page
+     * declares (`code`), while the column is what the survey stores it as
+     * (`extra_param_code`), so a bare route name is tried too.
+     *
+     * @return array|null
+     */
+    private function get_key_from_request()
+    {
+        $col = trim((string) $this->update_based_on);
+        if ($col === '') {
+            return null;
+        }
+        $params = is_array($this->params) ? $this->params : array();
+        if (!isset($params[$col])) {
+            // `extra_param_code` is carried in the route as `code`.
+            $short = preg_replace('/^extra_param_/', '', $col);
+            if ($short !== $col && isset($params[$short])) {
+                $params[$col] = $params[$short];
+            }
+        }
+        return $this->get_update_based_on_key($params);
     }
 
     /**
@@ -273,9 +310,23 @@ class SurveyJSModel extends StyleModel
      */
     private function row_exists($table_name, $key)
     {
+        return $this->find_row($table_name, $key) !== null;
+    }
+
+    /**
+     * The row answering to this key, or null when there is none.
+     *
+     * @param string $table_name
+     *  The data table the survey writes to.
+     * @param array $key
+     *  Column => value, as returned by get_update_based_on_key().
+     * @return array|null
+     */
+    private function find_row($table_name, $key)
+    {
         $id_table = $this->user_input->get_dataTable_id($table_name);
         if (!$id_table) {
-            return false;
+            return null;
         }
         $filter = '';
         foreach ($key as $col => $value) {
@@ -288,7 +339,36 @@ class SurveyJSModel extends StyleModel
             $this->own_entries_only && isset($_SESSION['id_user']) ? $_SESSION['id_user'] : null,
             true
         );
-        return !empty($record);
+        return empty($record) ? null : $record;
+    }
+
+    /**
+     * Whether the row answering to this key is already finished.
+     *
+     * A finished row is a completed submission. Writing into it would turn it
+     * back to `updated` and replace real answers with whatever a returning
+     * visitor typed, so a keyed save joins only rows that are still open.
+     *
+     * @param string $table_name
+     *  The data table the survey writes to.
+     * @param array $key
+     *  Column => value, as returned by get_update_based_on_key().
+     * @return bool
+     */
+    private function row_is_finished($table_name, $key)
+    {
+        $record = $this->find_row($table_name, $key);
+        if ($record === null) {
+            return false;
+        }
+        $trigger = null;
+        if (isset($record['trigger_type'])) {
+            $trigger = $record['trigger_type'];
+        } else if (isset($record['_json'])) {
+            $decoded = json_decode($record['_json'], true);
+            $trigger = isset($decoded['trigger_type']) ? $decoded['trigger_type'] : null;
+        }
+        return $trigger === actionTriggerTypes_finished;
     }
 
     /**
@@ -306,7 +386,13 @@ class SurveyJSModel extends StyleModel
                 // Join the shared row only if one already answers to the key. The
                 // key is often answered part way through, so falling through keeps
                 // this submission's own row instead of opening a second.
-                if ($key !== null && $this->row_exists($data['survey_generated_id'], $key)) {
+                // A finished row is a completed submission. Joining it would turn
+                // it back to `updated` and replace real answers with whatever a
+                // returning visitor typed, so the save falls through and opens a
+                // row of its own instead. The two are told apart in an export by
+                // `trigger_type` and `response_id`.
+                if ($key !== null && $this->row_exists($data['survey_generated_id'], $key)
+                    && !$this->row_is_finished($data['survey_generated_id'], $key)) {
                     return $this->user_input->save_data(transactionBy_by_user, $data['survey_generated_id'], $data, $key, $this->own_entries_only);
                 }
                 if ($data['trigger_type'] == actionTriggerTypes_started) {
