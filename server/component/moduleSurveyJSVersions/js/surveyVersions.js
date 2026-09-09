@@ -68,7 +68,14 @@ function initVersionsTable() {
                         var surveyContent = JSON.parse(config);
                         var version_id = row[0][0];
                         initModalRestoreBtn(version_id);
+                        // Apply the version's own stored theme so the preview matches
+                        // what participants saw at that point.
+                        var versionTheme = surveyContent.theme;
+                        delete surveyContent.theme;
                         var survey = new Survey.Model(surveyContent);
+                        if (versionTheme) {
+                            survey.applyTheme(versionTheme);
+                        }
                         // Render rich text markup instead of escaping it, as applyHtml() does.
                         survey.onTextMarkdown.add(function (sender, options) {
                             if (options.text.indexOf('<') > -1) {

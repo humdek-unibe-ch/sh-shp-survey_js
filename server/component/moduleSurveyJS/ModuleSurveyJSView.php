@@ -167,6 +167,7 @@ class ModuleSurveyJSView extends BaseView
                 __DIR__ . "/js/0_quill.min.js",
                 __DIR__ . "/js/2_survey.core.min.js",       // survey-core v3.0.2
                 __DIR__ . "/js/3_survey-js-ui.min.js",      // survey-js-ui v3.0.2
+                __DIR__ . "/js/4_survey-themes.min.js",     // survey-core themes v3.0.2 (window.SurveyTheme)
                 __DIR__ . "/js/4_survey-creator-core.min.js",
                 __DIR__ . "/js/5_survey-creator-js.min.js", // survey-creator-js v3.0.2
                 __DIR__ . "/js/6_survey-creator-core.i18n.min.js",

@@ -2,7 +2,8 @@
 const creatorOptions = {
     showLogicTab: true,
     autoSaveEnabled: true,
-    showTranslationTab: true
+    showTranslationTab: true,
+    showThemeTab: true
 };
 Survey.setLicenseKey(
     "ZWUzYjk4NjctYmYzMi00ZmFiLWFlODQtMGE4OTBjMTNiYTRkOzE9MjAyNy0wNi0xNCwyPTIwMjctMDYtMTQsND0yMDI3LTA2LTE0"
@@ -99,6 +100,11 @@ let creator;
 var published_json = '';
 
 $(document).ready(function () {
+    // The Theme tab only lists themes that have been registered; without this it
+    // offers "default" alone. SurveyTheme comes from the vendored themes bundle.
+    if (typeof SurveyCreatorCore !== "undefined" && SurveyCreatorCore.registerSurveyTheme && typeof SurveyTheme !== "undefined") {
+        SurveyCreatorCore.registerSurveyTheme(SurveyTheme);
+    }
     creator = new SurveyCreator.SurveyCreator(creatorOptions);
     initSurveyCreator();
     initSurveysTable();
@@ -121,11 +127,26 @@ function initSurveyCreator() {
             const basePathFromAttr = $("#surveyJSCreator").attr("data-base-path");
             window.SELFHELP_BASE_PATH = (typeof basePathFromAttr === "string") ? basePathFromAttr : "";
         }
-        creator.saveSurveyFunc = () => {
-            autoSaveTheSurvey(creator.JSON);
+        // The theme is kept inside the survey config so it travels with the existing
+        // save, publish and versioning path; `surveys` needs no new column.
+        const saveSurveyWithTheme = () => {
+            const surveyJson = creator.JSON;
+            const theme = creator.theme;
+            if (theme && theme.cssVariables && Object.keys(theme.cssVariables).length > 0) {
+                surveyJson.theme = theme;
+            }
+            autoSaveTheSurvey(surveyJson);
         };
+        creator.saveSurveyFunc = saveSurveyWithTheme;
+        creator.saveThemeFunc = saveSurveyWithTheme;
         if ($("#surveyJSCreator").data("config")) {
-            creator.text = JSON.stringify($("#surveyJSCreator").data("config"));
+            const config = $("#surveyJSCreator").data("config");
+            const savedTheme = config.theme;
+            delete config.theme;
+            creator.text = JSON.stringify(config);
+            if (savedTheme) {
+                creator.theme = savedTheme;
+            }
         }
         if ($("#surveyJSCreator").data("config-published")) {
             published_json = JSON.stringify($("#surveyJSCreator").data("config-published"));
