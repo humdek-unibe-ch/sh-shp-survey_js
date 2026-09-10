@@ -110,6 +110,7 @@ $(document).ready(function () {
     initSurveysTable();
     initDeleteSurvey();
     initPublishSurvey();
+    initJsonEditorPublishEnable();
 });
 
 function initSurveyCreator() {
@@ -411,7 +412,59 @@ function getSurveyDisplayTitle(surveyJson) {
 function initPublishSurvey() {
     $("#survey-js-publish").off('click').on('click', (e) => {
         e.preventDefault();
+        if (isJsonEditorTabActive()) {
+            $.alert({
+                title: 'Validate in the Designer tab',
+                type: 'orange',
+                content: 'Please validate the change in the Designer tab and then you can publish it.'
+            });
+            return;
+        }
         publishSurvey();
+    });
+}
+
+// The JSON tab is named "json" in Creator v3 ("editor" was the v1 name).
+// The tab keeps edits in its own model.text and only syncs them into the survey
+// on deactivate(), so autosave never runs while it is open and `config` (what
+// publish copies) stays stale — surveyjs/survey-creator#7212.
+function isJsonEditorTabActive() {
+    return !!(creator && creator.activeTab === 'json');
+}
+
+function updatePublishButtonState(surveyJson) {
+    if (JSON.stringify(surveyJson) != published_json) {
+        $('#survey-js-publish').removeClass('disabled');
+    } else {
+        $('#survey-js-publish').addClass('disabled');
+    }
+}
+
+/**
+ * Autosave never runs on the JSON tab, so nothing would re-enable Publish there
+ * and a `disabled` button swallows the click (pointer-events: none) — the user
+ * would get no alert at all. Enable it on the first edit so the click lands.
+ */
+function initJsonEditorPublishEnable() {
+    if (!creator || !creator.onActiveTabChanged) {
+        return;
+    }
+    creator.onActiveTabChanged.add(() => {
+        if (!isJsonEditorTabActive()) {
+            return;
+        }
+        const plugin = typeof creator.getPlugin === "function" ? creator.getPlugin('json') : null;
+        const model = plugin && plugin.model;
+        if (!model || model.onPropertyChanged === undefined) {
+            // Model not reachable: enable unconditionally so the alert is still reachable.
+            $('#survey-js-publish').removeClass('disabled');
+            return;
+        }
+        model.onPropertyChanged.add((_, options) => {
+            if (options.name === "_text" || options.name === "text") {
+                $('#survey-js-publish').removeClass('disabled');
+            }
+        });
     });
 }
 
@@ -480,11 +533,7 @@ function autoSaveTheSurvey(surveyJson) {
             if (data && typeof data === 'object') {
                 if (data.success) {
                     // Success - update publish button state
-                    if (JSON.stringify(surveyJson) != published_json) {
-                        $('#survey-js-publish').removeClass('disabled');
-                    } else {
-                        $('#survey-js-publish').addClass('disabled');
-                    }
+                    updatePublishButtonState(surveyJson);
                 } else {
                     // Server returned error
                     if (data.error === 'Authentication required' || data.error === 'Session expired') {
