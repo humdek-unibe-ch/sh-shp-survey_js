@@ -45,9 +45,15 @@ window['surveyjs-widgets'].microphone(Survey);
         htmlTemplate: "<div></div>",
         afterRender: function (question, el) {
             el.style.height = question.height;
+            // afterRender re-fires and `new Quill(el)` appends another toolbar
+            if (el.__quillEditor) {
+                el.__quillEditor.enable(!question.isReadOnly);
+                return;
+            }
             var editor = new Quill(el, {
                 theme: "snow"
             });
+            el.__quillEditor = editor;
             editor.enable(!question.isReadOnly);
             var isValueChanging = false;
             editor.on("text-change", function (eventName, ...args) {
@@ -66,13 +72,23 @@ window['surveyjs-widgets'].microphone(Survey);
             };
             updateValueHandler();
         },
-        willUnmount: function (question, el) { }
+        willUnmount: function (question, el) {
+            if (!el.__quillEditor) return;
+            // the toolbar is a sibling of el, so it outlives el on its own
+            var toolbar = el.previousElementSibling;
+            if (toolbar && toolbar.classList.contains("ql-toolbar")) toolbar.remove();
+            question.valueChangedCallback = undefined;
+            question.readOnlyChangedCallback = undefined;
+            delete el.__quillEditor;
+        }
     };
     if (!Survey.Serializer.findClass(componentName)) {
         Survey.CustomWidgetCollection.Instance.addCustomWidget(widget, "customtype");
     }
-    // Register as property grid editor
-    if (typeof SurveyCreatorCore !== "undefined" && SurveyCreatorCore.PropertyGridEditorCollection) {
+    // Register as property grid editor. `register` only pushes, never dedupes.
+    if (typeof SurveyCreatorCore !== "undefined" && SurveyCreatorCore.PropertyGridEditorCollection
+        && !SurveyCreatorCore.PropertyGridEditorCollection.__quillRegistered) {
+        SurveyCreatorCore.PropertyGridEditorCollection.__quillRegistered = true;
         SurveyCreatorCore.PropertyGridEditorCollection.register({
             fit: function (prop) {
                 return prop.type == "text";
