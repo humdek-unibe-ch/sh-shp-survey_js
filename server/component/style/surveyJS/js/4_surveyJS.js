@@ -154,6 +154,8 @@ function initSurveyJS() {
             survey.setValue('survey_generated_id', surveyFields['survey_generated_id']);
             var metaData = {};
             metaData['user_agent'] = navigator.userAgent;
+            // The language the survey was answered in, beside the other session facts.
+            metaData['language'] = survey.locale;
             metaData['screen_width'] = window.screen.width;
             metaData['screen_height'] = window.screen.height;
             metaData['pixel_ratio'] = window.devicePixelRatio;
