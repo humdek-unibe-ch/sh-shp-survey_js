@@ -1,60 +1,35 @@
 # SurveyJS Plugin Changelog
 
-## Unreleased
-
-### Fixes
-- A second participant no longer overwrites the first one's row. The survey loaded the last response with `ORDER BY record_id DESC` scoped to `$_SESSION['id_user']`, but participants in a guest study share one user id, so `own_entries_only` isolated nobody: the newest row belonged to whoever answered last, not to the visitor. Opening the page in a second browser restored the first participant's answers and the save wrote back over them. Where `update_based_on` names a key the lookup now filters by the value carried in the url instead, so a session only ever sees the row for its own code. A keyed survey reached without a key value now starts empty rather than falling back to the newest row: the key is itself a survey field, so restoring another participant's row handed over their key too and the save then joined it. Where `update_based_on` is not set the behaviour is unchanged. **Existing datasets may already contain merged rows** - installs using `update_based_on` with guest participants should check for codes whose answers changed between sessions.
-- Revisiting a finished survey no longer overwrites it. A keyed save joined any row answering to the key without asking what state it was in, so opening a completed survey again turned `finished` back to `updated` and replaced the stored answers with the empty form. A finished row is now left alone and the visit opens a row of its own; the two are told apart in an export by `trigger_type` and `response_id`. Note that an export can therefore hold more than one row per key, so analysis should select on `trigger_type = 'finished'` rather than assume one row per participant.
-
-
-- Survey navigation buttons ("Next", "Previous", "Complete") now follow the SelfHelp language instead of staying English. The buttons are not part of the survey JSON; they come from survey-core's built-in string table, which ships English only, with every other language in a separate `survey.i18n` bundle. That bundle was included by the CMS module but not by the `surveyJS` style that renders surveys to participants, so `survey.locale` had no translations to switch to — authored question texts translated (they carry their own per-locale values in the survey JSON) while the buttons did not. The style now loads `7_survey.i18n.min.js` after `survey-core`, which it extends.
-
 ## v1.7.0
 
-SurveyJS libraries upgraded to **v3.0.2**. Survey Creator Dashboard now renders through Chart.js; Plotly is no longer shipped.
+SurveyJS libraries upgraded to **v3.0.2**. Dashboard analytics render through Chart.js. Authors can theme surveys in the Creator. Response rows can be keyed with `update_based_on`.
 
 ### Library / runtime
-- Bump `survey-core`, `survey-js-ui`, `survey-creator-core`, `survey-creator-js`, `survey-analytics` and `survey-pdf` to **3.0.2**.
-- Dashboard: the default `survey-analytics` v3 bundle renders through **Chart.js 4.5.1** (+ `chartjs-plugin-datalabels` 2.2.0) instead of Plotly. `plotly-latest.min.js` (4.5 MB) is removed from the package; Chart.js is 208 KB.
-- Dashboard: `new SurveyAnalytics.VisualizationPanel(questions, data, options)` replaced by `new SurveyAnalytics.Dashboard({ questions, data, ... })`. `Dashboard` extends `VisualizationPanel`, so the existing `state` / `onStateChanged` localStorage persistence and `layout()` call are unchanged.
-- Bump jsPDF to **4.2.1** and `jspdf-autotable` to **5.0.8** (`survey-pdf` v3 accepts jsPDF `^2 || ^3 || ^4`).
-- Bump Tabulator to **6.5.2**.
-- The Creator still runs on Preact: `survey-creator-js` v3 lists react/react-dom/survey-react-ui as UMD dependencies, but only on its CommonJS/AMD branch. Its browser-global branch resolves all three from `window.SurveyUI`, which `survey-js-ui` provides. No React is loaded.
-- Refresh `survey-core`, `survey-creator-core`, `survey-analytics` and Tabulator CSS from the 3.0.2 packages.
-- Set a per-instance `elementIdPrefix` when rendering surveys. In v2 element ids came from one global counter, so multiple surveys on a page got unique input ids; in v3 each survey instance restarts its own counter and two surveys emitted identical ids (`sq_0i_0`, `sq_1i`, ...). Pages with more than one surveyJS section are affected.
-- Construct the Survey Creator on DOM ready instead of at script parse time. The v3 Creator initialises its theme variables in the constructor by appending a probe element to `document.body` to read computed styles; the Creator script loads in `<head>`, where `document.body` is still null, so the constructor threw `Cannot read properties of null (reading 'appendChild')` and the Creator never rendered.
+- Bump `survey-core`, `survey-js-ui`, `survey-creator-core`, `survey-creator-js`, `survey-analytics` and `survey-pdf` to **3.0.2**; refresh their CSS.
+- Dashboard: `survey-analytics` v3 uses **Chart.js 4.5.1** (+ `chartjs-plugin-datalabels` 2.2.0). Construct with `new SurveyAnalytics.Dashboard({ questions, data, ... })`.
+- Bump jsPDF to **4.2.1** and `jspdf-autotable` to **5.0.8**.
+- Set a per-instance `elementIdPrefix` so multiple surveys on one page keep unique input ids under v3.
+- Construct the Survey Creator on DOM ready (v3 reads computed styles from `document.body` in the constructor).
 
 ### Theming (#13)
+- Enable the Creator **Theme tab** (`showThemeTab`), vendor `4_survey-themes.min.js`, and register themes with `SurveyCreatorCore.registerSurveyTheme()`.
+- Store the chosen theme on the survey config under `theme` (no new DB column). Save, publish, restore and the participant runtime / version preview all carry and apply it via `applyTheme()`.
 
-Survey authors can pick a theme per survey in the Creator, using the themes SurveyJS ships.
-
-- Enable the Survey Creator **Theme tab** (`showThemeTab`) and vendor the themes bundle as `4_survey-themes.min.js` (`window.SurveyTheme`).
-- Call `SurveyCreatorCore.registerSurveyTheme()` before the Creator is constructed. The tab only lists themes that have been registered; without this it offers `default` alone. Authors get the eight families SurveyJS ships (default, contrast, borderless, flat, plain, three-dimensional, soft, monochrome) in light/dark and panelless variants.
-- The theme is stored **inside the survey config** under a `theme` key rather than in a new column. Publishing is `published = config` and versions snapshot `config`, so the theme travels with save, publish and restore for free and `surveys` needs no schema change. `saveThemeFunc` and `saveSurveyFunc` share one save path.
-- The runtime pulls `theme` out of the config, applies it with `applyTheme()` and builds the model from the rest, so SurveyJS never sees a property it does not define. The versions preview applies the version's own stored theme, so an old version renders as participants saw it.
-
-**Note on Bootstrap.** SurveyJS also publishes theme *adapters* that map its tokens onto a host framework's CSS variables. An adapter and a theme cannot be combined: the adapter writes direct `background-color` / `border-color` rules on SurveyJS controls (`.sd-item__control`, `.sd-radio__decorator`, `.sd-action--primary`), which override the tokens a theme sets — option hover states and the Complete button keep the framework colour while the rest of the survey follows the theme. Upstream documents one adapter per application and never combines the two. This release takes the theme route.
-
-### Notes
-- v3 deprecates the `--sjs-` CSS variable prefix in favour of `--sjs2-`, but maps the old names internally, so existing custom CSS keeps working.
-- v3 changes navigation buttons from `<input type="button">` to `<button>` with a nested `<span>`. The plugin defines no `sd-btn` selectors, so no CSS changes were needed.
-
-### After update
-- Run `server/db/v1.7.0.sql`.
-- Clear CMS / styles / hooks cache.
-- Rebuild CSS with gulp if you customize styles (`css/ext/survey-js.min.css`).
+### New features
+- `update_based_on` on the `surveyJS` style: column that identifies a response row. Empty (default) keeps one row per `response_id`. Set to a column name and the survey updates the row already holding that value, so several components sharing a `survey_generated_id` build one row. A key matching no row falls back to the default rather than inserting. A keyed survey reaching `started` again updates its existing `response_id` row instead of opening a second one. The column must identify one participant on its own (guest writes share a user).
+- Keyed load: when `update_based_on` is set, restore the row for the key from the URL; if the key is absent, start empty. A finished row is not rejoined — a later visit opens its own row (`trigger_type` / `response_id` distinguish them in exports; select `trigger_type = 'finished'` for completed answers).
+- `url_params` also forwards route parameters (not only the query string); a query parameter wins on a name clash.
+- Response `_meta` records the survey `language` (locale) used for the session.
+- Participant runtime loads `survey.i18n` so navigation buttons ("Next", "Previous", "Complete") follow the SelfHelp language.
 
 ### Fixes
-- Viewing a saved survey version no longer fails with "Corrupted version!". The versions table carried the survey JSON as raw text in a (hidden) table cell, so the browser parsed the markup inside question texts and descriptions (`<p>`, `<b>`, ...) as real HTML: unclosed tags were closed, `<`/`>` in the remaining text were re-escaped to `&lt;`/`&gt;`, and the string DataTables read back was no longer valid JSON. `JSON.parse` threw and the catch-all reported the version as corrupted — the stored data was always fine. Any survey containing markup was affected (9 of 10 versions in a local database); only markup-free surveys opened. The cell now carries the config base64-encoded and `surveyVersions.js` decodes it as UTF-8 before parsing, which round-trips unchanged and also stops the config from being injected into the page as HTML. Because the page markup and that script now share an encoding contract, the script is included with a `?v=<filemtime>` cache key so a browser holding the previous copy refetches it instead of feeding the encoded value to `JSON.parse`.
-- The version preview no longer shows raw markup (`<p>`, `<b>`, ...) in question titles and descriptions authored with the rich text editor. SurveyJS escapes text by default; the viewer now registers the same `onTextMarkdown` hook the survey renderer applies through `applyHtml()`, so the content renders formatted.
-- Expired sessions no longer surface as a bare "Data not saved!" alert (#22). When a save comes back as the rendered `no_access_guest` page (HTML, HTTP 200) instead of the controller's JSON — or as a 401/403 — the survey now reports that the session expired and sends the user to the login page. Genuine save failures still show the original error. Post-login return relies on core's `$_SESSION['target_url']`, so the user lands back on the survey.
-
-## v1.7.0
-
-### New feature
-- `update_based_on` on the `surveyJS` style: names the column that identifies a response row. Empty (the default) keeps the existing behaviour, rows keyed on the generated `response_id`, one row per submission. Set to a column name, the survey updates the row already holding that value, so several components sharing a `survey_generated_id` build one row together, for example a questionnaire split across pages or a survey chained with a `labJS` experiment. A key matching no row falls back to the default rather than inserting, because the key is often a question answered part way through and inserting then would abandon the row already opened. A keyed survey reaching `started` again updates the row it already has for that `response_id` instead of opening a second one.
-- The keyed column must identify one participant on its own. With guest participants every write shares a user, so a value repeated across people would merge them into one row.
-- `url_params` now also exposes route parameters, not only the query string, so a value carried in the URL path reaches the survey. A query parameter still wins on a name clash.
+- Guest studies with `update_based_on`: load/save scope by the URL key instead of the newest row for the shared guest user. **Existing datasets may already contain merged rows** — check codes whose answers changed between sessions.
+- Version viewer: store config base64-encoded in the table cell and decode as UTF-8 before `JSON.parse` (raw JSON with rich-text markup was mangled by the browser). Cache-bust `surveyVersions.js` with `?v=<filemtime>`. Preview applies `onTextMarkdown` so rich text renders.
+- Expired session on save (#22): detect `no_access_guest` HTML / 401 / 403, show a session-expired dialog, and redirect to login (core returns via `$_SESSION['target_url']`).
+- Publish is blocked while the Creator JSON tab is active (that tab does not autosave into `config`).
+- Quill property-grid editor: stop stacking toolbars on re-render; clean up on unmount.
+- Creator Translations tab: wrap the toolbar so the other tabs stay visible on smaller screens.
+- Survey admin list: select listing columns only (omit full `config`) to cut memory use on the dashboard.
 
 ## v1.6.0
 
