@@ -23,12 +23,17 @@
     "node": ">=0.12.0"
   },
   "dependencies": {
+    "chart.js": "4.5.1",
+    "chartjs-plugin-datalabels": "2.2.0",
     "gulp": "^4.0.2",
     "gulp-terser": "^1.2.0",
-    "survey-analytics": "^2.5.28",
-    "survey-core": "2.5.28",
-    "survey-creator-core": "2.5.28",
-    "survey-creator-js": "2.5.28",
-    "survey-js-ui": "2.5.28"
+    "jspdf": "4.2.1",
+    "jspdf-autotable": "5.0.8",
+    "survey-analytics": "3.0.2",
+    "survey-core": "3.0.2",
+    "survey-creator-core": "3.0.2",
+    "survey-creator-js": "3.0.2",
+    "survey-js-ui": "3.0.2",
+    "survey-pdf": "3.0.2"
   }
 }

@@ -9,3 +9,12 @@
 #surveyJSCreator {
     height: 1150px;
 }
+
+/* The Translations toolbar shares the tab row and pushes the other tabs into "…"; give it its own row. */
+.svc-creator:has(.svc-translation-tab) .svc-top-bar {
+    flex-wrap: wrap;
+}
+
+.svc-creator:has(.svc-translation-tab) .svc-toolbar-wrapper {
+    flex-basis: 100%;
+}

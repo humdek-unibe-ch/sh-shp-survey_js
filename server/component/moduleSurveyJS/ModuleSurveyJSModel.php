@@ -127,7 +127,11 @@ class ModuleSurveyJSModel extends BaseModel
      */
     public function get_surveys()
     {
-        return $this->db->select_table("view_surveys");
+        // Only the columns the listing renders. view_surveys also exposes the
+        // full survey `config`, which the list never reads (#3).
+        $sql = "SELECT id, survey_generated_id, survey_name, created_at, updated_at, published, published_at
+                FROM view_surveys";
+        return $this->db->query_db($sql);
     }
 
     /**

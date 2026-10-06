@@ -2,6 +2,8 @@ var autoSaveTimers = {};
 // A variable that will store files until the survey is completed
 const tempFileStorage = {};
 var surveyJSIsSaving = false;
+// Set once the session-expired dialog is shown, so concurrent saves don't stack dialogs.
+var surveyJSSessionExpiredHandled = false;
 
 // --- Quill Rich Text Editor Widget Registration ---
 (function registerQuillWidget() {
@@ -72,7 +74,7 @@ $(document).ready(function () {
 });
 
 function initSurveyJS() {
-    $('.selfHelp-survey-js-holder').each(function () {
+    $('.selfHelp-survey-js-holder').each(function (surveyIndex) {
         const surveyContent = $(this).data('survey-js');
         const surveyFields = $(this).data('survey-js-fields');
         const lastResponse = $(this).data('survey-js-last-response');
@@ -89,7 +91,26 @@ function initSurveyJS() {
         }
         window['surveyjs-widgets'].microphone(Survey);
         expandSurveyJsForSelfhelp();
+        // The Creator keeps its theme inside the survey config. Pull it out before
+        // building the model so SurveyJS never sees a property it does not define.
+        var surveyTheme = null;
+        if (surveyContent && typeof surveyContent === "object" && surveyContent.theme) {
+            surveyTheme = surveyContent.theme;
+            delete surveyContent.theme;
+        }
         var survey = new Survey.Model(surveyContent);
+        // survey-core does not read a `theme` off the model, so apply it here.
+        if (surveyTheme && typeof survey.applyTheme === "function") {
+            try {
+                survey.applyTheme(surveyTheme);
+            } catch (e) {
+                // A malformed theme must not stop the survey from rendering.
+                console.warn("SurveyJS: could not apply theme", e);
+            }
+        }
+        // Each survey instance keeps its own element id counter, so two surveys
+        // on one page would otherwise emit identical input ids.
+        survey.elementIdPrefix = "sjs" + surveyIndex + "_";
         var currentLocale = $(this).attr("class").split(" ").filter(function (className) {
             return className.startsWith("selfHelp-locale-");
         });
@@ -133,6 +154,8 @@ function initSurveyJS() {
             survey.setValue('survey_generated_id', surveyFields['survey_generated_id']);
             var metaData = {};
             metaData['user_agent'] = navigator.userAgent;
+            // The language the survey was answered in, beside the other session facts.
+            metaData['language'] = survey.locale;
             metaData['screen_width'] = window.screen.width;
             metaData['screen_height'] = window.screen.height;
             metaData['pixel_ratio'] = window.devicePixelRatio;
@@ -402,14 +425,25 @@ function saveSurveyJS(survey, newPageNo) {
                 if (r.result) {
                     resolve(true);
                 } else {
-                    dataNotSaved();
+                    // An expired session fails the ACL check before the controller
+                    // runs, so the body is the no_access_guest page (HTML, 200).
+                    if (typeof r === 'string' && /<html|<!doctype|no_access_guest/i.test(r)) {
+                        sessionExpired();
+                    } else {
+                        dataNotSaved();
+                    }
                     resolve(false);
                 }
 
             },
             error: function (xhr, status, error) {
                 console.error('Save survey data failed:', error);
-                dataNotSaved();
+                // 401/403: deployments that answer with a status code instead of a page.
+                if (xhr && (xhr.status === 401 || xhr.status === 403)) {
+                    sessionExpired();
+                } else {
+                    dataNotSaved();
+                }
                 resolve(false);
             }
         });
@@ -489,6 +523,42 @@ function dataNotSaved() {
         title: 'Error!',
         content: 'Data not saved!',
         type: "red",
+    });
+}
+
+/**
+ * Tell the user the session expired and send them to login. No return URL is
+ * needed: core redirects back via $_SESSION['target_url'] (Login::get_target_url).
+ */
+function sessionExpired() {
+    if (surveyJSSessionExpiredHandled) {
+        return;
+    }
+    surveyJSSessionExpiredHandled = true;
+    var basePath = (typeof window.SELFHELP_BASE_PATH !== 'undefined' && window.SELFHELP_BASE_PATH) || '';
+    var loginUrl = basePath + '/login';
+    var goToLogin = function () {
+        window.location.href = loginUrl;
+    };
+    $.alert({
+        title: 'Session expired',
+        content: 'Your session has expired, so your latest answers could not be saved. You will be taken to the login page to sign in again.',
+        type: "orange",
+        typeAnimated: true,
+        // Redirect on its own after 5s so an unattended survey does not sit on
+        // a dead session; the button label shows the countdown.
+        autoClose: 'ok|5000',
+        buttons: {
+            ok: {
+                text: 'Go to login',
+                btnClass: 'btn-primary',
+                action: goToLogin
+            }
+        },
+        onDestroy: function () {
+            // Redirect on ESC / click-outside too.
+            goToLogin();
+        }
     });
 }
 

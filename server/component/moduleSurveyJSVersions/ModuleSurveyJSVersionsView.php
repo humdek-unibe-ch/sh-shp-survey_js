@@ -123,10 +123,12 @@ class ModuleSurveyJSVersionsView extends BaseView
     public function get_js_includes($local = array())
     {
         if (empty($local)) {
+            // Cache key: a stale copy would feed the base64 config to JSON.parse.
+            $versions_js = __DIR__ . "/js/surveyVersions.js";
             $local = array(
                 __DIR__ . "/../moduleSurveyJS/js/2_survey.core.min.js", // survey-core v2.5.28
                 __DIR__ . "/../style/surveyJS/js/1_survey-js-ui.min.js", // survey-js-ui v2.5.28
-                __DIR__ . "/js/surveyVersions.js",
+                $versions_js . "?v=" . filemtime($versions_js),
             );
         }
         return parent::get_js_includes($local);

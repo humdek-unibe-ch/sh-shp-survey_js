@@ -5,7 +5,8 @@
 ?>
 <tr class="cursor-pointer">
     <td><?php echo $version['id']; ?></td>
-    <td><?php echo $version['config']; ?></td>
+    <?php /* base64: raw JSON in a cell is parsed as HTML by the browser and read back mangled, see surveyVersions.js */ ?>
+    <td><?php echo base64_encode($version['config']); ?></td>
     <td><?php echo $version['created_at']; ?></td>
     <td><?php echo $version['user_email']; ?></td>
     <td><?php echo $version['restored_at']; ?></td>

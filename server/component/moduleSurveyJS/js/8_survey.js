@@ -2,7 +2,8 @@
 const creatorOptions = {
     showLogicTab: true,
     autoSaveEnabled: true,
-    showTranslationTab: true
+    showTranslationTab: true,
+    showThemeTab: true
 };
 Survey.setLicenseKey(
     "ZWUzYjk4NjctYmYzMi00ZmFiLWFlODQtMGE4OTBjMTNiYTRkOzE9MjAyNy0wNi0xNCwyPTIwMjctMDYtMTQsND0yMDI3LTA2LTE0"
@@ -44,9 +45,15 @@ window['surveyjs-widgets'].microphone(Survey);
         htmlTemplate: "<div></div>",
         afterRender: function (question, el) {
             el.style.height = question.height;
+            // afterRender re-fires and `new Quill(el)` appends another toolbar
+            if (el.__quillEditor) {
+                el.__quillEditor.enable(!question.isReadOnly);
+                return;
+            }
             var editor = new Quill(el, {
                 theme: "snow"
             });
+            el.__quillEditor = editor;
             editor.enable(!question.isReadOnly);
             var isValueChanging = false;
             editor.on("text-change", function (eventName, ...args) {
@@ -65,13 +72,23 @@ window['surveyjs-widgets'].microphone(Survey);
             };
             updateValueHandler();
         },
-        willUnmount: function (question, el) { }
+        willUnmount: function (question, el) {
+            if (!el.__quillEditor) return;
+            // the toolbar is a sibling of el, so it outlives el on its own
+            var toolbar = el.previousElementSibling;
+            if (toolbar && toolbar.classList.contains("ql-toolbar")) toolbar.remove();
+            question.valueChangedCallback = undefined;
+            question.readOnlyChangedCallback = undefined;
+            delete el.__quillEditor;
+        }
     };
     if (!Survey.Serializer.findClass(componentName)) {
         Survey.CustomWidgetCollection.Instance.addCustomWidget(widget, "customtype");
     }
-    // Register as property grid editor
-    if (typeof SurveyCreatorCore !== "undefined" && SurveyCreatorCore.PropertyGridEditorCollection) {
+    // Register as property grid editor. `register` only pushes, never dedupes.
+    if (typeof SurveyCreatorCore !== "undefined" && SurveyCreatorCore.PropertyGridEditorCollection
+        && !SurveyCreatorCore.PropertyGridEditorCollection.__quillRegistered) {
+        SurveyCreatorCore.PropertyGridEditorCollection.__quillRegistered = true;
         SurveyCreatorCore.PropertyGridEditorCollection.register({
             fit: function (prop) {
                 return prop.type == "text";
@@ -92,14 +109,24 @@ function applyHtml(_, options) {
     options.html = str;
 }
 
-const creator = new SurveyCreator.SurveyCreator(creatorOptions);
+// Constructed on DOM ready: the v3 Creator probes computed styles against
+// document.body while initialising its theme variables, and this script loads
+// in <head>, where document.body is still null.
+let creator;
 var published_json = '';
 
 $(document).ready(function () {
+    // The Theme tab only lists themes that have been registered; without this it
+    // offers "default" alone. SurveyTheme comes from the vendored themes bundle.
+    if (typeof SurveyCreatorCore !== "undefined" && SurveyCreatorCore.registerSurveyTheme && typeof SurveyTheme !== "undefined") {
+        SurveyCreatorCore.registerSurveyTheme(SurveyTheme);
+    }
+    creator = new SurveyCreator.SurveyCreator(creatorOptions);
     initSurveyCreator();
     initSurveysTable();
     initDeleteSurvey();
     initPublishSurvey();
+    initJsonEditorPublishEnable();
 });
 
 function initSurveyCreator() {
@@ -117,11 +144,26 @@ function initSurveyCreator() {
             const basePathFromAttr = $("#surveyJSCreator").attr("data-base-path");
             window.SELFHELP_BASE_PATH = (typeof basePathFromAttr === "string") ? basePathFromAttr : "";
         }
-        creator.saveSurveyFunc = () => {
-            autoSaveTheSurvey(creator.JSON);
+        // The theme is kept inside the survey config so it travels with the existing
+        // save, publish and versioning path; `surveys` needs no new column.
+        const saveSurveyWithTheme = () => {
+            const surveyJson = creator.JSON;
+            const theme = creator.theme;
+            if (theme && theme.cssVariables && Object.keys(theme.cssVariables).length > 0) {
+                surveyJson.theme = theme;
+            }
+            autoSaveTheSurvey(surveyJson);
         };
+        creator.saveSurveyFunc = saveSurveyWithTheme;
+        creator.saveThemeFunc = saveSurveyWithTheme;
         if ($("#surveyJSCreator").data("config")) {
-            creator.text = JSON.stringify($("#surveyJSCreator").data("config"));
+            const config = $("#surveyJSCreator").data("config");
+            const savedTheme = config.theme;
+            delete config.theme;
+            creator.text = JSON.stringify(config);
+            if (savedTheme) {
+                creator.theme = savedTheme;
+            }
         }
         if ($("#surveyJSCreator").data("config-published")) {
             published_json = JSON.stringify($("#surveyJSCreator").data("config-published"));
@@ -386,7 +428,59 @@ function getSurveyDisplayTitle(surveyJson) {
 function initPublishSurvey() {
     $("#survey-js-publish").off('click').on('click', (e) => {
         e.preventDefault();
+        if (isJsonEditorTabActive()) {
+            $.alert({
+                title: 'Validate in the Designer tab',
+                type: 'orange',
+                content: 'Please validate the change in the Designer tab and then you can publish it.'
+            });
+            return;
+        }
         publishSurvey();
+    });
+}
+
+// The JSON tab is named "json" in Creator v3 ("editor" was the v1 name).
+// The tab keeps edits in its own model.text and only syncs them into the survey
+// on deactivate(), so autosave never runs while it is open and `config` (what
+// publish copies) stays stale — surveyjs/survey-creator#7212.
+function isJsonEditorTabActive() {
+    return !!(creator && creator.activeTab === 'json');
+}
+
+function updatePublishButtonState(surveyJson) {
+    if (JSON.stringify(surveyJson) != published_json) {
+        $('#survey-js-publish').removeClass('disabled');
+    } else {
+        $('#survey-js-publish').addClass('disabled');
+    }
+}
+
+/**
+ * Autosave never runs on the JSON tab, so nothing would re-enable Publish there
+ * and a `disabled` button swallows the click (pointer-events: none) — the user
+ * would get no alert at all. Enable it on the first edit so the click lands.
+ */
+function initJsonEditorPublishEnable() {
+    if (!creator || !creator.onActiveTabChanged) {
+        return;
+    }
+    creator.onActiveTabChanged.add(() => {
+        if (!isJsonEditorTabActive()) {
+            return;
+        }
+        const plugin = typeof creator.getPlugin === "function" ? creator.getPlugin('json') : null;
+        const model = plugin && plugin.model;
+        if (!model || model.onPropertyChanged === undefined) {
+            // Model not reachable: enable unconditionally so the alert is still reachable.
+            $('#survey-js-publish').removeClass('disabled');
+            return;
+        }
+        model.onPropertyChanged.add((_, options) => {
+            if (options.name === "_text" || options.name === "text") {
+                $('#survey-js-publish').removeClass('disabled');
+            }
+        });
     });
 }
 
@@ -455,11 +549,7 @@ function autoSaveTheSurvey(surveyJson) {
             if (data && typeof data === 'object') {
                 if (data.success) {
                     // Success - update publish button state
-                    if (JSON.stringify(surveyJson) != published_json) {
-                        $('#survey-js-publish').removeClass('disabled');
-                    } else {
-                        $('#survey-js-publish').addClass('disabled');
-                    }
+                    updatePublishButtonState(surveyJson);
                 } else {
                     // Server returned error
                     if (data.error === 'Authentication required' || data.error === 'Session expired') {
