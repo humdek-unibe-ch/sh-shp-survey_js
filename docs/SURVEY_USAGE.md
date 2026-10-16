@@ -185,6 +185,7 @@ section and configure its fields:
 | `save_pdf`                  | If `1`, adds a "Save as PDF" navigation button.                                          |
 | `own_entries_only`          | If `1` (default), users can only edit their own responses in edit mode. Note that guest participants share one user id, so this isolates nobody in a study without accounts. |
 | `update_based_on`           | Column that identifies a response row. Empty (default) keys rows on the generated `response_id`, one row per submission. Set to a column name and the survey updates the row already holding that value, so several components sharing a `survey_generated_id` build one row. A key matching no row falls back to the default rather than inserting. See [Keying rows on a participant code](#keying-rows-on-a-participant-code). |
+| `auto_session_key`          | If checked, each visitor on a shared invite URL gets a unique `?sid=…` on first open; rows are keyed on `extra_param_sid` so guests do not resume each other. Leave `update_based_on` empty. See [Shared invite link (no per-user URL)](#shared-invite-link-no-per-user-url). |
 | `dynamic_replacement`       | A JSON template that overrides the dropdown selection for advanced dynamic content.      |
 | `label_survey_done`         | Markdown shown when the survey has already been completed.                               |
 | `label_survey_not_active`   | Markdown shown when the survey is outside its active window.                             |
@@ -217,6 +218,14 @@ starts a row of its own rather than turning the original back to `updated` and
 replacing its answers with the empty form. **An export can therefore hold more
 than one row per key** — select on `trigger_type = 'finished'` instead of
 assuming one row per participant.
+
+### Shared invite link (no per-user URL)
+
+When every participant receives the same link (no distinct codes), enable
+`auto_session_key` and leave `update_based_on` empty. On first open the client
+mints a unique `sid` (the survey `response_id`), appends it as `?sid=…`, and
+stores `extra_param_sid`. Load/save then scope by that value. A refresh with
+`?sid=` continues the draft; opening the bare invite URL starts a new one.
 
 ## 5. Testing surveys locally
 

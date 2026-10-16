@@ -1,5 +1,13 @@
 # SurveyJS Plugin Changelog
 
+## v1.8.0
+
+### New feature
+- `auto_session_key` on the `surveyJS` style: for guest studies that share one invite URL. On first open the client mints a unique `sid` (the survey `response_id`), appends `?sid=…` to the URL, stores `extra_param_sid`, and keys the row on that column so visitors do not resume each other. Leave `update_based_on` empty to use `extra_param_sid`. Keyed load also reads the query string, so a refresh with `?sid=` restores the same draft.
+
+### Fixes
+- Invalid Creator JSON (e.g. a failed paste) is rejected and no longer writes `config` or creates an empty response dataTable.
+
 ## v1.7.0
 
 SurveyJS libraries upgraded to **v3.0.2**. Dashboard analytics render through Chart.js. Authors can theme surveys in the Creator. Response rows can be keyed with `update_based_on`.

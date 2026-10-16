@@ -173,7 +173,13 @@ function initSurveyJS() {
                     survey.setValue("extra_param_" + prop, surveyFields['extra_params'][prop]);
                 }
             }
+            // Shared invite URL: mint sid into the query string so refresh restores
+            // this visitor's row instead of another guest's under the same user.
+            ensureAutoSessionKey(survey, surveyFields);
             saveSurveyJS(survey);
+        } else if (surveyFields && surveyFields['auto_session_key']) {
+            // Restored draft: keep the URL in sync so a later refresh still has sid.
+            ensureAutoSessionKey(survey, surveyFields);
         }
         $(this).children(".selfHelp-survey-js").first().Survey({ model: survey });
 
@@ -516,6 +522,53 @@ function uploadFiles(survey) {
                 });
         }
     });
+}
+
+/**
+ * For shared invite links (`auto_session_key`): put a unique sid on the URL and
+ * into `extra_param_sid` (or whatever `update_based_on` names). Uses response_id
+ * as the value — not a bare timestamp — so two visitors cannot collide.
+ */
+function ensureAutoSessionKey(survey, surveyFields) {
+    if (!survey || !surveyFields || !surveyFields['auto_session_key']) {
+        return;
+    }
+    var col = (surveyFields['update_based_on'] || 'extra_param_sid').trim();
+    if (!col) {
+        col = 'extra_param_sid';
+    }
+    var short = col.indexOf('extra_param_') === 0 ? col.substring('extra_param_'.length) : col;
+    var existing = survey.data[col];
+    try {
+        var params = new URLSearchParams(window.location.search);
+        if (!existing) {
+            existing = params.get(short);
+        }
+    } catch (e) {
+        params = null;
+    }
+    if (existing) {
+        survey.setValue(col, existing);
+        // Keep the query string aligned so a refresh can restore this row.
+        try {
+            var urlKeep = new URL(window.location.href);
+            if (urlKeep.searchParams.get(short) !== String(existing)) {
+                urlKeep.searchParams.set(short, String(existing));
+                window.history.replaceState({}, '', urlKeep.toString());
+            }
+        } catch (e2) { /* older browsers: survey field alone still saves */ }
+        return;
+    }
+    var sid = survey.data['response_id'];
+    if (!sid) {
+        return;
+    }
+    survey.setValue(col, sid);
+    try {
+        var url = new URL(window.location.href);
+        url.searchParams.set(short, sid);
+        window.history.replaceState({}, '', url.toString());
+    } catch (e3) { /* survey field alone still saves */ }
 }
 
 function dataNotSaved() {

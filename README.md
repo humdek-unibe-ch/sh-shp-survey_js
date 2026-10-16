@@ -116,6 +116,7 @@ For current licensing details and plan options, refer to the official SurveyJS p
   one row per key, so analysis should select on `trigger_type = 'finished'`
   rather than assume one row per participant.
 - `url_params`: passes the URL's parameters to the survey, each stored as `extra_param_<name>`. Both route parameters and the query string are read; a query parameter wins on a name clash.
+- `auto_session_key`: for guest studies with one shared invite link. On first open the client appends a unique `?sid=…` (the `response_id`), stores `extra_param_sid`, and keys the row on that value so guests do not resume each other. Leave `update_based_on` empty when using this; refresh with `?sid=` continues the same draft.
 
 ### Page Navigation Control
 - Reset answers when returning to previous pages (resetOnBack property)

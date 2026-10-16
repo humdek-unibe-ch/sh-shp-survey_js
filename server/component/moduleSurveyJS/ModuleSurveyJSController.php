@@ -70,7 +70,15 @@ class ModuleSurveyJSController extends BaseController
             return array('success' => false, 'error' => 'Authentication required', 'message' => 'Your session has expired. Please log in again.');
         }
 
-        $adjustJson = $this->convertStringToBoolean(json_decode($_POST['surveyJson'], true));
+        if (!isset($_POST['surveyJson']) || !is_string($_POST['surveyJson'])) {
+            return array('success' => false, 'error' => 'Invalid survey JSON');
+        }
+        $decoded = json_decode($_POST['surveyJson'], true);
+        if (!is_array($decoded) || json_last_error() !== JSON_ERROR_NONE) {
+            // Bad paste / corrupt payload must not write config or create a dataTable.
+            return array('success' => false, 'error' => 'Invalid survey JSON');
+        }
+        $adjustJson = $this->convertStringToBoolean($decoded);
         $result = $this->model->update_survey($sid, $adjustJson);
 
         if ($result !== false) {

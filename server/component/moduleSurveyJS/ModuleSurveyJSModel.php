@@ -77,6 +77,9 @@ class ModuleSurveyJSModel extends BaseModel
      */
     public function update_survey($sid, $surveyJson)
     {
+        if (!is_array($surveyJson)) {
+            return false;
+        }
         try {
             $this->db->begin_transaction();
             $this->db->update_by_ids(SURVEYJS_TABLE_SURVEYS, array("config" => json_encode($surveyJson)), array('id' => $sid));
@@ -87,12 +90,12 @@ class ModuleSurveyJSModel extends BaseModel
                 SURVEYJS_TABLE_SURVEYS,
                 $sid
             );
-            if (!isset($surveyJson['title'])) {
-                $displayName = '';
-            } else {
-                $displayName = is_array($surveyJson['title']) ? $surveyJson['title']['default'] : $surveyJson['title'];
+            $displayName = $this->survey_display_name_from_json($surveyJson);
+            // Only create/rename the response dataTable once we have a real title.
+            // Failed or empty JSON pastes must not leave empty dataTables behind.
+            if ($displayName !== '') {
+                $this->sync_survey_dataTable_name($displayName);
             }
-            $this->set_dataTables_displayName($this->survey['survey_generated_id'], $displayName);
             $this->db->commit();
             $this->db->clear_cache($this->db->get_cache()::CACHE_TYPE_SECTIONS);
             return $sid;
@@ -100,6 +103,44 @@ class ModuleSurveyJSModel extends BaseModel
             $this->db->rollback();
             return false;
         }
+    }
+
+    /**
+     * Human-readable survey title from Creator JSON, or '' when missing.
+     *
+     * @param array $surveyJson
+     * @return string
+     */
+    private function survey_display_name_from_json($surveyJson)
+    {
+        if (!isset($surveyJson['title'])) {
+            return '';
+        }
+        $title = $surveyJson['title'];
+        if (is_array($title)) {
+            $title = isset($title['default']) ? $title['default'] : '';
+        }
+        return is_string($title) ? trim($title) : '';
+    }
+
+    /**
+     * Ensure one dataTable for this survey_generated_id; update displayName if it exists.
+     *
+     * @param string $displayName
+     * @return void
+     */
+    private function sync_survey_dataTable_name($displayName)
+    {
+        if (!isset($this->survey['survey_generated_id']) || $this->survey['survey_generated_id'] === '') {
+            return;
+        }
+        $name = $this->survey['survey_generated_id'];
+        $id_table = $this->user_input->get_dataTable_id($name);
+        if ($id_table) {
+            $this->db->update_by_ids('dataTables', array('displayName' => $displayName), array('id' => $id_table));
+            return;
+        }
+        $this->set_dataTables_displayName($name, $displayName);
     }
 
     /**

@@ -54,6 +54,12 @@ class SurveyJSModel extends StyleModel
     private $update_based_on;
 
     /**
+     * When set, mint a unique `sid` on first open (URL + `extra_param_sid`) so
+     * guests on a shared invite link do not resume each other's rows.
+     */
+    private $auto_session_key;
+
+    /**
      * JSON object where can be defined global translation keys and use the key to load the proper translation based on the selected language. A key is accessed by {{key_name}}, and this will be replaced with the value for the selected language
      */
     private $dynamic_replacement;
@@ -82,10 +88,35 @@ class SurveyJSModel extends StyleModel
         $this->once_per_user = $this->get_db_field('once_per_user', 0);
         $this->own_entries_only = $this->get_db_field('own_entries_only', 1);
         $this->update_based_on = $this->get_db_field('update_based_on', '');
+        $this->auto_session_key = $this->get_db_field('auto_session_key', 0);
+        // Shared invite link: key on sid unless the section already names a column.
+        if ($this->auto_session_key && trim((string) $this->update_based_on) === '') {
+            $this->update_based_on = 'extra_param_sid';
+        }
         $this->start_time = $this->get_db_field('start_time', '00:00');
         $this->end_time = $this->get_db_field('end_time', '00:00');
         $this->dynamic_replacement = $this->get_db_field('dynamic_replacement', '');
         $this->calc_times();
+    }
+
+    /**
+     * Column used to identify a response row (may be forced to extra_param_sid).
+     *
+     * @return string
+     */
+    public function get_update_based_on()
+    {
+        return (string) $this->update_based_on;
+    }
+
+    /**
+     * Whether the client should mint a unique sid into the URL on first open.
+     *
+     * @return bool
+     */
+    public function get_auto_session_key()
+    {
+        return (bool) $this->auto_session_key;
     }
 
     /* Private Methods ********************************************************/
@@ -256,9 +287,18 @@ class SurveyJSModel extends StyleModel
         if ($col === '') {
             return null;
         }
+        // Route / style params first; query string overlays so `?sid=` wins and
+        // auto_session_key refresh restores the same row.
         $params = is_array($this->params) ? $this->params : array();
+        if (!empty($_GET) && is_array($_GET)) {
+            foreach ($_GET as $name => $value) {
+                if (is_scalar($value)) {
+                    $params[$name] = $value;
+                }
+            }
+        }
         if (!isset($params[$col])) {
-            // `extra_param_code` is carried in the route as `code`.
+            // `extra_param_sid` is carried in the URL as `sid`.
             $short = preg_replace('/^extra_param_/', '', $col);
             if ($short !== $col && isset($params[$short])) {
                 $params[$col] = $params[$short];

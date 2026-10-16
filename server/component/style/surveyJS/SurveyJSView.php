@@ -158,7 +158,11 @@ class SurveyJSView extends StyleView
                     // (e.g. the `video` question) can resolve root-relative
                     // URLs such as "/assets/video.mp4" against the SelfHelp
                     // install path.
-                    "base_path" => defined('BASE_PATH') ? BASE_PATH : ''
+                    "base_path" => defined('BASE_PATH') ? BASE_PATH : '',
+                    "update_based_on" => method_exists($this->model, 'get_update_based_on')
+                        ? $this->model->get_update_based_on() : '',
+                    "auto_session_key" => method_exists($this->model, 'get_auto_session_key')
+                        ? $this->model->get_auto_session_key() : false,
                 );
                 if (method_exists($this->model, 'is_cms_page') && $this->model->is_cms_page()) {
                     // if it is in CMS unset the survey id, we do not want to save it
